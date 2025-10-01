@@ -1,6 +1,8 @@
-import { Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Text, TouchableOpacity, View } from "react-native";
 
 export default function Index() {
+  const router = useRouter();
   return (
     <View
       style={{
@@ -10,6 +12,10 @@ export default function Index() {
       }}
     >
       <Text>This will be the welcome screen!</Text>
+      <TouchableOpacity onPress={() => router.push("/login")}
+        style={{ marginTop: 20 }}>
+        <Text>Login Page</Text>
+      </TouchableOpacity>
     </View>
   );
 }
