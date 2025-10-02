@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import BottomNavButton from "@/components/bottomNavBar";
 
 export default function Index() {
   return (
@@ -10,6 +11,7 @@ export default function Index() {
       }}
     >
       <Text>This will be the welcome screen!</Text>
+      <BottomNavButton/>
     </View>
   );
 }
