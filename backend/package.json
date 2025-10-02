@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "backend_connection.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon start.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "expo": "^52.0.37",
+    "express": "^4.21.2",
+    "nodemon": "^3.1.10",
+    "pg": "^8.15.5"
+  }
+}
