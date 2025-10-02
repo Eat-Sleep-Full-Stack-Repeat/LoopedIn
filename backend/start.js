@@ -1,3 +1,7 @@
+//import S3 functions for images
+const { uploadFile, deleteFile, getSignedFile } = require("./s3_connection.js");
+
+
 //set up express server
 const express = require("express");
 const app = express();
@@ -7,6 +11,17 @@ const port = 5000;
 
 //connect express server to our database connection
 const { pool } = require("./backend_connection");
+
+//middleware for uploading files into S3
+const multer = require('multer');
+
+//where images go temporarily while being uploaded
+//good for error checking before sending off
+const storage = multer.memoryStorage();
+
+//the upload const (along with a method that determines how many images we're sending) 
+//goes inside an API endpoint
+const upload = multer({storage: storage});
 
 
 // -------------------- RUNNING SERVER --------------------------- 
