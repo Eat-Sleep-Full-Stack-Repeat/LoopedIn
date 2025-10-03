@@ -2,7 +2,7 @@ import { Link, router } from "expo-router";
 import { View, StyleSheet, Text, Image, Pressable } from "react-native";
 
 const handleProfilePress = () => {
-  router.push("/userProfile");
+  router.replace("/userProfile");
 };
 
 const BottomNavButton = () => {
@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     width: "100%",
     padding: 10,
+    backgroundColor: "white",
   },
 });
 
