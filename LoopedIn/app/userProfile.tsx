@@ -5,7 +5,6 @@ import {
   Image,
   FlatList,
   Dimensions,
-  ScrollView,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,6 +16,57 @@ export default function UserProfile() {
   const userData = mockUser;
   const insets = useSafeAreaInsets();
 
+  const renderHeader = () => (
+    <View>
+      <View style={styles.topBar}>
+        <View style={styles.userOptions}>
+          <Text> DMs </Text>
+          <Text> Settings </Text>
+        </View>
+      </View>
+      {/* Middle section - user info */}
+      <View style={styles.userInfo}>
+        <Image source={userData.profilePic} />
+        <View style={{ flexShrink: 1, rowGap: 10 }}>
+          <Text>{userData.userName}</Text>
+          <View style={styles.userCount}>
+            <View style={styles.countLabel}>
+              <Text>{userData.numFollowers}</Text>
+              <Text> Followers </Text>
+            </View>
+            <View style={styles.countLabel}>
+              <Text>{userData.numFriends}</Text>
+              <Text> Friends </Text>
+            </View>
+          </View>
+          <Text>{userData.userBio}</Text>
+        </View>
+      </View>
+
+      {/* tags */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "flex-start",
+          gap: 15,
+          marginHorizontal: 20,
+        }}
+      >
+        {userData.tags.map((tag, index) => (
+          <Text key={index} style={styles.userTags}>
+            {tag}
+          </Text>
+        ))}
+      </View>
+
+      {/* posts */}
+      <View style={styles.userPosts}>
+        <Text> Posts </Text>
+        <Text> Saved </Text>
+      </View>
+    </View>
+  );
+
   return (
     // Additional navigation for the user
     <View
@@ -25,75 +75,25 @@ export default function UserProfile() {
         { paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
-      <ScrollView style={{ flex: 1 }}>
-        <View style={styles.topBar}>
-          <View style={styles.userOptions}>
-            <Text> DMs </Text>
-            <Text> Settings </Text>
-          </View>
-        </View>
-        {/* Middle section - user info */}
-        <View style={styles.userInfo}>
-          <Image source={userData.profilePic} />
-          <View style={{ flexShrink: 1, rowGap: 10 }}>
-            <Text>{userData.userName}</Text>
-            <View style={styles.userCount}>
-              <View style={styles.countLabel}>
-                <Text>{userData.numFollowers}</Text>
-                <Text> Followers </Text>
-              </View>
-              <View style={styles.countLabel}>
-                <Text>{userData.numFriends}</Text>
-                <Text> Friends </Text>
-              </View>
-            </View>
-            <Text>{userData.userBio}</Text>
-          </View>
-        </View>
-
-        {/* tags */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-start",
-            gap: 15,
-            marginHorizontal: 20,
-          }}
-        >
-          {userData.tags.map((tag, index) => (
-            <Text key={index} style={styles.userTags}>
-              {tag}
-            </Text>
-          ))}
-        </View>
-
-        {/* posts */}
-        <View style={styles.userPosts}>
-          <Text> Posts </Text>
-          <Text> Saved </Text>
-        </View>
-
-        <FlatList
-          data={userData.posts}
-          numColumns={3}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <Image
-              source={item}
-              resizeMode="cover"
-              style={{
-                width: Dimensions.get("window").width / 3 - 10,
-                height: (Dimensions.get("window").width / 3 - 10) * (16 / 9),
-                borderRadius: 10,
-                marginBottom: 5,
-              }}
-            />
-          )}
-          contentContainerStyle={{ paddingBottom: 70, marginHorizontal: 10 }}
-          columnWrapperStyle={{ justifyContent: "space-between" }}
-        />
-      </ScrollView>
-
+      <FlatList
+        data={userData.posts}
+        numColumns={3}
+        ListHeaderComponent={renderHeader}
+        renderItem={({ item }) => (
+          <Image
+            source={item}
+            resizeMode="cover"
+            style={{
+              width: Dimensions.get("window").width / 3 - 10,
+              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9),
+              borderRadius: 10,
+              marginBottom: 5,
+            }}
+          />
+        )}
+        contentContainerStyle={{ paddingBottom: 70, marginHorizontal: 10 }}
+        columnWrapperStyle={{ justifyContent: "space-between" }}
+      />
       <BottomNavButton />
     </View>
   );
@@ -102,7 +102,6 @@ export default function UserProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // overflow: "scroll",
   },
   topBar: {
     flexDirection: "row",
