@@ -1,13 +1,16 @@
 import { Link, router } from "expo-router";
 import { View, StyleSheet, Text, Image, Pressable } from "react-native";
+import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const handleProfilePress = () => {
   router.replace("/userProfile");
 };
 
 const BottomNavButton = () => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {bottom: insets.bottom}]}>
       <Pressable onPress={handleProfilePress}>
         <View
           style={{
@@ -62,15 +65,21 @@ const BottomNavButton = () => {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 15,
     flexDirection: "row",
     flexWrap: "nowrap",
     justifyContent: "space-evenly",
     alignItems: "center",
-    borderTopWidth: 2,
-    width: "100%",
+    borderWidth: 2,
+    borderColor: "#E0D5DD",
+    width: "90%",
     padding: 10,
-    backgroundColor: "white",
+    backgroundColor: "#F8F2E5",
+    alignSelf: "center",
+    borderRadius: 50,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
 });
 

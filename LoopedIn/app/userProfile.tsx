@@ -5,78 +5,208 @@ import {
   Image,
   FlatList,
   Dimensions,
+  Pressable,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 // FIXME: delete the following line when backend set up
 import mockUser from "./mockData";
+import { Fragment, useState } from "react";
+import craftIcons from "@/components/craftIcons";
 
 export default function UserProfile() {
   // FIXME: will need to call the userInfo from the backend when time
   const userData = mockUser;
   const insets = useSafeAreaInsets();
+  const [activeTab, setTab] = useState("posts");
+  const [currentPosts, setPosts] = useState(userData.posts);
+
+  const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
+
+  const handleSavedPress = () => (
+    setTab("saved"), setPosts(userData.savedPosts)
+  );
 
   const renderHeader = () => (
     <View>
-      <View style={styles.topBar}>
-        <View style={styles.userOptions}>
-          <Text> DMs </Text>
-          <Text> Settings </Text>
-        </View>
-      </View>
-      {/* Middle section - user info */}
-      <View style={styles.userInfo}>
-        <Image source={userData.profilePic} />
-        <View style={{ flexShrink: 1, rowGap: 10 }}>
-          <Text>{userData.userName}</Text>
-          <View style={styles.userCount}>
-            <View style={styles.countLabel}>
-              <Text>{userData.numFollowers}</Text>
-              <Text> Followers </Text>
-            </View>
-            <View style={styles.countLabel}>
-              <Text>{userData.numFriends}</Text>
-              <Text> Friends </Text>
-            </View>
-          </View>
-          <Text>{userData.userBio}</Text>
-        </View>
-      </View>
-
-      {/* tags */}
       <View
         style={{
-          flexDirection: "row",
-          justifyContent: "flex-start",
-          gap: 15,
-          marginHorizontal: 20,
+          backgroundColor: "#E0D5DD",
+          flexDirection: "column",
+          flex: 1,
+          paddingTop: insets.top,
+          width: "100%",
+          marginBottom: 30,
+          borderBottomLeftRadius: 30,
+          borderBottomRightRadius: 30,
         }}
       >
-        {userData.tags.map((tag, index) => (
-          <Text key={index} style={styles.userTags}>
-            {tag}
-          </Text>
-        ))}
+        <View style={{ flexDirection: "column" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 20,
+              marginTop: 20,
+              marginBottom: 20,
+              marginRight: 20,
+            }}
+          >
+            <Text> DMs </Text>
+            <Text> Settings </Text>
+          </View>
+
+          {/* user info: pic, username, follower + friend count */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+            }}
+          >
+            <Image
+              source={require("@/assets/images/icons8-cat-profile-100.png")}
+            />
+            <View>
+              <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
+              <View style={{ flexDirection: "row", gap: 20 }}>
+                <View style={{ flexDirection: "column", alignItems: "center" }}>
+                  <View
+                    style={{
+                      backgroundColor: "#F7B557",
+                      width: 50,
+                      height: 50,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 25,
+                      flexDirection: "row",
+                    }}
+                  >
+                    <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                      {userData.numFollowers}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 14 }}> Followers </Text>
+                </View>
+                <View style={{ flexDirection: "column", alignItems: "center" }}>
+                  <View
+                    style={{
+                      backgroundColor: "#F7B557",
+                      width: 50,
+                      height: 50,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 25,
+                    }}
+                  >
+                    <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                      {userData.numFriends}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 14 }}> Friends </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* bio */}
+          <View
+            style={{
+              flexDirection: "column",
+              marginHorizontal: 30,
+              marginBottom: 20,
+              marginTop: 10,
+            }}
+          >
+            <Text style={{ fontSize: 14 }}> Bio </Text>
+            <View
+              style={{
+                backgroundColor: "#F8F2E5",
+                padding: 10,
+                borderRadius: 15,
+              }}
+            >
+              <Text style={{ fontSize: 14 }}>{userData.userBio}</Text>
+            </View>
+          </View>
+
+          {/* craft tags */}
+          <View
+            style={{
+              flexDirection: "column",
+              marginBottom: 30,
+              marginHorizontal: 30,
+            }}
+          >
+            <Text> Crafts </Text>
+            <View
+              style={{
+                backgroundColor: "#F8F2E5",
+                padding: 10,
+                borderRadius: 15,
+                flexDirection: "row",
+                gap: 30,
+              }}
+            >
+              {userData.tags.map((item, index) => (
+                <View
+                  key={index}
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                >
+                  <Text>{item.craft}</Text>
+                  <Image source={craftIcons[item.craft]} />
+                  <Text>{item.skill}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* edit profile button */}
+          <View
+            style={{
+              backgroundColor: "#F8F2E5",
+              marginBottom: 30,
+              marginHorizontal: 85,
+              paddingVertical: 10,
+              alignItems: "center",
+              borderRadius: 15,
+            }}
+          >
+            <Text style={{ fontSize: 14 }}> Edit Profile </Text>
+          </View>
+        </View>
       </View>
 
-      {/* posts */}
-      <View style={styles.userPosts}>
-        <Text> Posts </Text>
-        <Text> Saved </Text>
-      </View>
+      {/* Post tab navigation (my posts vs saved posts) */}
+      {activeTab == "posts" ? (
+        <View style={styles.postTabs}>
+          <View style={styles.postTabText}>
+            <Text style={{ color: "#C1521E" }}> My Posts </Text>
+          </View>
+          <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
+            <Text> Saved Posts </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.postTabs}>
+          <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
+            <Text> My Posts </Text>
+          </Pressable>
+          <View style={styles.postTabText}>
+            <Text style={{ color: "#C1521E" }}> Saved Posts </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 
   return (
-    // Additional navigation for the user
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={[styles.container]}>
+      <View style={styles.topBackground}/>
+      <View style={styles.bottomBackground}/>
       <FlatList
-        data={userData.posts}
+        data={currentPosts}
         numColumns={3}
         ListHeaderComponent={renderHeader}
         renderItem={({ item }) => (
@@ -85,14 +215,17 @@ export default function UserProfile() {
             resizeMode="cover"
             style={{
               width: Dimensions.get("window").width / 3 - 10,
-              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9),
-              borderRadius: 10,
+              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9), //aspect ration 16/9
+              borderRadius: 20,
               marginBottom: 5,
             }}
           />
         )}
-        contentContainerStyle={{ paddingBottom: 70, marginHorizontal: 10 }}
-        columnWrapperStyle={{ justifyContent: "space-between" }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100, backgroundColor: "#F8F2E5" }}
+        columnWrapperStyle={{
+          justifyContent: "space-between",
+          marginHorizontal: 10,
+        }}
       />
       <BottomNavButton />
     </View>
@@ -103,47 +236,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topBar: {
+  postTabs: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
+    justifyContent: "center",
+    gap: 40,
     marginBottom: 20,
-    marginHorizontal: 20,
-  },
-  userOptions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-  },
-  userInfo: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    gap: 10,
-    marginBottom: 10,
-    marginHorizontal: 20,
-  },
-  userTags: {
-    backgroundColor: "pink",
-    padding: 5,
-    flexShrink: 1,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  userPosts: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    borderBottomColor: "black",
-    borderBottomWidth: 1,
-    marginBottom: 10,
-  },
-  userCount: {
-    flexDirection: "row",
-    gap: 20,
-    justifyContent: "flex-start",
     alignItems: "center",
   },
-  countLabel: {
-    flexDirection: "column",
-    alignItems: "center",
+  postTabText: {
+    backgroundColor: "#F7B557",
+    padding: 10,
+    borderRadius: 15,
   },
+  topBackground: {
+    backgroundColor: "#E0D5DD",
+    height: "50%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: -1,
+  },
+  bottomBackground: {
+    backgroundColor: "#F8F2E5",
+    height: "50%",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: -1,
+  }
 });
