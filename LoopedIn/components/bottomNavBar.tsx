@@ -6,6 +6,11 @@ const handleProfilePress = () => {
   router.replace("/userProfile");
 };
 
+const handleForumPress = () => {
+  // FIXME: route the forums button to the correct page - this is for testing
+  router.replace("/");
+}
+
 const BottomNavButton = () => {
   const insets = useSafeAreaInsets();
 
@@ -53,10 +58,12 @@ const BottomNavButton = () => {
         }}
       >
         {/* put the forums stuff here */}
-        <Image
-          source={require("@/assets/images/icons8-communication-50.png")}
-        />
-        <Text> forums </Text>
+        <Pressable onPress={handleForumPress}>
+          <Image
+            source={require("@/assets/images/icons8-communication-50.png")}
+          />
+          <Text> forums </Text>
+        </Pressable>
       </View>
     </View>
   );
