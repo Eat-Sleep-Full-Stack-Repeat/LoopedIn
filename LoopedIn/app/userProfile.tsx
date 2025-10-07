@@ -29,42 +29,15 @@ export default function UserProfile() {
 
   const renderHeader = () => (
     <View>
-      <View
-        style={{
-          backgroundColor: "#E0D5DD",
-          flexDirection: "column",
-          flex: 1,
-          paddingTop: insets.top,
-          width: "100%",
-          marginBottom: 30,
-          borderBottomLeftRadius: 30,
-          borderBottomRightRadius: 30,
-        }}
-      >
+      <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
         <View style={{ flexDirection: "column" }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-end",
-              gap: 20,
-              marginTop: 20,
-              marginBottom: 20,
-              marginRight: 20,
-            }}
-          >
+          <View style={styles.topAccountManagement}>
             <Text> DMs </Text>
             <Text> Settings </Text>
           </View>
 
           {/* user info: pic, username, follower + friend count */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-            }}
-          >
+          <View style={styles.userInfoContainer}>
             <Image
               source={require("@/assets/images/icons8-cat-profile-100.png")}
             />
@@ -72,17 +45,7 @@ export default function UserProfile() {
               <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
                 <View style={{ flexDirection: "column", alignItems: "center" }}>
-                  <View
-                    style={{
-                      backgroundColor: "#F7B557",
-                      width: 50,
-                      height: 50,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      borderRadius: 25,
-                      flexDirection: "row",
-                    }}
-                  >
+                  <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFollowers}
                     </Text>
@@ -90,16 +53,7 @@ export default function UserProfile() {
                   <Text style={{ fontSize: 14 }}> Followers </Text>
                 </View>
                 <View style={{ flexDirection: "column", alignItems: "center" }}>
-                  <View
-                    style={{
-                      backgroundColor: "#F7B557",
-                      width: 50,
-                      height: 50,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      borderRadius: 25,
-                    }}
-                  >
+                  <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFriends}
                     </Text>
@@ -111,44 +65,17 @@ export default function UserProfile() {
           </View>
 
           {/* bio */}
-          <View
-            style={{
-              flexDirection: "column",
-              marginHorizontal: 30,
-              marginBottom: 20,
-              marginTop: 10,
-            }}
-          >
+          <View style={styles.bioContainer}>
             <Text style={{ fontSize: 14 }}> Bio </Text>
-            <View
-              style={{
-                backgroundColor: "#F8F2E5",
-                padding: 10,
-                borderRadius: 15,
-              }}
-            >
+            <View style={styles.bioContentContainer}>
               <Text style={{ fontSize: 14 }}>{userData.userBio}</Text>
             </View>
           </View>
 
           {/* craft tags */}
-          <View
-            style={{
-              flexDirection: "column",
-              marginBottom: 30,
-              marginHorizontal: 30,
-            }}
-          >
+          <View style={styles.tagsContainer}>
             <Text> Crafts </Text>
-            <View
-              style={{
-                backgroundColor: "#F8F2E5",
-                padding: 10,
-                borderRadius: 15,
-                flexDirection: "row",
-                gap: 30,
-              }}
-            >
+            <View style={styles.tagsContentContainer}>
               {userData.tags.map((item, index) => (
                 <View
                   key={index}
@@ -163,16 +90,7 @@ export default function UserProfile() {
           </View>
 
           {/* edit profile button */}
-          <View
-            style={{
-              backgroundColor: "#F8F2E5",
-              marginBottom: 30,
-              marginHorizontal: 85,
-              paddingVertical: 10,
-              alignItems: "center",
-              borderRadius: 15,
-            }}
-          >
+          <View style={styles.editProfileButton}>
             <Text style={{ fontSize: 14 }}> Edit Profile </Text>
           </View>
         </View>
@@ -203,8 +121,8 @@ export default function UserProfile() {
 
   return (
     <View style={[styles.container]}>
-      <View style={styles.topBackground}/>
-      <View style={styles.bottomBackground}/>
+      <View style={styles.topBackground} />
+      <View style={styles.bottomBackground} />
       <FlatList
         data={currentPosts}
         numColumns={3}
@@ -221,7 +139,10 @@ export default function UserProfile() {
             }}
           />
         )}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100, backgroundColor: "#F8F2E5" }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 100,
+          backgroundColor: "#F8F2E5",
+        }}
         columnWrapperStyle={{
           justifyContent: "space-between",
           marginHorizontal: 10,
@@ -265,5 +186,68 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: -1,
-  }
+  },
+  renderHeaderStyle: {
+    backgroundColor: "#E0D5DD",
+    flexDirection: "column",
+    flex: 1,
+    width: "100%",
+    marginBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  topAccountManagement: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 20,
+    marginTop: 20,
+    marginBottom: 20,
+    marginRight: 20,
+  },
+  userInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  countCircles: {
+    backgroundColor: "#F7B557",
+    width: 50,
+    height: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 25,
+    flexDirection: "row",
+  },
+  bioContainer: {
+    flexDirection: "column",
+    marginHorizontal: 30,
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  bioContentContainer: {
+    backgroundColor: "#F8F2E5",
+    padding: 10,
+    borderRadius: 15,
+  },
+  tagsContainer: {
+    flexDirection: "column",
+    marginBottom: 30,
+    marginHorizontal: 30,
+  },
+  tagsContentContainer: {
+    backgroundColor: "#F8F2E5",
+    padding: 10,
+    borderRadius: 15,
+    flexDirection: "row",
+    gap: 30,
+  },
+  editProfileButton: {
+    backgroundColor: "#F8F2E5",
+    marginBottom: 30,
+    marginHorizontal: 85,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 15,
+  },
 });
