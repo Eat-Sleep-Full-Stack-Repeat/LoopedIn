@@ -9,23 +9,20 @@ import {
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-// FIXME: delete the following line when backend set up
 import mockUser from "./mockData";
 import { Fragment, useState } from "react";
 import craftIcons from "@/components/craftIcons";
+import { useRouter } from "expo-router";
 
 export default function UserProfile() {
-  // FIXME: will need to call the userInfo from the backend when time
+  const router = useRouter();
   const userData = mockUser;
   const insets = useSafeAreaInsets();
   const [activeTab, setTab] = useState("posts");
   const [currentPosts, setPosts] = useState(userData.posts);
 
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
-
-  const handleSavedPress = () => (
-    setTab("saved"), setPosts(userData.savedPosts)
-  );
+  const handleSavedPress = () => (setTab("saved"), setPosts(userData.savedPosts));
 
   const renderHeader = () => (
     <View>
@@ -36,7 +33,7 @@ export default function UserProfile() {
             <Text> Settings </Text>
           </View>
 
-          {/* user info: pic, username, follower + friend count */}
+          {/* user info: pic, username, follower + following count */}
           <View style={styles.userInfoContainer}>
             <Image
               source={require("@/assets/images/icons8-cat-profile-100.png")}
@@ -44,22 +41,31 @@ export default function UserProfile() {
             <View>
               <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
-                <View style={{ flexDirection: "column", alignItems: "center" }}>
+                {/* Followers - clickable */}
+                <Pressable
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => router.push("/followers")}
+                >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFollowers}
                     </Text>
                   </View>
                   <Text style={{ fontSize: 14 }}> Followers </Text>
-                </View>
-                <View style={{ flexDirection: "column", alignItems: "center" }}>
+                </Pressable>
+
+                {/* Following - clickable */}
+                <Pressable
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => router.push("/following")}
+                >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFriends}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Friends </Text>
-                </View>
+                  <Text style={{ fontSize: 14 }}> Following </Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -133,7 +139,7 @@ export default function UserProfile() {
             resizeMode="cover"
             style={{
               width: Dimensions.get("window").width / 3 - 10,
-              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9), //aspect ration 16/9
+              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9),
               borderRadius: 20,
               marginBottom: 5,
             }}
