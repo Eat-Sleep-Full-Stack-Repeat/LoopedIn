@@ -6,15 +6,20 @@ import {
   FlatList,
   Dimensions,
   Pressable,
+  Button,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import mockUser from "./mockData";
-import { Fragment, useState } from "react";
+import { Fragment, useContext, useState } from "react";
 import craftIcons from "@/components/craftIcons";
 import { useRouter } from "expo-router";
+import { Colors } from "@/Styles/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function UserProfile() {
+  const { currentTheme, toggleTheme } = useTheme();
+  const colors = Colors[currentTheme];
   const router = useRouter();
   const userData = mockUser;
   const insets = useSafeAreaInsets();
@@ -24,13 +29,112 @@ export default function UserProfile() {
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
   const handleSavedPress = () => (setTab("saved"), setPosts(userData.savedPosts));
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    postTabs: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 40,
+      marginBottom: 20,
+      alignItems: "center",
+    },
+    postTabText: {
+      backgroundColor: colors.decorativeBackground,
+      padding: 10,
+      borderRadius: 15,
+    },
+    topBackground: {
+      backgroundColor: colors.topBackground,
+      height: "50%",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: -1,
+    },
+    bottomBackground: {
+      backgroundColor: colors.background,
+      height: "50%",
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: -1,
+    },
+    renderHeaderStyle: {
+      backgroundColor: colors.topBackground,
+      flexDirection: "column",
+      flex: 1,
+      width: "100%",
+      marginBottom: 30,
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+    },
+    topAccountManagement: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 20,
+      marginTop: 20,
+      marginBottom: 20,
+      marginRight: 20,
+    },
+    userInfoContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    countCircles: {
+      backgroundColor: colors.decorativeBackground,
+      width: 50,
+      height: 50,
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 25,
+      flexDirection: "row",
+    },
+    bioContainer: {
+      flexDirection: "column",
+      marginHorizontal: 30,
+      marginBottom: 20,
+      marginTop: 10,
+    },
+    bioContentContainer: {
+      backgroundColor: colors.boxBackground,
+      padding: 10,
+      borderRadius: 15,
+    },
+    tagsContainer: {
+      flexDirection: "column",
+      marginBottom: 30,
+      marginHorizontal: 30,
+    },
+    tagsContentContainer: {
+      backgroundColor: colors.boxBackground,
+      padding: 10,
+      borderRadius: 15,
+      flexDirection: "row",
+      gap: 30,
+    },
+    editProfileButton: {
+      backgroundColor: colors.boxBackground,
+      marginBottom: 30,
+      marginHorizontal: 85,
+      paddingVertical: 10,
+      alignItems: "center",
+      borderRadius: 15,
+    },
+  });  
+
   const renderHeader = () => (
     <View>
       <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
         <View style={{ flexDirection: "column" }}>
           <View style={styles.topAccountManagement}>
-            <Text> DMs </Text>
-            <Text> Settings </Text>
+            <Text style={{ color: colors.text}}> DMs </Text>
+            <Text style={{ color: colors.text }}> Settings </Text>
           </View>
 
           {/* user info: pic, username, follower + following count */}
@@ -39,7 +143,7 @@ export default function UserProfile() {
               source={require("@/assets/images/icons8-cat-profile-100.png")}
             />
             <View>
-              <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
+              <Text style={{ fontSize: 20, color: colors.text }}>{userData.userName}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
                 {/* Followers - clickable */}
                 <Pressable
@@ -47,11 +151,11 @@ export default function UserProfile() {
                   onPress={() => router.push("/followers")}
                 >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                    <Text style={{ fontSize: 24, color: colors.decorativeText }}>
                       {userData.numFollowers}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Followers </Text>
+                  <Text style={{ fontSize: 14, color: colors.text }}> Followers </Text>
                 </Pressable>
 
                 {/* Following - clickable */}
@@ -60,11 +164,11 @@ export default function UserProfile() {
                   onPress={() => router.push("/following")}
                 >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                    <Text style={{ fontSize: 24, color: colors.decorativeText }}>
                       {userData.numFriends}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Following </Text>
+                  <Text style={{ fontSize: 14, color: colors.text }}> Following </Text>
                 </Pressable>
               </View>
             </View>
@@ -72,24 +176,24 @@ export default function UserProfile() {
 
           {/* bio */}
           <View style={styles.bioContainer}>
-            <Text style={{ fontSize: 14 }}> Bio </Text>
+            <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
             <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14 }}>{userData.userBio}</Text>
+              <Text style={{ fontSize: 14, color: colors.text }}>{userData.userBio}</Text>
             </View>
           </View>
 
           {/* craft tags */}
           <View style={styles.tagsContainer}>
-            <Text> Crafts </Text>
+            <Text style={{ color: colors.text }}> Crafts </Text>
             <View style={styles.tagsContentContainer}>
               {userData.tags.map((item, index) => (
                 <View
                   key={index}
                   style={{ flexDirection: "column", alignItems: "center" }}
                 >
-                  <Text>{item.craft}</Text>
+                  <Text style={{ color: colors.text }}>{item.craft}</Text>
                   <Image source={craftIcons[item.craft]} />
-                  <Text>{item.skill}</Text>
+                  <Text style={{ color: colors.text }}>{item.skill}</Text>
                 </View>
               ))}
             </View>
@@ -97,8 +201,10 @@ export default function UserProfile() {
 
           {/* edit profile button */}
           <View style={styles.editProfileButton}>
-            <Text style={{ fontSize: 14 }}> Edit Profile </Text>
+            <Text style={{ fontSize: 14, color: colors.text }}> Edit Profile </Text>
           </View>
+
+          <Button title="Toggle Theme" onPress={toggleTheme}/>
         </View>
       </View>
 
@@ -106,19 +212,19 @@ export default function UserProfile() {
       {activeTab == "posts" ? (
         <View style={styles.postTabs}>
           <View style={styles.postTabText}>
-            <Text style={{ color: "#C1521E" }}> My Posts </Text>
+            <Text style={{ color: colors.decorativeText }}> My Posts </Text>
           </View>
           <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
-            <Text> Saved Posts </Text>
+            <Text style={{ color: colors.text }}> Saved Posts </Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.postTabs}>
           <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
-            <Text> My Posts </Text>
+            <Text style={{ color: colors.text }}> My Posts </Text>
           </Pressable>
           <View style={styles.postTabText}>
-            <Text style={{ color: "#C1521E" }}> Saved Posts </Text>
+            <Text style={{ color: colors.decorativeText }}> Saved Posts </Text>
           </View>
         </View>
       )}
@@ -147,7 +253,7 @@ export default function UserProfile() {
         )}
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
-          backgroundColor: "#F8F2E5",
+          backgroundColor: colors.background,
         }}
         columnWrapperStyle={{
           justifyContent: "space-between",
@@ -159,101 +265,3 @@ export default function UserProfile() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  postTabs: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 40,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  postTabText: {
-    backgroundColor: "#F7B557",
-    padding: 10,
-    borderRadius: 15,
-  },
-  topBackground: {
-    backgroundColor: "#E0D5DD",
-    height: "50%",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: -1,
-  },
-  bottomBackground: {
-    backgroundColor: "#F8F2E5",
-    height: "50%",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: -1,
-  },
-  renderHeaderStyle: {
-    backgroundColor: "#E0D5DD",
-    flexDirection: "column",
-    flex: 1,
-    width: "100%",
-    marginBottom: 30,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  topAccountManagement: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 20,
-    marginTop: 20,
-    marginBottom: 20,
-    marginRight: 20,
-  },
-  userInfoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  countCircles: {
-    backgroundColor: "#F7B557",
-    width: 50,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 25,
-    flexDirection: "row",
-  },
-  bioContainer: {
-    flexDirection: "column",
-    marginHorizontal: 30,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  bioContentContainer: {
-    backgroundColor: "#F8F2E5",
-    padding: 10,
-    borderRadius: 15,
-  },
-  tagsContainer: {
-    flexDirection: "column",
-    marginBottom: 30,
-    marginHorizontal: 30,
-  },
-  tagsContentContainer: {
-    backgroundColor: "#F8F2E5",
-    padding: 10,
-    borderRadius: 15,
-    flexDirection: "row",
-    gap: 30,
-  },
-  editProfileButton: {
-    backgroundColor: "#F8F2E5",
-    marginBottom: 30,
-    marginHorizontal: 85,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderRadius: 15,
-  },
-});
