@@ -80,31 +80,34 @@ export default function UserProfile() {
             <View>
               <Text style={{ fontSize: 20 }}>{username}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
-{/* Followers - clickable */}
-<Pressable
-style={{ flexDirection: "column", alignItems: "center" }}
-onPress={() => router.push("/followers")}
->
+
+                {/* Followers - clickable */}
+                <Pressable
+                style={{ flexDirection: "column", alignItems: "center" }}
+                onPress={() => router.push("/followers")}
+                >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFollowers}
                     </Text>
                   </View>
                   <Text style={{ fontSize: 14 }}> Followers </Text>
-</Pressable>
+                </Pressable>
 
-{/* Following - clickable */}
-  <Pressable
-  style={{ flexDirection: "column", alignItems: "center" }}
-  onPress={() => router.push("/following")}
-  >
+                {/* Following - clickable */}
+
+                  <Pressable
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => router.push("/following")}
+                  >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFriends}
                     </Text>
                   </View>
                   <Text style={{ fontSize: 14 }}> Following </Text>
-  </Pressable>
+                </Pressable>
+
                 </View>
               </View>
             </View>
@@ -139,7 +142,8 @@ onPress={() => router.push("/followers")}
           <View style={styles.editProfileButton}>
             <Text style={{ fontSize: 14 }}> Edit Profile </Text>
           </View>
-      {/* Floating Logout Button */}
+          
+          {/* Floating Logout Button */}
           <TouchableOpacity style={styles.editProfileButton} onPress={handleLogout}>
             <Text style={{ fontSize: 14 }}>Logout</Text>
           </TouchableOpacity>
