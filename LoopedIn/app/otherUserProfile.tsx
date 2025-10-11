@@ -33,31 +33,30 @@ export default function OtherUserProfile() {
             <View>
               <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
-                {/* Followers */}
-                <Pressable
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                  onPress={() => router.push("/followers")}
-                >
+{/* Followers */}
+<Pressable
+  style={{ flexDirection: "column", alignItems: "center" }}
+  onPress={() => router.push("/followers")}
+>
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFollowers}
                     </Text>
                   </View>
                   <Text style={styles.countLabel}>Followers</Text>
-                </Pressable>
-
-                {/* Following */}
-                <Pressable
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                  onPress={() => router.push("/following")}
-                >
+</Pressable>
+{/* Following */}
+<Pressable
+  style={{ flexDirection: "column", alignItems: "center" }}
+  onPress={() => router.push("/following")}
+>
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFriends}
                     </Text>
                   </View>
-                  <Text style={styles.countLabel}>Following</Text>
-                </Pressable>
+                   <Text style={styles.countLabel}>Following</Text>
+</Pressable>
               </View>
             </View>
           </View>
@@ -99,7 +98,7 @@ export default function OtherUserProfile() {
         </View>
       </View>
 
-      {/* user’s posts section */}
+      {/* user's posts section */}
       <View style={styles.postTabs}>
         <View style={styles.postTabText}>
           <Text style={{ color: "#C1521E" }}>{userData.userName}'s Posts</Text>
@@ -107,6 +106,8 @@ export default function OtherUserProfile() {
       </View>
     </View>
   );
+
+
 
   return (
     <View style={[styles.container]}>
