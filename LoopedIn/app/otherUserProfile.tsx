@@ -6,8 +6,6 @@ import {
   FlatList,
   Dimensions,
   Pressable,
-  Modal,
-  TouchableWithoutFeedback,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,12 +13,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import mockUser from "./mockData";
 import { useState } from "react";
 import craftIcons from "@/components/craftIcons";
+import { useRouter } from "expo-router";
 
-export default function UserProfile() {
+export default function OtherUserProfile() {
   // FIXME: will need to call the userInfo from the backend when time
   const userData = mockUser;
   const insets = useSafeAreaInsets();
-  const [modalVisible, setModalVisible] = useState(false);
+  const router = useRouter();
 
   const renderHeader = () => (
     <View>
@@ -34,22 +33,31 @@ export default function UserProfile() {
             <View>
               <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
-                <View style={{ flexDirection: "column", alignItems: "center" }}>
+                {/* Followers */}
+                <Pressable
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => router.push("/followers")}
+                >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFollowers}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Followers </Text>
-                </View>
-                <View style={{ flexDirection: "column", alignItems: "center" }}>
+                  <Text style={styles.countLabel}>Followers</Text>
+                </Pressable>
+
+                {/* Following */}
+                <Pressable
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => router.push("/following")}
+                >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFriends}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Friends </Text>
-                </View>
+                  <Text style={styles.countLabel}>Following</Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -79,56 +87,19 @@ export default function UserProfile() {
             </View>
           </View>
 
-          {/* follow, message, and block buttons */}
+          {/* follow and message buttons */}
           <View style={styles.contactContainer}>
-            <View style={styles.followContainer}>
+            <Pressable style={styles.followContainer}>
               <Text style={{ fontSize: 14 }}> Follow </Text>
-            </View>
+            </Pressable>
             <View style={styles.followContainer}>
               <Text style={{ fontSize: 14 }}> Message </Text>
             </View>
-
-            {/* Block/report button */}
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => setModalVisible(!modalVisible)}
-            >
-              <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                <View style={styles.modalContainer}>
-                  <TouchableWithoutFeedback
-                    onPress={(e) => e.stopPropagation()}
-                  >
-                    <View style={styles.modalPopUp}>
-                      <Pressable style={styles.modalButtonText}>
-                        <Text style={styles.modalFont}> Block User </Text>
-                      </Pressable>
-                      <Pressable style={styles.modalButtonText}>
-                        <Text style={styles.modalFont}> Report User </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setModalVisible(!modalVisible)}
-                        style={styles.modalButtonText}
-                      >
-                        <Text style={{ fontSize: 18 }}> Cancel </Text>
-                      </Pressable>
-                    </View>
-                  </TouchableWithoutFeedback>
-                </View>
-              </TouchableWithoutFeedback>
-            </Modal>
-
-            <Pressable onPress={() => setModalVisible(true)}>
-              {/* FIXME: Change this to a circle icon */}
-              <View style={styles.blockReportButton}>
-                <Text>...</Text>
-              </View>
-            </Pressable>
           </View>
         </View>
       </View>
 
+      {/* user’s posts section */}
       <View style={styles.postTabs}>
         <View style={styles.postTabText}>
           <Text style={{ color: "#C1521E" }}>{userData.userName}'s Posts</Text>
@@ -151,7 +122,7 @@ export default function UserProfile() {
             resizeMode="cover"
             style={{
               width: Dimensions.get("window").width / 3 - 10,
-              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9), //aspect ration 16/9
+              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9),
               borderRadius: 20,
               marginBottom: 5,
             }}
@@ -205,23 +176,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: -1,
   },
-  modalButtonText: {
-    backgroundColor: "#F8F2E5",
-    padding: 15,
-    marginHorizontal: 30,
-    marginTop: 10,
-    marginBottom: 10,
-    width: "80%",
-    borderRadius: 10,
-    borderWidth: 2,
-    alignItems: "center",
-    borderColor: "#E0D5DD",
-  },
-  modalFont: {
-    fontSize: 16,
-    color: "red",
-    fontWeight: "bold",
-  },
   renderHeaderStyle: {
     backgroundColor: "#E0D5DD",
     flexDirection: "column",
@@ -244,6 +198,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 25,
+  },
+  countLabel: {
+    fontSize: 14,
+    color: "#000",
+    marginTop: 4,
   },
   bioContainer: {
     flexDirection: "column",
@@ -280,30 +239,5 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 15,
-  },
-  modalContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 1,
-    width: "100%",
-  },
-  modalPopUp: {
-    margin: 20,
-    backgroundColor: "#F8F2E5",
-    borderRadius: 20,
-    alignItems: "center",
-    paddingVertical: 30,
-    width: "80%",
-    borderWidth: 2,
-    borderColor: "#E0D5DD",
-    shadowColor: "#F7B557",
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  blockReportButton: {
-    padding: 10,
-    backgroundColor: "#F8F2E5",
-    borderRadius: 30,
   },
 });
