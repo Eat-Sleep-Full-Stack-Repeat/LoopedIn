@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
   View,
@@ -6,8 +6,6 @@ import {
   useWindowDimensions,
   SafeAreaView,
   Platform,
-  AccessibilityInfo,
-  findNodeHandle,
   Text,
   ScrollView,
   StyleSheet,
@@ -30,19 +28,15 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type SettingsOverlayProps = {
   visible: boolean;
   onClose: () => void;
-
-  onEditProfile?: () => void;
   onAccessibility?: () => void;
   onAppearance?: () => void;
   onLogout?: () => void;
-
   title?: string;
 };
 
 export default function SettingsOverlay({
   visible,
   onClose,
-  onEditProfile,
   onAccessibility,
   onAppearance,
   onLogout,
@@ -50,36 +44,29 @@ export default function SettingsOverlay({
 }: SettingsOverlayProps) {
   const { width: screenW } = useWindowDimensions();
   const panelW = Math.min(420, Math.max(320, Math.round(screenW * 0.85)));
-
-  // translateX: 0 = open, panelW = closed (off-screen)
   const translateX = useSharedValue(panelW);
-  const firstFocusRef = useRef<View>(null);
 
-  // Open/close side-effects
+  // Open / close animations
   useEffect(() => {
     if (visible) {
       translateX.value = withTiming(0, { duration: 220 });
-      setTimeout(() => {
-        const node = findNodeHandle(firstFocusRef.current);
-        if (node) AccessibilityInfo.setAccessibilityFocus(node);
-      }, 250);
     } else {
       translateX.value = withTiming(panelW, { duration: 200 });
     }
   }, [visible, panelW, translateX]);
 
-  // Shared close animation (used by swipe, backdrop, and x button)
+  // Shared close animation
   const animateClose = () => {
     translateX.value = withTiming(panelW, { duration: 200 }, () => {
       runOnJS(onClose)();
     });
   };
 
-  // Pan gesture with scroll-friendly thresholds
+  // Swipe gesture handler
   const pan = Gesture.Pan()
     .maxPointers(1)
-    .activeOffsetX([-12, 12]) // require horizontal move
-    .failOffsetY([-8, 8])     // vertical scroll passes through
+    .activeOffsetX([-12, 12])
+    .failOffsetY([-8, 8])
     .onUpdate((e) => {
       const next = Math.min(panelW, Math.max(0, e.translationX));
       translateX.value = next;
@@ -88,20 +75,19 @@ export default function SettingsOverlay({
       const shouldClose =
         translateX.value > panelW * 0.33 || e.velocityX > 600;
       if (shouldClose) {
-        runOnJS(animateClose)(); // fade + slide + onClose
+        runOnJS(animateClose)();
       } else {
         translateX.value = withSpring(0, { velocity: e.velocityX });
       }
     });
 
-  // Panel slide style
+  // Animated styles
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
 
-  // Backdrop fade style (0.35 when open, 0 when closed)
   const backdropStyle = useAnimatedStyle(() => {
-    const progress = 1 - translateX.value / panelW; // 1 open → 0 closed
+    const progress = 1 - translateX.value / panelW;
     return { opacity: 0.35 * progress };
   });
 
@@ -114,35 +100,18 @@ export default function SettingsOverlay({
       presentationStyle={Platform.OS === "ios" ? "overFullScreen" : undefined}
     >
       <GestureHandlerRootView style={styles.flex}>
-        {/* Animated backdrop (tap to close) */}
-        <AnimatedPressable
-          onPress={animateClose}
-          style={[styles.backdrop, backdropStyle]}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        />
+        {/* Backdrop */}
+        <AnimatedPressable onPress={animateClose} style={[styles.backdrop, backdropStyle]} />
 
-        {/* Touch shield + panel */}
-        <Pressable style={styles.flex} accessible={false}>
+        {/* Overlay panel */}
+        <Pressable style={styles.flex}>
           <GestureDetector gesture={pan}>
-            <Animated.View
-              accessibilityViewIsModal
-              accessibilityRole="menu"
-              style={[styles.panel, { width: panelW }, panelStyle]}
-            >
+            <Animated.View style={[styles.panel, { width: panelW }, panelStyle]}>
               <SafeAreaView style={styles.safeArea}>
-                {/* Header */}
-                <View ref={firstFocusRef} accessible style={styles.headerRow}>
-                  <Text accessibilityRole="header" style={styles.headerTitle}>
-                    {title}
-                  </Text>
-                  <Pressable
-                    onPress={animateClose}
-                    accessibilityRole="button"
-                    accessibilityLabel="Close settings"
-                    hitSlop={12}
-                    style={styles.closeBtn}
-                  >
+                {/* Header Row */}
+                <View style={styles.headerRow}>
+                  <Text style={styles.headerTitle}>{title}</Text>
+                  <Pressable onPress={animateClose} hitSlop={12} style={styles.closeBtn}>
                     <Text style={styles.closeBtnText}>✕</Text>
                   </Pressable>
                 </View>
@@ -150,27 +119,15 @@ export default function SettingsOverlay({
                 {/* Divider */}
                 <View style={styles.hairline} />
 
-                {/* Scrollable menu */}
+                {/* Scrollable content */}
                 <ScrollView
                   contentContainerStyle={styles.scrollContent}
                   showsVerticalScrollIndicator
                 >
-                  <SectionHeader label="Account" />
-                  <MenuItem label="Edit Profile" onPress={onEditProfile} />
-                  <Divider />
-
                   <SectionHeader label="App" />
-                  <MenuItem
-                    label="Accessibility"
-                    onPress={onAccessibility}
-                    showChevron
-                  />
+                  <MenuItem label="Accessibility" onPress={onAccessibility} showChevron />
                   <Divider />
-                  <MenuItem
-                    label="Appearance"
-                    onPress={onAppearance}
-                    showChevron
-                  />
+                  <MenuItem label="Appearance" onPress={onAppearance} showChevron />
 
                   <SectionHeader label=" " />
                   <MenuItem label="Log Out" destructive onPress={onLogout} />
@@ -184,12 +141,9 @@ export default function SettingsOverlay({
   );
 }
 
+/* ---------- Helpers ---------- */
 function SectionHeader({ label }: { label: string }) {
-  return (
-    <Text accessibilityRole="header" style={styles.sectionHeader}>
-      {label}
-    </Text>
-  );
+  return <Text style={styles.sectionHeader}>{label}</Text>;
 }
 
 function Divider() {
@@ -211,8 +165,6 @@ function MenuItem({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.menuItem,
         pressed && onPress ? styles.menuItemPressed : null,
@@ -227,29 +179,24 @@ function MenuItem({
       >
         {label}
       </Text>
-      {showChevron ? (
-        <Text style={styles.menuItemChevron} accessible={false}>
-          ›
-        </Text>
-      ) : null}
+      {showChevron ? <Text style={styles.menuItemChevron}>›</Text> : null}
     </Pressable>
   );
 }
 
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "black",
   },
-
   panel: {
     position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: "white",
+    backgroundColor: "#E0D5DD",
     borderTopLeftRadius: 16,
     borderBottomLeftRadius: 16,
     shadowColor: "#000",
@@ -270,7 +217,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 23,
   },
-  headerTitle: { fontSize: 20, fontWeight: "700" },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
   closeBtn: {
     width: 36,
     height: 36,
@@ -282,7 +232,7 @@ const styles = StyleSheet.create({
   closeBtnText: { fontSize: 18, fontWeight: "700" },
   hairline: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.08)",
+    backgroundColor: "rgba(0, 0, 0, 0)",
     marginBottom: 8,
   },
   scrollContent: { paddingVertical: 8, paddingRight: 8 },
@@ -298,7 +248,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(0, 0, 0, 0)",
     marginLeft: 4,
     marginRight: 4,
   },
