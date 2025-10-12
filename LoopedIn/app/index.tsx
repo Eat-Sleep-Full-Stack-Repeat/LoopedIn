@@ -2,12 +2,23 @@ import { Colors } from "@/Styles/colors";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Button, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Switch, Text, TouchableOpacity, View } from "react-native";
 
 export default function Index() {
   const { currentTheme, toggleTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
+  const [isEnabled, setIsEnabled] = useState(currentTheme === 'dark'); //turn on for dark mode
+  const toggleSwitch = () => {
+    setIsEnabled(previousState => !previousState);
+    toggleTheme();
+  }
+
+  //update toggle switch if changed
+  useEffect(() => {
+    setIsEnabled(currentTheme === 'dark');
+  }, [currentTheme])
 
   return (
     <View
@@ -57,7 +68,16 @@ export default function Index() {
         <Text style={{ color: colors.text }}>Following Page</Text>
       </TouchableOpacity>
 
-      <Button title="Toggle Theme" onPress={toggleTheme}/>
+      <View style={{justifyContent: "center", alignItems: "center", flexDirection: "row", marginTop: 10}}>
+        <Text style={{color: colors.text}}> Dark Mode? </Text>
+        <Switch
+          onValueChange={toggleSwitch}
+          trackColor={{ false: "#767577", true: "#E0D5DD" }}
+          thumbColor={isEnabled ? "#F7B557" : "#f4f3f4"}
+          value={isEnabled}
+          style={{justifyContent: "center"}}
+        />
+      </View>
 
       <BottomNavButton />
     </View>
