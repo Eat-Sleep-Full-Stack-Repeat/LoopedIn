@@ -2,8 +2,15 @@ import BottomNavButton from "@/components/bottomNavBar";
 import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 
+
 export default function Index() {
+
+  // FIXME: Need to empty this before launch, just to help load app
+
+
   const router = useRouter();
+
+
 
   return (
     <View
@@ -14,7 +21,7 @@ export default function Index() {
       }}
     >
       <Text>This will be the welcome screen!</Text>
-
+      
       <TouchableOpacity onPress={() => router.push("/login")} style={{ marginTop: 20 }}>
         <Text>Login Page</Text>
       </TouchableOpacity>
@@ -29,13 +36,15 @@ export default function Index() {
 
       <TouchableOpacity onPress={() => router.push("/followers")} style={{ marginTop: 20 }}>
         <Text>Followers Page</Text>
-      </TouchableOpacity>
+       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/following")} style={{ marginTop: 20 }}>
+       <TouchableOpacity onPress={() => router.push("/following")} style={{ marginTop: 20 }}>
         <Text>Following Page</Text>
       </TouchableOpacity>
+       
+      <BottomNavButton/>
 
-      <BottomNavButton />
     </View>
+
   );
 }
