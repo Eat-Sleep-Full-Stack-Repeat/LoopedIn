@@ -46,7 +46,7 @@ export default function Index() {
        
       <BottomNavButton/>
 
-    </View>
+    </GestureHandlerRootView>
 
   );
 }
