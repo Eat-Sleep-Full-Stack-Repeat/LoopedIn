@@ -6,9 +6,14 @@ import {
   FlatList,
   Dimensions,
   Pressable,
+  TouchableOpacity,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useEffect } from "react";
+import { Storage } from "../utils/storage";
+import API_URL from "@/utils/config";
+// FIXME: delete the following line when backend set up
 import mockUser from "./mockData";
 import { Fragment, useContext, useState } from "react";
 import craftIcons from "@/components/craftIcons";
@@ -20,14 +25,56 @@ import { Feather } from "@expo/vector-icons";
 export default function UserProfile() {
   const { currentTheme, toggleTheme } = useTheme();
   const colors = Colors[currentTheme];
+  const [username, setUsername] = useState<string | null>(null);
   const router = useRouter();
+
+  //must be logged in w/ jwt to see profile
+  //FIXME: build this out more later
+  useEffect(() => {
+    //check token
+    const getProfile = async () => {
+      console.log("getting token");
+      const token = await Storage.getItem("token");
+
+      //get username
+      console.log("getting username");
+      try {
+        const response = await fetch(`${API_URL}/api/profile/profile`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          alert("Access denied: please log in and try again.");
+          router.replace("/login");
+          return;
+        }
+        const data = await response.json();
+        setUsername(data.fld_username);
+      } catch (error) {
+        console.log("Error during deck fetch:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+    };
+
+    getProfile();
+  }, [router]);
+
+  // FIXME: will need to call the userInfo from the backend when time
   const userData = mockUser;
   const insets = useSafeAreaInsets();
   const [activeTab, setTab] = useState("posts");
   const [currentPosts, setPosts] = useState(userData.posts);
 
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
-  const handleSavedPress = () => (setTab("saved"), setPosts(userData.savedPosts));
+
+  const handleSavedPress = () => (
+    setTab("saved"), setPosts(userData.savedPosts)
+  );
 
   const styles = StyleSheet.create({
     container: {
@@ -126,19 +173,19 @@ export default function UserProfile() {
       alignItems: "center",
       borderRadius: 15,
     },
-  });  
+  });
 
   const renderHeader = () => (
     <View>
       <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
         <View style={{ flexDirection: "column" }}>
           <View style={styles.topAccountManagement}>
-            <View style={{flexDirection: "column", alignItems: "center"}}>
-              <Feather name="message-circle" size={28} color={colors.text}/>
-              <Text style={{ color: colors.text}}> DMs </Text>
+            <View style={{ flexDirection: "column", alignItems: "center" }}>
+              <Feather name="message-circle" size={28} color={colors.text} />
+              <Text style={{ color: colors.text }}> DMs </Text>
             </View>
-            <View style={{flexDirection: "column", alignItems: "center"}}>
-              <Feather name="settings" size={28} color={colors.text}/>
+            <View style={{ flexDirection: "column", alignItems: "center" }}>
+              <Feather name="settings" size={28} color={colors.text} />
               <Text style={{ color: colors.text }}> Settings </Text>
             </View>
           </View>
@@ -149,7 +196,9 @@ export default function UserProfile() {
               source={require("@/assets/images/icons8-cat-profile-100.png")}
             />
             <View>
-              <Text style={{ fontSize: 20, color: colors.text }}>{userData.userName}</Text>
+              <Text style={{ fontSize: 20, color: colors.text }}>
+                {username}
+              </Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
                 {/* Followers - clickable */}
                 <Pressable
@@ -157,59 +206,83 @@ export default function UserProfile() {
                   onPress={() => router.push("/followers")}
                 >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: colors.decorativeText }}>
+                    <Text
+                      style={{ fontSize: 24, color: colors.decorativeText }}
+                    >
                       {userData.numFollowers}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14, color: colors.text }}> Followers </Text>
+                  <Text style={{ fontSize: 14, color: colors.text }}>
+                    {" "}
+                    Followers{" "}
+                  </Text>
                 </Pressable>
 
                 {/* Following - clickable */}
+
                 <Pressable
                   style={{ flexDirection: "column", alignItems: "center" }}
                   onPress={() => router.push("/following")}
                 >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: colors.decorativeText }}>
+                    <Text
+                      style={{ fontSize: 24, color: colors.decorativeText }}
+                    >
                       {userData.numFriends}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14, color: colors.text }}> Following </Text>
+                  <Text style={{ fontSize: 14, color: colors.text }}>
+                    {" "}
+                    Following{" "}
+                  </Text>
                 </Pressable>
               </View>
             </View>
           </View>
+        </View>
 
-          {/* bio */}
-          <View style={styles.bioContainer}>
-            <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
-            <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14, color: colors.text }}>{userData.userBio}</Text>
-            </View>
-          </View>
-
-          {/* craft tags */}
-          <View style={styles.tagsContainer}>
-            <Text style={{ color: colors.text }}> Crafts </Text>
-            <View style={styles.tagsContentContainer}>
-              {userData.tags.map((item, index) => (
-                <View
-                  key={index}
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                >
-                  <Text style={{ color: colors.text }}>{item.craft}</Text>
-                  <Image source={craftIcons[item.craft]} />
-                  <Text style={{ color: colors.text }}>{item.skill}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* edit profile button */}
-          <View style={styles.editProfileButton}>
-            <Text style={{ fontSize: 14, color: colors.text }}> Edit Profile </Text>
+        {/* bio */}
+        <View style={styles.bioContainer}>
+          <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
+          <View style={styles.bioContentContainer}>
+            <Text style={{ fontSize: 14, color: colors.text }}>
+              {userData.userBio}
+            </Text>
           </View>
         </View>
+
+        {/* craft tags */}
+        <View style={styles.tagsContainer}>
+          <Text style={{ color: colors.text }}> Crafts </Text>
+          <View style={styles.tagsContentContainer}>
+            {userData.tags.map((item, index) => (
+              <View
+                key={index}
+                style={{ flexDirection: "column", alignItems: "center" }}
+              >
+                <Text style={{ color: colors.text }}>{item.craft}</Text>
+                <Image source={craftIcons[item.craft]} />
+                <Text style={{ color: colors.text }}>{item.skill}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* edit profile button */}
+        <View style={styles.editProfileButton}>
+          <Text style={{ fontSize: 14, color: colors.text }}>
+            {" "}
+            Edit Profile{" "}
+          </Text>
+        </View>
+
+        {/* Floating Logout Button */}
+        <TouchableOpacity
+          style={styles.editProfileButton}
+          onPress={handleLogout}
+        >
+          <Text style={{ fontSize: 14 }}>Logout</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Post tab navigation (my posts vs saved posts) */}
@@ -234,6 +307,20 @@ export default function UserProfile() {
       )}
     </View>
   );
+
+  // Logout - can be updated later or moved to settings overlay
+  const handleLogout = async () => {
+    //later, delete necessary items from local or async storage
+
+    //remove JWT
+    await Storage.removeItem("token");
+
+    setTimeout(() => {
+      router.push("/"); //index for dev purposes; later should be login
+    }, 0);
+
+    console.log("Logged out!");
+  };
 
   return (
     <View style={[styles.container]}>
@@ -268,4 +355,3 @@ export default function UserProfile() {
     </View>
   );
 }
-

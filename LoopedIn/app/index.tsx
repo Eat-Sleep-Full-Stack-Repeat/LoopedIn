@@ -5,7 +5,9 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Switch, Text, TouchableOpacity, View } from "react-native";
 
+
 export default function Index() {
+  // FIXME: Need to empty this before launch, just to help load app
   const { currentTheme, toggleTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
@@ -19,6 +21,8 @@ export default function Index() {
   useEffect(() => {
     setIsEnabled(currentTheme === 'dark');
   }, [currentTheme])
+
+
 
   return (
     <View
@@ -81,5 +85,6 @@ export default function Index() {
 
       <BottomNavButton />
     </View>
+
   );
 }

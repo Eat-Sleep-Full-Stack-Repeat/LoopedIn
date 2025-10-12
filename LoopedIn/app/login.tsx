@@ -2,11 +2,113 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Storage } from "../utils/storage";
+import API_URL from '../utils/config';
 
 export default function Login() {
-    const {currentTheme} = useTheme();
-    const colors = Colors[currentTheme];
-    const router = useRouter();
+  const {currentTheme} = useTheme();
+  const colors = Colors[currentTheme];
+  const router = useRouter();
+
+  //---------------------------------------------------------------------------------
+
+  //declaring/defining helper fxns used in main native login fxn
+  const isValidEmail = (email: string) => {
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailPattern.test(email.trim());
+  };
+
+  const isAlphanumeric = (password: string) => {
+    const alphanumericPattern = /^[a-zA-Z0-9]+$/;
+    return alphanumericPattern.test(password.trim());
+  };
+
+  //MAIN NATIVE LOGIN FUNCTION
+  const onPressSignIn = async () => {
+    console.log("Sign in pressed");
+    console.log("Entered email:", text.trim(), "Entered password:", password.trim());
+
+    //check if both fields entered
+    if (!text.trim() || !password.trim()) {
+        alert("Please enter both email and password.");
+        return;
+    }  
+
+    //check if user has a valid email
+    if(!isValidEmail(text)){
+      alert("Invalid email format.");
+      return;
+    }
+
+    // //check if user has a valid username (alphanumeric w/ underscore)
+    // if(!isValidUsername(user)){
+    //   alert("Invalid username format. Please ensure that your username includes only letters, numbers, and/or underscores (_).");
+    //   return;
+    // }
+
+    //check if password is alphanumeric
+    if(!isAlphanumeric(password)){
+      alert("Password contains at least one invalid character. Passwords must be 8-30 characters long and alphanumeric.");
+      return;
+    }
+
+    //check is password is between 8 and 30 characters long
+    if(password.length < 8){
+      alert("Password contains fewer than 8 characters. Passwords must be 8-30 characters long and alphanumeric.");
+      return;
+    } 
+    else if (password.length > 30){
+      alert("Password contains more than 30 characters. Passwords must be 8-30 characters long and alphanumeric.")
+      return;
+    }
+    
+    if(text.length > 321){
+      alert("Email too long. Please ensure that email is at most 321 characters.")
+      return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/login/login`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Ensure cookies/sessions are sent
+          body: JSON.stringify({
+            email: text.trim(),
+            password: password.trim(),
+          }),
+        });
+  
+        console.log("Response status:", response.status);
+        const data = await response.json();
+        
+        if (data.token) {
+          await Storage.setItem('token', data.token); //store jwt info
+          router.push("/userProfile"); // Redirect on success
+        } else {
+          console.log("Login failed:", data.message);
+          alert(data.message);
+        }
+        
+    } catch (error) {
+        console.log("Error during sign in:", error);
+        alert("Server error, please try again later.");
+    }
+
+  };
+
+//for login
+const [text, onChangeText] = useState('');
+const [password, onChangePassword] = useState('');
+// const [user, onChangeUser] = useState('');
+
+
+
+
+//---------------------------------------------------------------------------------
+    
   return (
     <View
       style={{
@@ -48,6 +150,9 @@ export default function Login() {
             marginBottom: 10,
             paddingHorizontal: 10,
         }}
+        onChangeText={onChangeText}
+        autoCorrect={false}
+        autoCapitalize="none"
         />
         </View>
 
@@ -76,6 +181,9 @@ export default function Login() {
             borderRadius: 25,
             paddingHorizontal: 10,
         }}
+        onChangeText={onChangePassword}
+        autoCorrect={false}
+        autoCapitalize="none"
         />
         <View style={{
             width: "100%",
@@ -94,7 +202,7 @@ export default function Login() {
 
         </View>
         {/* Login button*/}
-        <TouchableOpacity onPress={() => console.log("Login tapped")}
+        <TouchableOpacity onPress={onPressSignIn}
         style={{
             width: "80%",
             height: 55,

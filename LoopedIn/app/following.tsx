@@ -1,6 +1,6 @@
 import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRouter, useNavigation } from "expo-router";
+import { useState, useLayoutEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
 
@@ -33,6 +33,13 @@ export default function FollowingScreen() {
   const blockUser = (id: string) => {
     setFollowing(prev => prev.filter(f => f.id !== id));
   };
+
+  //to remove the auto-generated header... remove if we hate this!
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const styles = StyleSheet.create({
     container: {
