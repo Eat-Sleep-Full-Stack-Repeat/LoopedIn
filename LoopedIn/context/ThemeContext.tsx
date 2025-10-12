@@ -22,6 +22,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         try {
             const value = await AsyncStorage.getItem('user-theme');
             if (value === 'light' || value === 'dark'){
+                console.log("Theme in storage:", value);
                 setTheme(value);
             }
         } catch (e) {
@@ -29,6 +30,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         }
     }
     getTheme();
+    console.log("Got theme");
+    console.log(Appearance.getColorScheme());
   }, []);
 
   const toggleTheme = async () => {

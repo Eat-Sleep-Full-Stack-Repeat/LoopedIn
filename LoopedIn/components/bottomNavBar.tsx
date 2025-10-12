@@ -1,6 +1,9 @@
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { View, StyleSheet, Text, Image, Pressable } from "react-native";
-import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
+import {  useSafeAreaInsets } from "react-native-safe-area-context";
+import {MaterialCommunityIcons} from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import { Colors } from "@/Styles/colors";
 
 const handleProfilePress = () => {
   router.replace("/userProfile");
@@ -12,7 +15,30 @@ const handleForumPress = () => {
 }
 
 const BottomNavButton = () => {
+  const {currentTheme} = useTheme();
+  const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
+
+  const styles = StyleSheet.create({
+    container: {
+      position: "absolute",
+      flexDirection: "row",
+      flexWrap: "nowrap",
+      justifyContent: "space-evenly",
+      alignItems: "center",
+      borderWidth: 2,
+      borderColor: colors.topBackground,
+      width: "90%",
+      padding: 10,
+      backgroundColor: colors.background,
+      alignSelf: "center",
+      borderRadius: 50,
+      shadowColor: "#000",
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 5,
+    },
+  });
 
   return (
     <View style={[styles.container, {bottom: insets.bottom}]}>
@@ -24,10 +50,11 @@ const BottomNavButton = () => {
           }}
         >
           {/* put the profile icon stuff here */}
-          <Image
+          <MaterialCommunityIcons name="account-circle-outline" size={40} color={colors.text}/>
+          {/* <Image
             source={require("@/assets/images/icons8-cat-profile-50.png")}
-          />
-          <Text> profile </Text>
+          /> */}
+          <Text style={{ color: colors.text }}> profile </Text>
         </View>
       </Pressable>
 
@@ -38,8 +65,8 @@ const BottomNavButton = () => {
         }}
       >
         {/* put profile tracking stuff here */}
-        <Image source={require("@/assets/images/icons8-journal-50.png")} />
-        <Text> tracker </Text>
+        <MaterialCommunityIcons name="notebook" size={40} color={colors.text}/>
+        <Text style={{ color: colors.text }}> tracker </Text>
       </View>
       <View
         style={{
@@ -48,8 +75,8 @@ const BottomNavButton = () => {
         }}
       >
         {/* put the explore icon stuff here */}
-        <Image source={require("@/assets/images/icons8-exterior-50.png")} />
-        <Text> explore </Text>
+        <MaterialCommunityIcons name="home" size={40} color={colors.text}/>
+        <Text style={{ color: colors.text }}> explore </Text>
       </View>
       <View
         style={{
@@ -59,35 +86,13 @@ const BottomNavButton = () => {
       >
         {/* put the forums stuff here */}
         <Pressable onPress={handleForumPress}>
-          <Image
-            source={require("@/assets/images/icons8-communication-50.png")}
-          />
-          <Text> forums </Text>
+          <MaterialCommunityIcons name="forum-outline" size={40} color={colors.text}/>
+          <Text style={{ color: colors.text }}> forums </Text>
         </Pressable>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#E0D5DD",
-    width: "90%",
-    padding: 10,
-    backgroundColor: "#F8F2E5",
-    alignSelf: "center",
-    borderRadius: 50,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-});
 
 export default BottomNavButton;

@@ -1,6 +1,8 @@
 import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { useTheme } from "@/context/ThemeContext";
+import { Colors } from "@/Styles/colors";
 
 // User type
 type User = {
@@ -11,6 +13,8 @@ type User = {
 };
 
 export default function FollowingScreen() {
+  const {currentTheme} = useTheme();
+  const colors = Colors[currentTheme];
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [following, setFollowing] = useState<User[]>([
@@ -30,6 +34,77 @@ export default function FollowingScreen() {
     setFollowing(prev => prev.filter(f => f.id !== id));
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: 20,
+      paddingTop: 60,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    backArrow: {
+      fontSize: 28,
+      marginRight: 15,
+      color: colors.text,
+    },
+    headerText: {
+      fontSize: 26,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    searchBar: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      borderRadius: 25,
+      paddingHorizontal: 20,
+      height: 45,
+      marginBottom: 15,
+    },
+    userCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.topBackground,
+      borderRadius: 20,
+      padding: 12,
+      marginVertical: 6,
+    },
+    userInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    avatar: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: "#fff",
+    },
+    username: {
+      fontWeight: "600",
+      fontSize: 16,
+      color: colors.text,
+    },
+    name: {
+      fontSize: 14,
+      color: colors.text,
+    },
+    actionButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+    },
+    buttonText: {
+      color: "#fff",
+      fontWeight: "600",
+    },
+  });
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -46,7 +121,7 @@ export default function FollowingScreen() {
         placeholder="Search following"
         value={searchQuery}
         onChangeText={setSearchQuery}
-        placeholderTextColor="#555"
+        placeholderTextColor={colors.text}
       />
 
       {/* List */}
@@ -83,71 +158,3 @@ export default function FollowingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  backArrow: {
-    fontSize: 28,
-    marginRight: 15,
-    color: "#000",
-  },
-  headerText: {
-    fontSize: 26,
-    fontWeight: "600",
-    color: "#000",
-  },
-  searchBar: {
-    backgroundColor: "#D9D9D9",
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    height: 45,
-    marginBottom: 15,
-  },
-  userCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#D9D9D9",
-    borderRadius: 20,
-    padding: 12,
-    marginVertical: 6,
-  },
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#fff",
-  },
-  username: {
-    fontWeight: "600",
-    fontSize: 16,
-    color: "#000",
-  },
-  name: {
-    fontSize: 14,
-    color: "#555",
-  },
-  actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-});

@@ -6,7 +6,6 @@ import {
   FlatList,
   Dimensions,
   Pressable,
-  Button,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +15,7 @@ import craftIcons from "@/components/craftIcons";
 import { useRouter } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import { Feather } from "@expo/vector-icons";
 
 export default function UserProfile() {
   const { currentTheme, toggleTheme } = useTheme();
@@ -75,7 +75,7 @@ export default function UserProfile() {
     topAccountManagement: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      gap: 20,
+      gap: 10,
       marginTop: 20,
       marginBottom: 20,
       marginRight: 20,
@@ -133,8 +133,14 @@ export default function UserProfile() {
       <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
         <View style={{ flexDirection: "column" }}>
           <View style={styles.topAccountManagement}>
-            <Text style={{ color: colors.text}}> DMs </Text>
-            <Text style={{ color: colors.text }}> Settings </Text>
+            <View style={{flexDirection: "column", alignItems: "center"}}>
+              <Feather name="message-circle" size={28} color={colors.text}/>
+              <Text style={{ color: colors.text}}> DMs </Text>
+            </View>
+            <View style={{flexDirection: "column", alignItems: "center"}}>
+              <Feather name="settings" size={28} color={colors.text}/>
+              <Text style={{ color: colors.text }}> Settings </Text>
+            </View>
           </View>
 
           {/* user info: pic, username, follower + following count */}
@@ -203,8 +209,6 @@ export default function UserProfile() {
           <View style={styles.editProfileButton}>
             <Text style={{ fontSize: 14, color: colors.text }}> Edit Profile </Text>
           </View>
-
-          <Button title="Toggle Theme" onPress={toggleTheme}/>
         </View>
       </View>
 

@@ -25,13 +25,17 @@ export const Colors = {
         topBackground: "#87617C", //light purple background
         background: "#000000", //cream background
         boxBackground: "#9C7C93", //lighter purple
+        welcomeText: "#87617C", //purple
+        linkText: "#4753FF", //lighter blue
     },
     light: {
-        text: "000000", //main text on page
+        text: "#000000", //main text on page
         decorativeText: "#C1521E", //orange text
         decorativeBackground: "#F7B557", //orange background of circles
         topBackground: "#E0D5DD", //light purple background
         background: "#F8F2E5", //cream background
         boxBackground: "#F8F2E5", //cream background
+        welcomeText: "#C296B6", //light purple text
+        linkText: "blue",
     }
 }
