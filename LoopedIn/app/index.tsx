@@ -20,10 +20,6 @@ export default function Index() {
       <TouchableOpacity onPress={() => router.push("/login")} style={{ marginTop: 20 }}>
         <Text>Login Page</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push("/ExampleSettings")}
-        style={{ marginTop: 20 }}>
-        <Text>Test Settings</Text>
-      </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push("/otherUserProfile")} style={{ marginTop: 20 }}>
         <Text>Other User Profile</Text>
