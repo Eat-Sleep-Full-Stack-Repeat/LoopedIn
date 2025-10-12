@@ -1,3 +1,4 @@
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Text,
   View,
@@ -7,6 +8,9 @@ import {
   Dimensions,
   Pressable,
   TouchableOpacity,
+  TextInput,
+  Alert,
+  BackHandler,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,298 +25,231 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
-import SettingsOverlay from "@/components/settingsoverlay";
+import { useNavigation } from "@react-navigation/native";
+import SettingsOverlay from "@/components/settingsoverlay"; // adjust path if needed
 
 export default function UserProfile() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const [username, setUsername] = useState<string | null>(null);
   const router = useRouter();
-
-  //must be logged in w/ jwt to see profile
-  //FIXME: build this out more later
-  useEffect(() => {
-    //check token
-    const getProfile = async () => {
-      console.log("getting token");
-      const token = await Storage.getItem("token");
-
-      //get username
-      console.log("getting username");
-      try {
-        const response = await fetch(`${API_URL}/api/profile/profile`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          alert("Access denied: please log in and try again.");
-          router.replace("/login");
-          return;
-        }
-        const data = await response.json();
-        setUsername(data.fld_username);
-      } catch (error) {
-        console.log("Error during deck fetch:", (error as Error).message);
-        alert("Server error, please try again later.");
-      }
-    };
-
-    getProfile();
-  }, [router]);
-
-  // FIXME: will need to call the userInfo from the backend when time
+  const navigation = useNavigation();
   const userData = mockUser;
   const insets = useSafeAreaInsets();
-  const [activeTab, setTab] = useState("posts");
+
+  // Posts tab
+  const [activeTab, setTab] = useState<"posts" | "saved">("posts");
   const [currentPosts, setPosts] = useState(userData.posts);
 
+  // Settings overlay
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
+  // --- Edit Bio mode ---
+  const [originalUser, setOriginalUser] = useState(userData);
+  const [editing, setEditing] = useState(false);
+  const [draftBio, setDraftBio] = useState(originalUser.userBio ?? "");
 
-  const handleSavedPress = () => (
-    setTab("saved"), setPosts(userData.savedPosts)
-  );
+  const isDirty = editing && draftBio !== originalUser.userBio;
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    postTabs: {
-      flexDirection: "row",
-      justifyContent: "center",
-      gap: 40,
-      marginBottom: 20,
-      alignItems: "center",
-    },
-    postTabText: {
-      backgroundColor: colors.decorativeBackground,
-      padding: 10,
-      borderRadius: 15,
-    },
-    topBackground: {
-      backgroundColor: colors.topBackground,
-      height: "50%",
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: -1,
-    },
-    bottomBackground: {
-      backgroundColor: colors.background,
-      height: "50%",
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      zIndex: -1,
-    },
-    renderHeaderStyle: {
-      backgroundColor: colors.topBackground,
-      flexDirection: "column",
-      flex: 1,
-      width: "100%",
-      marginBottom: 30,
-      borderBottomLeftRadius: 30,
-      borderBottomRightRadius: 30,
-    },
-    topAccountManagement: {
-      flexDirection: "row",
-      justifyContent: "flex-end",
-      gap: 10,
-      marginTop: 20,
-      marginBottom: 20,
-      marginRight: 20,
-    },
-    userInfoContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 10,
-    },
-    countCircles: {
-      backgroundColor: colors.decorativeBackground,
-      width: 50,
-      height: 50,
-      justifyContent: "center",
-      alignItems: "center",
-      borderRadius: 25,
-      flexDirection: "row",
-    },
-    bioContainer: {
-      flexDirection: "column",
-      marginHorizontal: 30,
-      marginBottom: 20,
-      marginTop: 10,
-    },
-    bioContentContainer: {
-      backgroundColor: colors.boxBackground,
-      padding: 10,
-      borderRadius: 15,
-    },
-    tagsContainer: {
-      flexDirection: "column",
-      marginBottom: 30,
-      marginHorizontal: 30,
-    },
-    tagsContentContainer: {
-      backgroundColor: colors.boxBackground,
-      padding: 10,
-      borderRadius: 15,
-      flexDirection: "row",
-      gap: 30,
-    },
-    editProfileButton: {
-      backgroundColor: colors.boxBackground,
-      marginBottom: 30,
-      marginHorizontal: 85,
-      paddingVertical: 10,
-      alignItems: "center",
-      borderRadius: 15,
-    },
-  });
+  const startEditing = () => {
+    setDraftBio(originalUser.userBio ?? "");
+    setEditing(true);
+  };
 
-  const renderHeader = () => (
-    <View>
-      <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
-        <View style={{ flexDirection: "column" }}>
-          <View style={styles.topAccountManagement}>
-            <View style={{ flexDirection: "column", alignItems: "center" }}>
-              <Feather name="message-circle" size={28} color={colors.text} />
-              <Text style={{ color: colors.text }}> DMs </Text>
+  const discardChanges = () => {
+    setDraftBio(originalUser.userBio ?? "");
+    setEditing(false);
+  };
+
+  const saveChanges = () => {
+    // Just update local state (no backend)
+    setOriginalUser((prev) => ({
+      ...prev,
+      userBio: draftBio,
+    }));
+    setEditing(false);
+    Alert.alert("Profile updated");
+  };
+
+  // Guard leaving the screen if there are unsaved changes
+  useEffect(() => {
+    const beforeRemove = (e: any) => {
+      if (!isDirty) return;
+      e.preventDefault();
+
+      Alert.alert(
+        "Discard changes?",
+        "You have unsaved changes. Save or discard before leaving.",
+        [
+          { text: "Keep editing", style: "cancel" },
+          {
+            text: "Discard",
+            style: "destructive",
+            onPress: () => {
+              discardChanges();
+              navigation.dispatch(e.data.action);
+            },
+          },
+          { text: "Save", onPress: saveChanges },
+        ]
+      );
+    };
+
+    const sub = navigation.addListener("beforeRemove", beforeRemove);
+
+    // Handle Android hardware back button too
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!isDirty) return false;
+      Alert.alert(
+        "Discard changes?",
+        "You have unsaved changes. Save or discard before leaving.",
+        [
+          { text: "Keep editing", style: "cancel" },
+          { text: "Discard", style: "destructive", onPress: discardChanges },
+          { text: "Save", onPress: saveChanges },
+        ]
+      );
+      return true;
+    });
+
+    return () => {
+      sub();
+      backHandler.remove();
+    };
+  }, [isDirty, draftBio, originalUser.userBio, navigation]);
+
+  const handlePostPress = () => {
+    setTab("posts");
+    setPosts(originalUser.posts);
+  };
+
+  const handleSavedPress = () => {
+    setTab("saved");
+    setPosts(originalUser.savedPosts);
+  };
+
+  const renderHeader = useCallback(
+    () => (
+      <View>
+        <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
+          <View style={{ flexDirection: "column" }}>
+            <View style={styles.topAccountManagement}>
+              <Text> DMs </Text>
+              <Pressable onPress={() => setSettingsOpen(true)}>
+                <Text>Settings</Text>
+              </Pressable>
             </View>
 
-            <Pressable
-              style={{ flexDirection: "column", alignItems: "center" }}
-              onPress={() => setSettingsOpen(true)}
-            >
-              <Feather name="settings" size={28} color={colors.text} />
-              <Text style={{ color: colors.text }}>Settings</Text>
+            {/* user info: pic, username, follower + following count */}
+            <View style={styles.userInfoContainer}>
+              <Image source={require("@/assets/images/icons8-cat-profile-100.png")} />
+              <View>
+                <Text style={{ fontSize: 20 }}>{originalUser.userName}</Text>
+                <View style={{ flexDirection: "row", gap: 20 }}>
+                  {/* Followers */}
+                  <Pressable
+                    style={{ flexDirection: "column", alignItems: "center" }}
+                    onPress={() => router.push("/followers")}
+                  >
+                    <View style={styles.countCircles}>
+                      <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                        {originalUser.numFollowers}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 14 }}> Followers </Text>
+                  </Pressable>
+
+                  {/* Following */}
+                  <Pressable
+                    style={{ flexDirection: "column", alignItems: "center" }}
+                    onPress={() => router.push("/following")}
+                  >
+                    <View style={styles.countCircles}>
+                      <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                        {originalUser.numFriends}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 14 }}> Following </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+
+            {/* bio (editable only in edit mode) */}
+            <View style={styles.bioContainer}>
+              <Text style={{ fontSize: 14 }}> Bio </Text>
+              {editing ? (
+                <TextInput
+                  value={draftBio}
+                  onChangeText={setDraftBio}
+                  style={styles.bioInput}
+                  placeholder="Tell people about yourself"
+                  multiline
+                />
+              ) : (
+                <View style={styles.bioContentContainer}>
+                  <Text style={{ fontSize: 14 }}>{originalUser.userBio}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* craft tags */}
+            <View style={styles.tagsContainer}>
+              <Text> Crafts </Text>
+              <View style={styles.tagsContentContainer}>
+                {originalUser.tags.map((item: any, index: number) => (
+                  <View key={index} style={{ flexDirection: "column", alignItems: "center" }}>
+                    <Text>{item.craft}</Text>
+                    <Image source={craftIcons[item.craft]} />
+                    <Text>{item.skill}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Edit / Save / Discard */}
+            {editing ? (
+              <View style={styles.editRow}>
+                <Pressable onPress={saveChanges} style={styles.primaryBtn}>
+                  <Text style={{ fontSize: 14, color: "#fff", fontWeight: "600" }}>
+                    Save changes
+                  </Text>
+                </Pressable>
+                <Pressable onPress={discardChanges} style={styles.secondaryBtn}>
+                  <Text style={{ fontSize: 14, fontWeight: "600" }}>Discard</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.editProfileButton} onPress={startEditing}>
+                <Text style={{ fontSize: 14 }}> Edit Profile </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* Post tab navigation (my posts vs saved posts) */}
+        {activeTab === "posts" ? (
+          <View style={styles.postTabs}>
+            <View style={styles.postTabText}>
+              <Text style={{ color: "#C1521E" }}> My Posts </Text>
+            </View>
+            <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
+              <Text> Saved Posts </Text>
             </Pressable>
           </View>
-
-          {/* user info: pic, username, follower + following count */}
-          <View style={styles.userInfoContainer}>
-            <Image
-              source={require("@/assets/images/icons8-cat-profile-100.png")}
-            />
-            <View>
-              <Text style={{ fontSize: 20, color: colors.text }}>
-                {username}
-              </Text>
-              <View style={{ flexDirection: "row", gap: 20 }}>
-                {/* Followers - clickable */}
-                <Pressable
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                  onPress={() => router.push("/followers")}
-                >
-                  <View style={styles.countCircles}>
-                    <Text
-                      style={{ fontSize: 24, color: colors.decorativeText }}
-                    >
-                      {userData.numFollowers}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 14, color: colors.text }}>
-                    {" "}
-                    Followers{" "}
-                  </Text>
-                </Pressable>
-
-                {/* Following - clickable */}
-
-                <Pressable
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                  onPress={() => router.push("/following")}
-                >
-                  <View style={styles.countCircles}>
-                    <Text
-                      style={{ fontSize: 24, color: colors.decorativeText }}
-                    >
-                      {userData.numFriends}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 14, color: colors.text }}>
-                    {" "}
-                    Following{" "}
-                  </Text>
-                </Pressable>
-              </View>
+        ) : (
+          <View style={styles.postTabs}>
+            <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
+              <Text> My Posts </Text>
+            </Pressable>
+            <View style={styles.postTabText}>
+              <Text style={{ color: "#C1521E" }}> Saved Posts </Text>
             </View>
           </View>
-        </View>
-
-        {/* bio */}
-        <View style={styles.bioContainer}>
-          <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
-          <View style={styles.bioContentContainer}>
-            <Text style={{ fontSize: 14, color: colors.text }}>
-              {userData.userBio}
-            </Text>
-          </View>
-        </View>
-
-        {/* craft tags */}
-        <View style={styles.tagsContainer}>
-          <Text style={{ color: colors.text }}> Crafts </Text>
-          <View style={styles.tagsContentContainer}>
-            {userData.tags.map((item, index) => (
-              <View
-                key={index}
-                style={{ flexDirection: "column", alignItems: "center" }}
-              >
-                <Text style={{ color: colors.text }}>{item.craft}</Text>
-                <Image source={craftIcons[item.craft]} />
-                <Text style={{ color: colors.text }}>{item.skill}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* edit profile button */}
-        <View style={styles.editProfileButton}>
-          <Text style={{ fontSize: 14, color: colors.text }}>
-            {" "}
-            Edit Profile{" "}
-          </Text>
-        </View>
-
-        {/* Floating Logout Button */}
-        <TouchableOpacity
-          style={styles.editProfileButton}
-          onPress={handleLogout}
-        >
-          <Text style={{ fontSize: 14, color: colors.text }}>Logout</Text>
-        </TouchableOpacity>
+        )}
       </View>
-
-      {/* Post tab navigation (my posts vs saved posts) */}
-      {activeTab == "posts" ? (
-        <View style={styles.postTabs}>
-          <View style={styles.postTabText}>
-            <Text style={{ color: colors.decorativeText }}> My Posts </Text>
-          </View>
-          <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
-            <Text style={{ color: colors.text }}> Saved Posts </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={styles.postTabs}>
-          <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
-            <Text style={{ color: colors.text }}> My Posts </Text>
-          </Pressable>
-          <View style={styles.postTabText}>
-            <Text style={{ color: colors.decorativeText }}> Saved Posts </Text>
-          </View>
-        </View>
-      )}
-    </View>
+    ),
+    [insets.top, settingsOpen, editing, draftBio, originalUser, activeTab]
   );
 
   // Logout - can be updated later or moved to settings overlay
@@ -357,16 +294,139 @@ export default function UserProfile() {
           justifyContent: "space-between",
           marginHorizontal: 10,
         }}
+        keyboardShouldPersistTaps="handled"
       />
       <BottomNavButton />
+
+      {/* Settings overlay */}
       <SettingsOverlay
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        /* Can control routing for settings buttons fom here or within SettingsOverlay
-          onAccessibility={() => router.push("/accessibility")}
-          onAppearance={() => router.push("/appearance")}*/
         onLogout={() => console.log("Logged out")}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  postTabs: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 40,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  postTabText: {
+    backgroundColor: "#F7B557",
+    padding: 10,
+    borderRadius: 15,
+  },
+  topBackground: {
+    backgroundColor: "#E0D5DD",
+    height: "50%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: -1,
+  },
+  bottomBackground: {
+    backgroundColor: "#F8F2E5",
+    height: "50%",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: -1,
+  },
+  renderHeaderStyle: {
+    backgroundColor: "#E0D5DD",
+    flexDirection: "column",
+    flex: 1,
+    width: "100%",
+    marginBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  topAccountManagement: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 20,
+    marginTop: 20,
+    marginBottom: 20,
+    marginRight: 20,
+  },
+  userInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  countCircles: {
+    backgroundColor: "#F7B557",
+    width: 50,
+    height: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 25,
+    flexDirection: "row",
+  },
+  bioContainer: {
+    flexDirection: "column",
+    marginHorizontal: 30,
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  bioContentContainer: {
+    backgroundColor: "#F8F2E5",
+    padding: 10,
+    borderRadius: 15,
+  },
+  bioInput: {
+    backgroundColor: "#F8F2E5",
+    padding: 10,
+    borderRadius: 15,
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  tagsContainer: {
+    flexDirection: "column",
+    marginBottom: 30,
+    marginHorizontal: 30,
+  },
+  tagsContentContainer: {
+    backgroundColor: "#F8F2E5",
+    padding: 10,
+    borderRadius: 15,
+    flexDirection: "row",
+    gap: 30,
+  },
+  editProfileButton: {
+    backgroundColor: "#F8F2E5",
+    marginBottom: 30,
+    marginHorizontal: 85,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 15,
+  },
+  editRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 30,
+    marginHorizontal: 30,
+  },
+  primaryBtn: {
+    backgroundColor: "#C1521E",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  secondaryBtn: {
+    backgroundColor: "#F8F2E5",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+});
