@@ -1,6 +1,6 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { Appearance } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Storage } from "@/utils/storage";
 
 type ThemeContextType = {
   currentTheme: 'light' | 'dark';
@@ -20,7 +20,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const getTheme = async () => {
         try {
-            const value = await AsyncStorage.getItem('user-theme');
+            const value = await Storage.getItem('user-theme');
             if (value === 'light' || value === 'dark'){
                 console.log("Theme in storage:", value);
                 setTheme(value);
@@ -40,7 +40,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     setTheme(newTheme);
     try {
       // update the storage
-      await AsyncStorage.setItem("user-theme", newTheme);
+      await Storage.setItem("user-theme", newTheme);
     } catch (e) {
       console.log(e);
     }
