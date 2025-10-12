@@ -1,14 +1,10 @@
-import {
-  Text,
-  View,
-  StyleSheet,
-  Image,
-  FlatList,
-  Dimensions,
-  Pressable,
-} from "react-native";
+import { Text, View, StyleSheet, Image, FlatList, Dimensions, Pressable, TouchableOpacity } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useEffect } from "react";
+import { Storage } from "../utils/storage";
+import API_URL from '@/utils/config';
+// FIXME: delete the following line when backend set up
 import mockUser from "./mockData";
 import { Fragment, useState } from "react";
 import craftIcons from "@/components/craftIcons";
@@ -17,7 +13,49 @@ import SettingsOverlay from "@/components/settingsoverlay"; // adjust path as ne
 
 
 export default function UserProfile() {
+  const [username, setUsername] = useState<string | null>(null);
   const router = useRouter();
+
+  //must be logged in w/ jwt to see profile
+  //FIXME: build this out more later
+  useEffect(() => {
+    //check token
+    const getProfile = async () => {
+      console.log("getting token");
+      const token = await Storage.getItem('token');
+
+    //get username
+    console.log("getting username");
+    try {
+        const response = await fetch(`${API_URL}/api/profile/profile`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          alert("Access denied: please log in and try again.");
+          router.replace("/login")
+          return;
+        }
+        const data = await response.json();
+        setUsername(data.fld_username);
+
+      } catch (error) {
+        console.log("Error during deck fetch:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+      };
+
+      getProfile();
+    },[router]);
+
+
+
+  // FIXME: will need to call the userInfo from the backend when time
   const userData = mockUser;
   const insets = useSafeAreaInsets();
   const [activeTab, setTab] = useState("posts");
@@ -26,6 +64,7 @@ export default function UserProfile() {
    const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
+
   const handleSavedPress = () => (setTab("saved"), setPosts(userData.savedPosts));
 
   const renderHeader = () => (
@@ -45,12 +84,13 @@ export default function UserProfile() {
               source={require("@/assets/images/icons8-cat-profile-100.png")}
             />
             <View>
-              <Text style={{ fontSize: 20 }}>{userData.userName}</Text>
+              <Text style={{ fontSize: 20 }}>{username}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
+
                 {/* Followers - clickable */}
                 <Pressable
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                  onPress={() => router.push("/followers")}
+                style={{ flexDirection: "column", alignItems: "center" }}
+                onPress={() => router.push("/followers")}
                 >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
@@ -61,10 +101,11 @@ export default function UserProfile() {
                 </Pressable>
 
                 {/* Following - clickable */}
-                <Pressable
+
+                  <Pressable
                   style={{ flexDirection: "column", alignItems: "center" }}
                   onPress={() => router.push("/following")}
-                >
+                  >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: "#C1521E" }}>
                       {userData.numFriends}
@@ -72,6 +113,8 @@ export default function UserProfile() {
                   </View>
                   <Text style={{ fontSize: 14 }}> Following </Text>
                 </Pressable>
+
+                </View>
               </View>
             </View>
           </View>
@@ -105,7 +148,12 @@ export default function UserProfile() {
           <View style={styles.editProfileButton}>
             <Text style={{ fontSize: 14 }}> Edit Profile </Text>
           </View>
-        </View>
+          
+          {/* Floating Logout Button */}
+          <TouchableOpacity style={styles.editProfileButton} onPress={handleLogout}>
+            <Text style={{ fontSize: 14 }}>Logout</Text>
+          </TouchableOpacity>
+
       </View>
 
       {/* Post tab navigation (my posts vs saved posts) */}
@@ -130,6 +178,23 @@ export default function UserProfile() {
       )}
     </View>
   );
+
+
+  // Logout - can be updated later or moved to settings overlay
+  const handleLogout = async () => {
+      //later, delete necessary items from local or async storage
+      
+      //remove JWT
+      await Storage.removeItem('token');
+  
+      setTimeout(() => {
+        router.push("/"); //index for dev purposes; later should be login
+      }, 0);
+
+      console.log("Logged out!");
+      
+  };
+
 
   return (
     <View style={[styles.container]}>
