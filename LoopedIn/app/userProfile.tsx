@@ -9,6 +9,8 @@ import mockUser from "./mockData";
 import { Fragment, useState } from "react";
 import craftIcons from "@/components/craftIcons";
 import { useRouter } from "expo-router";
+import SettingsOverlay from "@/components/settingsoverlay"; // adjust path as needed
+
 
 export default function UserProfile() {
   const [username, setUsername] = useState<string | null>(null);
@@ -59,6 +61,8 @@ export default function UserProfile() {
   const [activeTab, setTab] = useState("posts");
   const [currentPosts, setPosts] = useState(userData.posts);
 
+   const [settingsOpen, setSettingsOpen] = useState(false);
+
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
 
   const handleSavedPress = () => (setTab("saved"), setPosts(userData.savedPosts));
@@ -69,7 +73,9 @@ export default function UserProfile() {
         <View style={{ flexDirection: "column" }}>
           <View style={styles.topAccountManagement}>
             <Text> DMs </Text>
-            <Text> Settings </Text>
+            <Pressable onPress={() => setSettingsOpen(true)}>
+              <Text>Settings</Text>
+            </Pressable>
           </View>
 
           {/* user info: pic, username, follower + following count */}
@@ -220,6 +226,15 @@ export default function UserProfile() {
         }}
       />
       <BottomNavButton />
+        <SettingsOverlay
+          visible={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          /* Can control routing for settings buttons fom here or within SettingsOverlay
+          onAccessibility={() => router.push("/accessibility")}
+          onAppearance={() => router.push("/appearance")}*/
+          onLogout={() => console.log("Logged out")}
+          
+          />
     </View>
   );
 }
