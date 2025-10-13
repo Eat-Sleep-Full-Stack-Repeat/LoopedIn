@@ -4,6 +4,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Switch, Text, TouchableOpacity, View } from "react-native";
+import "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 
 
 export default function Index() {
@@ -25,8 +28,7 @@ export default function Index() {
 
 
   return (
-    <View
-      style={{
+     <GestureHandlerRootView style={{
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
@@ -84,7 +86,7 @@ export default function Index() {
       </View>
 
       <BottomNavButton />
-    </View>
+    </GestureHandlerRootView>
 
   );
 }

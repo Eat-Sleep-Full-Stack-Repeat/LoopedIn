@@ -21,6 +21,7 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
+import SettingsOverlay from "@/components/settingsoverlay";
 
 export default function UserProfile() {
   const { currentTheme, toggleTheme } = useTheme();
@@ -69,6 +70,8 @@ export default function UserProfile() {
   const insets = useSafeAreaInsets();
   const [activeTab, setTab] = useState("posts");
   const [currentPosts, setPosts] = useState(userData.posts);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
 
@@ -186,7 +189,9 @@ export default function UserProfile() {
             </View>
             <View style={{ flexDirection: "column", alignItems: "center" }}>
               <Feather name="settings" size={28} color={colors.text} />
-              <Text style={{ color: colors.text }}> Settings </Text>
+              <Pressable onPress={() => setSettingsOpen(true)}>
+                <Text>Settings</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -352,6 +357,14 @@ export default function UserProfile() {
         }}
       />
       <BottomNavButton />
+      <SettingsOverlay
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        /* Can control routing for settings buttons fom here or within SettingsOverlay
+          onAccessibility={() => router.push("/accessibility")}
+          onAppearance={() => router.push("/appearance")}*/
+        onLogout={() => console.log("Logged out")}
+      />
     </View>
   );
 }
