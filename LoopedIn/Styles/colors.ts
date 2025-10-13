@@ -27,6 +27,9 @@ export const Colors = {
         boxBackground: "#9C7C93", //lighter purple
         welcomeText: "#87617C", //purple
         linkText: "#4753FF", //lighter blue
+        settingsText: "#F9F7F5",
+        settingsMenuText: "#F9F7F5",
+        warning: "#FF7F7F",
     },
     light: {
         text: "#000000", //main text on page
@@ -37,5 +40,8 @@ export const Colors = {
         boxBackground: "#F8F2E5", //cream background
         welcomeText: "#C296B6", //light purple text
         linkText: "blue",
+        settingsText: "rgba(0,0,0,0.45)",
+        settingsMenuText: "#111827",
+        warning: "#B91C1C",
     }
 }

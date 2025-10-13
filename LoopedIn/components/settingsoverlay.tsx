@@ -1,3 +1,5 @@
+import { Colors } from "@/Styles/colors";
+import { useTheme } from "@/context/ThemeContext";
 import React, { useEffect } from "react";
 import {
   Modal,
@@ -72,8 +74,7 @@ export default function SettingsOverlay({
       translateX.value = next;
     })
     .onEnd((e) => {
-      const shouldClose =
-        translateX.value > panelW * 0.33 || e.velocityX > 600;
+      const shouldClose = translateX.value > panelW * 0.33 || e.velocityX > 600;
       if (shouldClose) {
         runOnJS(animateClose)();
       } else {
@@ -91,6 +92,142 @@ export default function SettingsOverlay({
     return { opacity: 0.35 * progress };
   });
 
+  const { currentTheme } = useTheme();
+  const colors = Colors[currentTheme];
+
+  /* ---------- Helpers ---------- */
+  function SectionHeader({ label }: { label: string }) {
+    return <Text style={styles.sectionHeader}>{label}</Text>;
+  }
+
+  function Divider() {
+    return <View style={styles.divider} />;
+  }
+
+  function MenuItem({
+    label,
+    onPress,
+    destructive,
+    showChevron,
+  }: {
+    label: string;
+    onPress?: () => void;
+    destructive?: boolean;
+    showChevron?: boolean;
+  }) {
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+          styles.menuItem,
+          pressed && onPress ? styles.menuItemPressed : null,
+          !onPress && styles.menuItemDisabled,
+        ]}
+      >
+        <Text
+          style={[
+            styles.menuItemText,
+            destructive && styles.menuItemTextDestructive,
+          ]}
+        >
+          {label}
+        </Text>
+        {showChevron ? <Text style={styles.menuItemChevron}>›</Text> : null}
+      </Pressable>
+    );
+  }
+
+  /* ---------- Styles ---------- */
+  const styles = StyleSheet.create({
+    flex: { flex: 1 },
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "black",
+    },
+    panel: {
+      position: "absolute",
+      right: 0,
+      top: 0,
+      bottom: 0,
+      backgroundColor: colors.topBackground,
+      borderTopLeftRadius: 16,
+      borderBottomLeftRadius: 16,
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 8,
+      overflow: "hidden",
+    },
+    safeArea: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
+      paddingHorizontal: 23,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: colors.text
+    },
+    closeBtn: {
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 18,
+      backgroundColor: "rgba(0,0,0,0.06)",
+    },
+    closeBtnText: { fontSize: 18, fontWeight: "700", color: colors.text },
+    hairline: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      marginBottom: 8,
+    },
+    scrollContent: { paddingVertical: 8, paddingRight: 8 },
+    sectionHeader: {
+      marginTop: 18,
+      marginBottom: 6,
+      paddingHorizontal: 23,
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.settingsText,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      marginLeft: 4,
+      marginRight: 4,
+    },
+    menuItem: {
+      minHeight: 48,
+      paddingVertical: 12,
+      paddingHorizontal: 23,
+      borderRadius: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    menuItemPressed: { backgroundColor: "rgba(0,0,0,0.04)" },
+    menuItemDisabled: { opacity: 0.6 },
+    menuItemText: { fontSize: 16, color: colors.settingsMenuText, fontWeight: "500" },
+    menuItemTextDestructive: { color: colors.warning, fontWeight: "700" },
+    menuItemChevron: {
+      fontSize: 18,
+      color: colors.settingsMenuText,
+      marginLeft: 12,
+      lineHeight: 18,
+    },
+  });
+
   return (
     <Modal
       visible={visible}
@@ -101,17 +238,26 @@ export default function SettingsOverlay({
     >
       <GestureHandlerRootView style={styles.flex}>
         {/* Backdrop */}
-        <AnimatedPressable onPress={animateClose} style={[styles.backdrop, backdropStyle]} />
+        <AnimatedPressable
+          onPress={animateClose}
+          style={[styles.backdrop, backdropStyle]}
+        />
 
         {/* Overlay panel */}
         <Pressable style={styles.flex}>
           <GestureDetector gesture={pan}>
-            <Animated.View style={[styles.panel, { width: panelW }, panelStyle]}>
+            <Animated.View
+              style={[styles.panel, { width: panelW }, panelStyle]}
+            >
               <SafeAreaView style={styles.safeArea}>
                 {/* Header Row */}
                 <View style={styles.headerRow}>
                   <Text style={styles.headerTitle}>{title}</Text>
-                  <Pressable onPress={animateClose} hitSlop={12} style={styles.closeBtn}>
+                  <Pressable
+                    onPress={animateClose}
+                    hitSlop={12}
+                    style={styles.closeBtn}
+                  >
                     <Text style={styles.closeBtnText}>✕</Text>
                   </Pressable>
                 </View>
@@ -125,9 +271,17 @@ export default function SettingsOverlay({
                   showsVerticalScrollIndicator
                 >
                   <SectionHeader label="App" />
-                  <MenuItem label="Accessibility" onPress={onAccessibility} showChevron />
+                  <MenuItem
+                    label="Accessibility"
+                    onPress={onAccessibility}
+                    showChevron
+                  />
                   <Divider />
-                  <MenuItem label="Appearance" onPress={onAppearance} showChevron />
+                  <MenuItem
+                    label="Appearance"
+                    onPress={onAppearance}
+                    showChevron
+                  />
 
                   <SectionHeader label=" " />
                   <MenuItem label="Log Out" destructive onPress={onLogout} />
@@ -140,135 +294,3 @@ export default function SettingsOverlay({
     </Modal>
   );
 }
-
-/* ---------- Helpers ---------- */
-function SectionHeader({ label }: { label: string }) {
-  return <Text style={styles.sectionHeader}>{label}</Text>;
-}
-
-function Divider() {
-  return <View style={styles.divider} />;
-}
-
-function MenuItem({
-  label,
-  onPress,
-  destructive,
-  showChevron,
-}: {
-  label: string;
-  onPress?: () => void;
-  destructive?: boolean;
-  showChevron?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress}
-      style={({ pressed }) => [
-        styles.menuItem,
-        pressed && onPress ? styles.menuItemPressed : null,
-        !onPress && styles.menuItemDisabled,
-      ]}
-    >
-      <Text
-        style={[
-          styles.menuItemText,
-          destructive && styles.menuItemTextDestructive,
-        ]}
-      >
-        {label}
-      </Text>
-      {showChevron ? <Text style={styles.menuItemChevron}>›</Text> : null}
-    </Pressable>
-  );
-}
-
-/* ---------- Styles ---------- */
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "black",
-  },
-  panel: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: "#E0D5DD",
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-    overflow: "hidden",
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    paddingHorizontal: 23,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 18,
-    backgroundColor: "rgba(0,0,0,0.06)",
-  },
-  closeBtnText: { fontSize: 18, fontWeight: "700" },
-  hairline: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0, 0, 0, 0)",
-    marginBottom: 8,
-  },
-  scrollContent: { paddingVertical: 8, paddingRight: 8 },
-  sectionHeader: {
-    marginTop: 18,
-    marginBottom: 6,
-    paddingHorizontal: 23,
-    fontSize: 12,
-    fontWeight: "700",
-    color: "rgba(0,0,0,0.45)",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(0, 0, 0, 0)",
-    marginLeft: 4,
-    marginRight: 4,
-  },
-  menuItem: {
-    minHeight: 48,
-    paddingVertical: 12,
-    paddingHorizontal: 23,
-    borderRadius: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  menuItemPressed: { backgroundColor: "rgba(0,0,0,0.04)" },
-  menuItemDisabled: { opacity: 0.6 },
-  menuItemText: { fontSize: 16, color: "#111827", fontWeight: "500" },
-  menuItemTextDestructive: { color: "#B91C1C", fontWeight: "700" },
-  menuItemChevron: {
-    fontSize: 18,
-    color: "rgba(0,0,0,0.35)",
-    marginLeft: 12,
-    lineHeight: 18,
-  },
-});

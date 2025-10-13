@@ -190,7 +190,7 @@ export default function UserProfile() {
             <View style={{ flexDirection: "column", alignItems: "center" }}>
               <Feather name="settings" size={28} color={colors.text} />
               <Pressable onPress={() => setSettingsOpen(true)}>
-                <Text>Settings</Text>
+                <Text style={{ color: colors.text }}>Settings</Text>
               </Pressable>
             </View>
           </View>
@@ -286,7 +286,7 @@ export default function UserProfile() {
           style={styles.editProfileButton}
           onPress={handleLogout}
         >
-          <Text style={{ fontSize: 14 }}>Logout</Text>
+          <Text style={{ fontSize: 14, color: colors.text }}>Logout</Text>
         </TouchableOpacity>
       </View>
 
