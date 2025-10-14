@@ -149,6 +149,7 @@ const [password, onChangePassword] = useState('');
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
+            color: colors.text
         }}
         onChangeText={onChangeText}
         autoCorrect={false}
@@ -180,6 +181,7 @@ const [password, onChangePassword] = useState('');
             borderWidth: 1,
             borderRadius: 25,
             paddingHorizontal: 10,
+            color: colors.text
         }}
         onChangeText={onChangePassword}
         autoCorrect={false}

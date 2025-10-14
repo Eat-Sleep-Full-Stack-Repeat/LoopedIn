@@ -183,6 +183,7 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
+            color: colors.text
           }}
           onChangeText={onChangeUser}
           autoCorrect={false}
@@ -220,6 +221,7 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
+            color: colors.text
           }}
           onChangeText={onChangeText}
           autoCorrect={false}
@@ -256,6 +258,7 @@ export default function Login() {
             borderWidth: 1,
             borderRadius: 25,
             paddingHorizontal: 10,
+            color: colors.text
           }}
           onChangeText={onChangePassword}
           autoCorrect={false}

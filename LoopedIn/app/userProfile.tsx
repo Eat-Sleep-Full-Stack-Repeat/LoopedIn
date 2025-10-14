@@ -187,12 +187,14 @@ export default function UserProfile() {
               <Feather name="message-circle" size={28} color={colors.text} />
               <Text style={{ color: colors.text }}> DMs </Text>
             </View>
-            <View style={{ flexDirection: "column", alignItems: "center" }}>
+
+            <Pressable
+              style={{ flexDirection: "column", alignItems: "center" }}
+              onPress={() => setSettingsOpen(true)}
+            >
               <Feather name="settings" size={28} color={colors.text} />
-              <Pressable onPress={() => setSettingsOpen(true)}>
-                <Text style={{ color: colors.text }}>Settings</Text>
-              </Pressable>
-            </View>
+              <Text style={{ color: colors.text }}>Settings</Text>
+            </Pressable>
           </View>
 
           {/* user info: pic, username, follower + following count */}

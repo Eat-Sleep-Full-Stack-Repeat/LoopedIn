@@ -24,6 +24,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -94,6 +95,7 @@ export default function SettingsOverlay({
 
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
+  const insets = useSafeAreaInsets();
 
   /* ---------- Helpers ---------- */
   function SectionHeader({ label }: { label: string }) {
@@ -158,6 +160,7 @@ export default function SettingsOverlay({
       shadowRadius: 12,
       elevation: 8,
       overflow: "hidden",
+      paddingTop: insets.top
     },
     safeArea: {
       flex: 1,
