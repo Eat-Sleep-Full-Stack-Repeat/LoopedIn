@@ -1,3 +1,5 @@
+import { Colors } from "@/Styles/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useState } from "react";
@@ -5,6 +7,8 @@ import { Storage } from "../utils/storage";
 import API_URL from '../utils/config';
 
 export default function Login() {
+  const {currentTheme} = useTheme();
+  const colors = Colors[currentTheme];
   const router = useRouter();
 
   //---------------------------------------------------------------------------------
@@ -112,12 +116,14 @@ const [password, onChangePassword] = useState('');
         justifyContent: "flex-start",
         alignItems: "center",
         paddingTop: "30%",
+        backgroundColor: colors.background,
       }}
     >
       <Text style={{
         fontSize: 32,
         fontWeight: "500",
-        marginBottom: 40,}}>
+        marginBottom: 40,
+        color: colors.welcomeText}}>
         Welcome Back!
         </Text>
         
@@ -129,18 +135,21 @@ const [password, onChangePassword] = useState('');
         <Text style={{
             marginLeft: 10,
             marginBottom:5,
-            fontSize: 18,}}> Email </Text>
+            fontSize: 18,
+            color: colors.text}}> Email </Text>
         <TextInput
         placeholder="example@email.com"
+        placeholderTextColor={colors.text}
         style={{
             width: "100%",
             height: 50,
-            backgroundColor: "#D9D9D9",
-            borderColor: "gray",
+            backgroundColor: colors.background,
+            borderColor: colors.decorativeBackground,
             borderWidth: 1,
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
+            color: colors.text
         }}
         onChangeText={onChangeText}
         autoCorrect={false}
@@ -156,20 +165,23 @@ const [password, onChangePassword] = useState('');
         <Text style={{
             marginLeft: 10,
             marginBottom:5,
-            fontSize: 18,}}>
+            fontSize: 18,
+            color: colors.text}}>
         Password
         </Text>
         <TextInput
         placeholder="Password"
+        placeholderTextColor={colors.text}
         secureTextEntry={true}
         style={{
             width: "100%",
             height: 50,
-            borderColor: "gray",
-            backgroundColor: "#D9D9D9",
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.background,
             borderWidth: 1,
             borderRadius: 25,
             paddingHorizontal: 10,
+            color: colors.text
         }}
         onChangeText={onChangePassword}
         autoCorrect={false}
@@ -184,7 +196,7 @@ const [password, onChangePassword] = useState('');
             <TouchableOpacity onPress ={() => console.log("Forgot Password tapped")}>
                 <Text style=
                 {{ 
-                    color: "blue",
+                    color: colors.linkText,
                     marginRight: 5,
                     }}> Forgot Password?</Text>
             </TouchableOpacity>
@@ -196,8 +208,8 @@ const [password, onChangePassword] = useState('');
         style={{
             width: "80%",
             height: 55,
-            borderColor: "gray",
-            backgroundColor: "#D9D9D9",
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.decorativeBackground,
             borderWidth: 1,
             marginTop: 40,
             borderRadius: 25,
@@ -207,7 +219,8 @@ const [password, onChangePassword] = useState('');
             }}>
                 <Text style={{
                     fontSize: 25,
-                    fontWeight: "600"
+                    fontWeight: "600",
+                    color: colors.decorativeText
                 }}>Login</Text>
             </TouchableOpacity>
 
@@ -218,11 +231,11 @@ const [password, onChangePassword] = useState('');
             marginTop: 5,
         }}>
             {/* Sign-up*/}
-            <Text> Don't have an account? </Text>
+            <Text style={{ color: colors.text}}> Don't have an account? </Text>
             <TouchableOpacity onPress ={() => router.push("/signup")}> 
                 <Text style=
                 {{ 
-                    color: "blue",
+                    color: colors.linkText,
                     marginRight: 5,
                     }}> Sign Up</Text>
             </TouchableOpacity>
@@ -234,20 +247,21 @@ const [password, onChangePassword] = useState('');
             width: "80%",
             marginTop: 30,
             }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: "gray" }} />
-                <Text style={{ marginHorizontal: 10, color: "gray" }}>or</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: "gray" }} />
+                <View style={{ flex: 1, height: 1, backgroundColor: colors.text }} />
+                <Text style={{ marginHorizontal: 10, color: colors.text }}>or</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: colors.text }} />
             </View>
 
             <View
                 style={{
                     borderWidth: 1,
-                    borderColor: "gray",
+                    borderColor: colors.decorativeBackground,
                     borderRadius: 25,
                     padding: 5,
                     width: "80%",
                     alignItems: "center",
                     marginTop: 40,
+                    backgroundColor: "#F2F0EF",
                 }}> 
                 <TouchableOpacity onPress={()=> console.log ("Google Login tapped")}
                 style ={{

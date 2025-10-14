@@ -1,18 +1,31 @@
-import { Text, View, StyleSheet, Image, FlatList, Dimensions, Pressable, TouchableOpacity } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Image,
+  FlatList,
+  Dimensions,
+  Pressable,
+  TouchableOpacity,
+} from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect } from "react";
 import { Storage } from "../utils/storage";
-import API_URL from '@/utils/config';
+import API_URL from "@/utils/config";
 // FIXME: delete the following line when backend set up
 import mockUser from "./mockData";
-import { Fragment, useState } from "react";
+import { Fragment, useContext, useState } from "react";
 import craftIcons from "@/components/craftIcons";
 import { useRouter } from "expo-router";
-import SettingsOverlay from "@/components/settingsoverlay"; // adjust path as needed
-
+import { Colors } from "@/Styles/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { Feather } from "@expo/vector-icons";
+import SettingsOverlay from "@/components/settingsoverlay";
 
 export default function UserProfile() {
+  const { currentTheme, toggleTheme } = useTheme();
+  const colors = Colors[currentTheme];
   const [username, setUsername] = useState<string | null>(null);
   const router = useRouter();
 
@@ -22,11 +35,11 @@ export default function UserProfile() {
     //check token
     const getProfile = async () => {
       console.log("getting token");
-      const token = await Storage.getItem('token');
+      const token = await Storage.getItem("token");
 
-    //get username
-    console.log("getting username");
-    try {
+      //get username
+      console.log("getting username");
+      try {
         const response = await fetch(`${API_URL}/api/profile/profile`, {
           method: "GET",
           headers: {
@@ -38,22 +51,19 @@ export default function UserProfile() {
 
         if (!response.ok) {
           alert("Access denied: please log in and try again.");
-          router.replace("/login")
+          router.replace("/login");
           return;
         }
         const data = await response.json();
         setUsername(data.fld_username);
-
       } catch (error) {
         console.log("Error during deck fetch:", (error as Error).message);
         alert("Server error, please try again later.");
       }
-      };
+    };
 
-      getProfile();
-    },[router]);
-
-
+    getProfile();
+  }, [router]);
 
   // FIXME: will need to call the userInfo from the backend when time
   const userData = mockUser;
@@ -61,20 +71,129 @@ export default function UserProfile() {
   const [activeTab, setTab] = useState("posts");
   const [currentPosts, setPosts] = useState(userData.posts);
 
-   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handlePostPress = () => (setTab("posts"), setPosts(userData.posts));
 
-  const handleSavedPress = () => (setTab("saved"), setPosts(userData.savedPosts));
+  const handleSavedPress = () => (
+    setTab("saved"), setPosts(userData.savedPosts)
+  );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    postTabs: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 40,
+      marginBottom: 20,
+      alignItems: "center",
+    },
+    postTabText: {
+      backgroundColor: colors.decorativeBackground,
+      padding: 10,
+      borderRadius: 15,
+    },
+    topBackground: {
+      backgroundColor: colors.topBackground,
+      height: "50%",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: -1,
+    },
+    bottomBackground: {
+      backgroundColor: colors.background,
+      height: "50%",
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: -1,
+    },
+    renderHeaderStyle: {
+      backgroundColor: colors.topBackground,
+      flexDirection: "column",
+      flex: 1,
+      width: "100%",
+      marginBottom: 30,
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+    },
+    topAccountManagement: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 10,
+      marginTop: 20,
+      marginBottom: 20,
+      marginRight: 20,
+    },
+    userInfoContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    countCircles: {
+      backgroundColor: colors.decorativeBackground,
+      width: 50,
+      height: 50,
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 25,
+      flexDirection: "row",
+    },
+    bioContainer: {
+      flexDirection: "column",
+      marginHorizontal: 30,
+      marginBottom: 20,
+      marginTop: 10,
+    },
+    bioContentContainer: {
+      backgroundColor: colors.boxBackground,
+      padding: 10,
+      borderRadius: 15,
+    },
+    tagsContainer: {
+      flexDirection: "column",
+      marginBottom: 30,
+      marginHorizontal: 30,
+    },
+    tagsContentContainer: {
+      backgroundColor: colors.boxBackground,
+      padding: 10,
+      borderRadius: 15,
+      flexDirection: "row",
+      gap: 30,
+    },
+    editProfileButton: {
+      backgroundColor: colors.boxBackground,
+      marginBottom: 30,
+      marginHorizontal: 85,
+      paddingVertical: 10,
+      alignItems: "center",
+      borderRadius: 15,
+    },
+  });
 
   const renderHeader = () => (
     <View>
       <View style={[styles.renderHeaderStyle, { paddingTop: insets.top }]}>
         <View style={{ flexDirection: "column" }}>
           <View style={styles.topAccountManagement}>
-            <Text> DMs </Text>
-            <Pressable onPress={() => setSettingsOpen(true)}>
-              <Text>Settings</Text>
+            <View style={{ flexDirection: "column", alignItems: "center" }}>
+              <Feather name="message-circle" size={28} color={colors.text} />
+              <Text style={{ color: colors.text }}> DMs </Text>
+            </View>
+
+            <Pressable
+              style={{ flexDirection: "column", alignItems: "center" }}
+              onPress={() => setSettingsOpen(true)}
+            >
+              <Feather name="settings" size={28} color={colors.text} />
+              <Text style={{ color: colors.text }}>Settings</Text>
             </Pressable>
           </View>
 
@@ -84,117 +203,131 @@ export default function UserProfile() {
               source={require("@/assets/images/icons8-cat-profile-100.png")}
             />
             <View>
-              <Text style={{ fontSize: 20 }}>{username}</Text>
+              <Text style={{ fontSize: 20, color: colors.text }}>
+                {username}
+              </Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
-
                 {/* Followers - clickable */}
                 <Pressable
-                style={{ flexDirection: "column", alignItems: "center" }}
-                onPress={() => router.push("/followers")}
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => router.push("/followers")}
                 >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                    <Text
+                      style={{ fontSize: 24, color: colors.decorativeText }}
+                    >
                       {userData.numFollowers}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Followers </Text>
+                  <Text style={{ fontSize: 14, color: colors.text }}>
+                    {" "}
+                    Followers{" "}
+                  </Text>
                 </Pressable>
 
                 {/* Following - clickable */}
 
-                  <Pressable
+                <Pressable
                   style={{ flexDirection: "column", alignItems: "center" }}
                   onPress={() => router.push("/following")}
-                  >
+                >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: "#C1521E" }}>
+                    <Text
+                      style={{ fontSize: 24, color: colors.decorativeText }}
+                    >
                       {userData.numFriends}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14 }}> Following </Text>
+                  <Text style={{ fontSize: 14, color: colors.text }}>
+                    {" "}
+                    Following{" "}
+                  </Text>
                 </Pressable>
-
-                </View>
               </View>
             </View>
           </View>
+        </View>
 
-          {/* bio */}
-          <View style={styles.bioContainer}>
-            <Text style={{ fontSize: 14 }}> Bio </Text>
-            <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14 }}>{userData.userBio}</Text>
-            </View>
+        {/* bio */}
+        <View style={styles.bioContainer}>
+          <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
+          <View style={styles.bioContentContainer}>
+            <Text style={{ fontSize: 14, color: colors.text }}>
+              {userData.userBio}
+            </Text>
           </View>
+        </View>
 
-          {/* craft tags */}
-          <View style={styles.tagsContainer}>
-            <Text> Crafts </Text>
-            <View style={styles.tagsContentContainer}>
-              {userData.tags.map((item, index) => (
-                <View
-                  key={index}
-                  style={{ flexDirection: "column", alignItems: "center" }}
-                >
-                  <Text>{item.craft}</Text>
-                  <Image source={craftIcons[item.craft]} />
-                  <Text>{item.skill}</Text>
-                </View>
-              ))}
-            </View>
+        {/* craft tags */}
+        <View style={styles.tagsContainer}>
+          <Text style={{ color: colors.text }}> Crafts </Text>
+          <View style={styles.tagsContentContainer}>
+            {userData.tags.map((item, index) => (
+              <View
+                key={index}
+                style={{ flexDirection: "column", alignItems: "center" }}
+              >
+                <Text style={{ color: colors.text }}>{item.craft}</Text>
+                <Image source={craftIcons[item.craft]} />
+                <Text style={{ color: colors.text }}>{item.skill}</Text>
+              </View>
+            ))}
           </View>
+        </View>
 
-          {/* edit profile button */}
-          <View style={styles.editProfileButton}>
-            <Text style={{ fontSize: 14 }}> Edit Profile </Text>
-          </View>
-          
-          {/* Floating Logout Button */}
-          <TouchableOpacity style={styles.editProfileButton} onPress={handleLogout}>
-            <Text style={{ fontSize: 14 }}>Logout</Text>
-          </TouchableOpacity>
+        {/* edit profile button */}
+        <View style={styles.editProfileButton}>
+          <Text style={{ fontSize: 14, color: colors.text }}>
+            {" "}
+            Edit Profile{" "}
+          </Text>
+        </View>
 
+        {/* Floating Logout Button */}
+        <TouchableOpacity
+          style={styles.editProfileButton}
+          onPress={handleLogout}
+        >
+          <Text style={{ fontSize: 14, color: colors.text }}>Logout</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Post tab navigation (my posts vs saved posts) */}
       {activeTab == "posts" ? (
         <View style={styles.postTabs}>
           <View style={styles.postTabText}>
-            <Text style={{ color: "#C1521E" }}> My Posts </Text>
+            <Text style={{ color: colors.decorativeText }}> My Posts </Text>
           </View>
           <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
-            <Text> Saved Posts </Text>
+            <Text style={{ color: colors.text }}> Saved Posts </Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.postTabs}>
           <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
-            <Text> My Posts </Text>
+            <Text style={{ color: colors.text }}> My Posts </Text>
           </Pressable>
           <View style={styles.postTabText}>
-            <Text style={{ color: "#C1521E" }}> Saved Posts </Text>
+            <Text style={{ color: colors.decorativeText }}> Saved Posts </Text>
           </View>
         </View>
       )}
     </View>
   );
 
-
   // Logout - can be updated later or moved to settings overlay
   const handleLogout = async () => {
-      //later, delete necessary items from local or async storage
-      
-      //remove JWT
-      await Storage.removeItem('token');
-  
-      setTimeout(() => {
-        router.push("/"); //index for dev purposes; later should be login
-      }, 0);
+    //later, delete necessary items from local or async storage
 
-      console.log("Logged out!");
-      
+    //remove JWT
+    await Storage.removeItem("token");
+
+    setTimeout(() => {
+      router.push("/"); //index for dev purposes; later should be login
+    }, 0);
+
+    console.log("Logged out!");
   };
-
 
   return (
     <View style={[styles.container]}>
@@ -218,7 +351,7 @@ export default function UserProfile() {
         )}
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
-          backgroundColor: "#F8F2E5",
+          backgroundColor: colors.background,
         }}
         columnWrapperStyle={{
           justifyContent: "space-between",
@@ -226,114 +359,14 @@ export default function UserProfile() {
         }}
       />
       <BottomNavButton />
-        <SettingsOverlay
-          visible={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-          /* Can control routing for settings buttons fom here or within SettingsOverlay
+      <SettingsOverlay
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        /* Can control routing for settings buttons fom here or within SettingsOverlay
           onAccessibility={() => router.push("/accessibility")}
           onAppearance={() => router.push("/appearance")}*/
-          onLogout={() => console.log("Logged out")}
-          
-          />
+        onLogout={() => console.log("Logged out")}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  postTabs: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 40,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  postTabText: {
-    backgroundColor: "#F7B557",
-    padding: 10,
-    borderRadius: 15,
-  },
-  topBackground: {
-    backgroundColor: "#E0D5DD",
-    height: "50%",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: -1,
-  },
-  bottomBackground: {
-    backgroundColor: "#F8F2E5",
-    height: "50%",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: -1,
-  },
-  renderHeaderStyle: {
-    backgroundColor: "#E0D5DD",
-    flexDirection: "column",
-    flex: 1,
-    width: "100%",
-    marginBottom: 30,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  topAccountManagement: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 20,
-    marginTop: 20,
-    marginBottom: 20,
-    marginRight: 20,
-  },
-  userInfoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  countCircles: {
-    backgroundColor: "#F7B557",
-    width: 50,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 25,
-    flexDirection: "row",
-  },
-  bioContainer: {
-    flexDirection: "column",
-    marginHorizontal: 30,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  bioContentContainer: {
-    backgroundColor: "#F8F2E5",
-    padding: 10,
-    borderRadius: 15,
-  },
-  tagsContainer: {
-    flexDirection: "column",
-    marginBottom: 30,
-    marginHorizontal: 30,
-  },
-  tagsContentContainer: {
-    backgroundColor: "#F8F2E5",
-    padding: 10,
-    borderRadius: 15,
-    flexDirection: "row",
-    gap: 30,
-  },
-  editProfileButton: {
-    backgroundColor: "#F8F2E5",
-    marginBottom: 30,
-    marginHorizontal: 85,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderRadius: 15,
-  },
-});
