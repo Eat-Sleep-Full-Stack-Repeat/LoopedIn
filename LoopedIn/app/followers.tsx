@@ -1,16 +1,16 @@
 import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter,  useNavigation } from "expo-router";
-import { useState, useLayoutEffect } from "react";
+import { useState, useLayoutEffect, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
+import { Storage } from "../utils/storage";
+import API_URL from "@/utils/config";
 
 // Define a type for a user
 type User = {
   id: string;
   username: string;
-  name: string;
   image: any; // You can refine this type if using React Native ImageSourcePropType
-  isFollowing: boolean;
 };
 
 export default function FollowersScreen() {
@@ -18,11 +18,56 @@ export default function FollowersScreen() {
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [followers, setFollowers] = useState<User[]>([
-    { id: "1", username: "catlover23", name: "Maya Chen", image: require("@/assets/images/icons8-cat-profile-100.png"), isFollowing: true },
-    { id: "2", username: "craftqueen", name: "Aisha Rahman", image: require("@/assets/images/icons8-cat-profile-100.png"), isFollowing: false },
-    { id: "3", username: "knitncozy", name: "Liam Torres", image: require("@/assets/images/icons8-cat-profile-100.png"), isFollowing: true },
-  ]);
+  const [followers, setFollowers] = useState<User[]>([]);
+
+  useEffect(() => {
+    //get followers
+    const getFollowers = async () => {
+      //obtain token
+      const token = await Storage.getItem("token");
+
+      console.log("getting followers")
+
+      //obtain followers
+      try {
+        const response = await fetch(`${API_URL}/api/follow/get-followers`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+
+        if (!response.ok) {
+          alert("Error fetching followers. Try again later.");
+          router.replace("/userProfile");
+          return;
+        }
+
+        const data = await response.json();
+
+        //if followers
+        const format_followers = data.map((row: any) => ({
+          id: row.fld_user_pk,
+          username: row.fld_username,
+          image: row.fld_profile_pic ?? require("@/assets/images/icons8-cat-profile-100.png")
+        }))
+
+        setFollowers(format_followers)
+
+      }
+      catch(error) {
+        console.log("Error while fetching followers:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+
+    }
+    
+    getFollowers()
+
+  }, [])
 
   const filteredFollowers = followers.filter(f =>
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
@@ -42,6 +87,8 @@ export default function FollowersScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
+
+
 
   const styles = StyleSheet.create({
     container: {
@@ -143,7 +190,6 @@ export default function FollowersScreen() {
               <Image source={item.image} style={styles.avatar} />
               <View>
                 <Text style={styles.username}>{item.username}</Text>
-                <Text style={styles.name}>{item.name}</Text>
               </View>
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
