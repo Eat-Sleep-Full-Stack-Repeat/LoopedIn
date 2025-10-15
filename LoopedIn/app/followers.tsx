@@ -64,7 +64,7 @@ export default function FollowersScreen() {
       }
 
     }
-    
+
     getFollowers()
 
   }, [])
@@ -75,6 +75,42 @@ export default function FollowersScreen() {
 
   const removeFollower = (id: string) => {
     setFollowers(prev => prev.filter(f => f.id !== id));
+
+    //get followed people for current user logged in
+    const removeFollower = async () => {
+      //obtain token
+      const token = await Storage.getItem("token");
+
+      console.log("remove follower")
+
+      //obtain the followed dudes
+      try {
+        const response = await fetch(`${API_URL}/api/follow/remove-follower`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ followerID: parseInt(id) }),
+        });
+
+
+        if (!response.ok) {
+          alert("Error while removing follower. Try again later.");
+          router.replace("/userProfile");
+          return;
+        }
+
+      }
+      catch(error) {
+        console.log("Error while removing follower:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+
+    }
+    
+    removeFollower()
   };
 
   const blockFollower = (id: string) => {
