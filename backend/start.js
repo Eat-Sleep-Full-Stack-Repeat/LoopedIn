@@ -71,12 +71,14 @@ app.get("/", (req, res) => {
 //ensure file exists ("import router")
 const loginProcess = require('./api/login');
 const profileWork = require('./api/profile');
+const followWork = require('./api/follow');
 const secondFile = require('./api/newFeature'); //delete this example upon creation of new file
 
 
 //get ready to use that bad boy ("mount")
 app.use('/api/login', loginProcess);
 app.use('/api/profile', profileWork);
+app.use('/api/follow', followWork);
 app.use('/api/newFeature', secondFile);
 
 

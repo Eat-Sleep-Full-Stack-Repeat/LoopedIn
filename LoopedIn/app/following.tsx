@@ -1,14 +1,15 @@
 import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useNavigation } from "expo-router";
-import { useState, useLayoutEffect } from "react";
+import { useState, useLayoutEffect, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
+import { Storage } from "../utils/storage";
+import API_URL from "@/utils/config";
 
 // User type
 type User = {
   id: string;
   username: string;
-  name: string;
   image: any;
 };
 
@@ -17,10 +18,57 @@ export default function FollowingScreen() {
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [following, setFollowing] = useState<User[]>([
-    { id: "1", username: "makermax", name: "Emily Zhang", image: require("@/assets/images/icons8-cat-profile-100.png") },
-    { id: "2", username: "designsbyrio", name: "Rio Martinez", image: require("@/assets/images/icons8-cat-profile-100.png") },
-  ]);
+  const [following, setFollowing] = useState<User[]>([]);
+
+  useEffect(() => {
+    //get followed people for current user logged in
+    const getFollowing = async () => {
+      //obtain token
+      const token = await Storage.getItem("token");
+
+      console.log("getting following")
+
+      //obtain the followed dudes
+      try {
+        const response = await fetch(`${API_URL}/api/follow/get-following`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+
+        if (!response.ok) {
+          alert("Error fetching users followed. Try again later.");
+          router.replace("/userProfile");
+          return;
+        }
+
+        const data = await response.json();
+
+        //if following people
+        const format_followers = data.map((row: any) => ({
+          id: row.fld_user_pk,
+          username: row.fld_username,
+          image: row.fld_profile_pic ?? require("@/assets/images/icons8-cat-profile-100.png")
+        }))
+
+        setFollowing(format_followers)
+
+      }
+      catch(error) {
+        console.log("Error while fetching followers:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+
+    }
+    
+    getFollowing()
+
+  }, [])
+
 
   const filteredFollowing = following.filter(f =>
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
@@ -28,6 +76,43 @@ export default function FollowingScreen() {
 
   const unfollow = (id: string) => {
     setFollowing(prev => prev.filter(f => f.id !== id));
+
+      //get followed people for current user logged in
+      const unfollowUser = async () => {
+        //obtain token
+        const token = await Storage.getItem("token");
+
+        console.log("unfollow user")
+
+        //obtain the followed dudes
+        try {
+          const response = await fetch(`${API_URL}/api/follow/unfollow-user`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({ followingID: parseInt(id) }),
+          });
+
+
+          if (!response.ok) {
+            alert("Error while unfollowing. Try again later.");
+            router.replace("/userProfile");
+            return;
+          }
+
+        }
+        catch(error) {
+          console.log("Error while unfollowing:", (error as Error).message);
+          alert("Server error, please try again later.");
+        }
+
+      }
+      
+      unfollowUser()
+
   };
 
   const blockUser = (id: string) => {
@@ -141,7 +226,6 @@ export default function FollowingScreen() {
               <Image source={item.image} style={styles.avatar} />
               <View>
                 <Text style={styles.username}>{item.username}</Text>
-                <Text style={styles.name}>{item.name}</Text>
               </View>
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
