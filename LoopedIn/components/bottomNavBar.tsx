@@ -10,7 +10,11 @@ const handleProfilePress = () => {
 };
 
 const handleForumPress = () => {
-  // FIXME: route the forums button to the correct page - this is for testing
+  router.replace("/forumFeed");
+};
+
+const handleProjectTrackerPress = () => {
+  //FIXME: route project tracket to correct screen
   router.replace("/");
 }
 
@@ -65,8 +69,10 @@ const BottomNavButton = () => {
         }}
       >
         {/* put profile tracking stuff here */}
-        <MaterialCommunityIcons name="notebook" size={40} color={colors.text}/>
-        <Text style={{ color: colors.text }}> tracker </Text>
+        <Pressable onPress={handleProjectTrackerPress}>
+          <MaterialCommunityIcons name="notebook" size={40} color={colors.text}/>
+          <Text style={{ color: colors.text }}> tracker </Text>
+        </Pressable>
       </View>
       <View
         style={{

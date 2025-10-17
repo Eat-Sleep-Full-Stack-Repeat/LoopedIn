@@ -24,7 +24,7 @@ import { Feather } from "@expo/vector-icons";
 import SettingsOverlay from "@/components/settingsoverlay";
 
 export default function UserProfile() {
-  const { currentTheme, toggleTheme } = useTheme();
+  const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const [username, setUsername] = useState<string | null>(null);
   const router = useRouter();
