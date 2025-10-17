@@ -101,6 +101,34 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
         //other person's user ID 
         const { otherUserID } = req.body
 
+        //check if you're blocked by user
+        query = `
+        SELECT fld_block_pk
+	    FROM following_blocked.tbl_block
+	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
+        `
+        let block_id = await pool.query(query, [userID, req.userID.trim()])
+
+        //if blocked, can't follow
+        if (block_id.rowCount > 0) {
+            console.log("return POST follow: you are blocked")
+            res.status(403).json({ message: "Cannot follow user: you are blocked" })
+        }
+
+        //check if you blocked user
+        query = `
+        SELECT fld_block_pk
+	    FROM following_blocked.tbl_block
+	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
+        `
+        block_id = await pool.query(query, [req.userID.trim(), userID])
+
+        //if blocked, can't follow
+        if (block_id.rowCount > 0) {
+            console.log("return POST follow: you blocked this user")
+            res.status(403).json({ message: "Cannot follow user: you blocked them" })
+        }
+
         //check if currently following
         query = `
         SELECT fld_connection_pk
