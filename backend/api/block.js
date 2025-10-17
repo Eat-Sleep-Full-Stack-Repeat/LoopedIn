@@ -27,24 +27,29 @@ router.post('/block-user/:userID', authenticateToken, async (req, res) => {
         if (block_id.rowCount > 0) {
             console.log("Error: already blocked user.")
             res.status(409).json({ message: "Already blocked this user." })
+            return;
         }
 
-        //transaction statement -> covers all use cases of user following/followed for desired block user
+        //covers all use cases of user following/followed for desired block user
         //adds new blocked connection
         query = `
-        BEGIN;
-            DELETE FROM following_blocked.tbl_follow
-            WHERE (fld_user_id = $1 AND fld_follower_id = $2) 
-            OR (fld_user_id = $2 AND fld_follower_id = $1);
-            
-            INSERT INTO following_blocked.tbl_block(fld_user_id, fld_blocked_user_id)
-            VALUES ($1, $2);
-	    COMMIT;
+        DELETE FROM following_blocked.tbl_follow
+        WHERE (fld_user_id = $1 AND fld_follower_id = $2) 
+        OR (fld_user_id = $2 AND fld_follower_id = $1);
         `
 
         await pool.query(query, [req.userID.trim(), userID])
 
+        query = ` 
+        INSERT INTO following_blocked.tbl_block(fld_user_id, fld_blocked_user_id)
+        VALUES ($1, $2);
+        `
+
+        await pool.query(query, [req.userID.trim(), userID])
+
+
         console.log("Successful block")
+        res.status(200).json({ message: "successfully blocked user!" })
 
     }
     catch(error) {
@@ -72,6 +77,7 @@ router.delete('/block-user/:userID', authenticateToken, async(req, res) => {
         if (block_id.rowCount < 1) {
             console.log("Error: user was never blocked in the first place")
             res.status(404).json({ message: "Cannot unblock user: never blocked in the first place." })
+            return;
         }
 
         //now unblock
@@ -82,6 +88,7 @@ router.delete('/block-user/:userID', authenticateToken, async(req, res) => {
         await pool.query(query, [block_id.rows[0].fld_block_pk])
 
         console.log("Successful unblock.")
+        res.status(200).json({ message: "successfully unblocked user!" })
 
     }
     catch (error) {
@@ -110,10 +117,12 @@ router.get('/block-user/:userID', authenticateToken, async(req, res) => {
         if (block_id.rowCount > 0) {
             console.log("return GET: user is blocked")
             res.status(200).json({ if_blocked: true })
+            return;
         }
         else {
             console.log("return GET: user is NOT blocked")
             res.status(200).json({ if_blocked: false })
+            return;
         }
 
     }
@@ -143,10 +152,12 @@ router.get('/blocked-by-user/:userID', authenticateToken, async(req, res) => {
         if (block_id.rowCount > 0) {
             console.log("return GET: you are blocked")
             res.status(200).json({ if_blocked: true })
+            return;
         }
         else {
             console.log("return GET: you are NOT blocked")
             res.status(200).json({ if_blocked: false })
+            return;
         }
     }
     catch(error) {
@@ -165,7 +176,7 @@ router.get('/blocked-users', authenticateToken, async(req, res) => {
         SELECT u.fld_profile_pic, u.fld_username, u.fld_user_pk
 	    FROM following_blocked.tbl_block AS b INNER JOIN login.tbl_user AS u
 		    ON b.fld_blocked_user_id = u.fld_user_pk
-	    WHERE fld_user_id = $1;
+	    WHERE b.fld_user_id = $1;
         `
 
         const blocked_users = await pool.query(query, [req.userID.trim()])

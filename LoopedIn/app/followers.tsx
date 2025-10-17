@@ -39,6 +39,7 @@ export default function FollowersScreen() {
           credentials: "include",
         });
 
+        console.log("got followers")
 
         if (!response.ok) {
           alert("Error fetching followers. Try again later.");
@@ -77,7 +78,7 @@ export default function FollowersScreen() {
     setFollowers(prev => prev.filter(f => f.id !== id));
 
     //get followed people for current user logged in
-    const removeFollower = async () => {
+    const removeFollowerAPI = async () => {
       //obtain token
       const token = await Storage.getItem("token");
 
@@ -110,11 +111,42 @@ export default function FollowersScreen() {
 
     }
     
-    removeFollower()
+    removeFollowerAPI()
   };
+
 
   const blockFollower = (id: string) => {
     setFollowers(prev => prev.filter(f => f.id !== id));
+
+    const blockFollowerAPI = async () => {
+      const token = await Storage.getItem("token");
+
+      console.log("block follower")
+
+      //block a follower of yours
+      try {
+        const response = await fetch(`${API_URL}/api/block/block-user/${id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+
+        if (!response.ok) {
+          alert("Error while blocking follower. Try again later.");
+          router.replace("/userProfile");
+          return;
+        }
+      }
+      catch(error) {
+        console.log("Error while blocking follower:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+    }
+    blockFollowerAPI()
   };
 
   //to remove the auto-generated header... remove if we hate this!
@@ -181,6 +213,7 @@ export default function FollowersScreen() {
       fontWeight: "600",
       fontSize: 16,
       color: colors.text,
+      maxWidth: 125,
     },
     name: {
       fontSize: 14,
@@ -225,7 +258,7 @@ export default function FollowersScreen() {
             <View style={styles.userInfo}>
               <Image source={item.image} style={styles.avatar} />
               <View>
-                <Text style={styles.username}>{item.username}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
               </View>
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
