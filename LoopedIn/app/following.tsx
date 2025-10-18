@@ -194,6 +194,7 @@ export default function FollowingScreen() {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: 5,
       backgroundColor: colors.topBackground,
       borderRadius: 20,
       padding: 12,
@@ -203,6 +204,9 @@ export default function FollowingScreen() {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
+      flexShrink: 1,
+      flexGrow: 1,
+      minWidth: 0,
     },
     avatar: {
       width: 50,
@@ -214,7 +218,8 @@ export default function FollowingScreen() {
       fontWeight: "600",
       fontSize: 16,
       color: colors.text,
-      maxWidth: 125
+      flexShrink: 1,
+      minWidth: 0,
     },
     name: {
       fontSize: 14,
@@ -258,11 +263,11 @@ export default function FollowingScreen() {
           <View style={styles.userCard}>
             <View style={styles.userInfo}>
               <Image source={item.image} style={styles.avatar} />
-              <View>
+              <View style={{flexShrink: 1, minWidth: 0}}>
                 <Text  numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
               </View>
             </View>
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flexDirection: "row", gap: 8, flexShrink: 0, alignItems: "center" }}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
                 onPress={() => unfollow(item.id)}
