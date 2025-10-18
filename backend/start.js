@@ -72,6 +72,7 @@ app.get("/", (req, res) => {
 const loginProcess = require('./api/login');
 const profileWork = require('./api/profile');
 const followWork = require('./api/follow');
+const blockWork = require('./api/block');
 const secondFile = require('./api/newFeature'); //delete this example upon creation of new file
 
 
@@ -79,6 +80,7 @@ const secondFile = require('./api/newFeature'); //delete this example upon creat
 app.use('/api/login', loginProcess);
 app.use('/api/profile', profileWork);
 app.use('/api/follow', followWork);
+app.use('/api/block', blockWork)
 app.use('/api/newFeature', secondFile);
 
 

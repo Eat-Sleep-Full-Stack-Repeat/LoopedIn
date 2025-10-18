@@ -20,6 +20,7 @@ export default function FollowingScreen() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [following, setFollowing] = useState<User[]>([]);
 
+
   useEffect(() => {
     //get followed people for current user logged in
     const getFollowing = async () => {
@@ -39,6 +40,7 @@ export default function FollowingScreen() {
           credentials: "include",
         });
 
+        console.log("got following")
 
         if (!response.ok) {
           alert("Error fetching users followed. Try again later.");
@@ -77,46 +79,77 @@ export default function FollowingScreen() {
   const unfollow = (id: string) => {
     setFollowing(prev => prev.filter(f => f.id !== id));
 
-      //get followed people for current user logged in
-      const unfollowUser = async () => {
-        //obtain token
-        const token = await Storage.getItem("token");
+    //get followed people for current user logged in
+    const unfollowUserAPI = async () => {
+      //obtain token
+      const token = await Storage.getItem("token");
 
-        console.log("unfollow user")
+      console.log("unfollow user")
 
-        //obtain the followed dudes
-        try {
-          const response = await fetch(`${API_URL}/api/follow/unfollow-user`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            credentials: "include",
-            body: JSON.stringify({ followingID: parseInt(id) }),
-          });
+      //obtain the followed dudes
+      try {
+        const response = await fetch(`${API_URL}/api/follow/unfollow-user`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ followingID: parseInt(id) }),
+        });
 
 
-          if (!response.ok) {
-            alert("Error while unfollowing. Try again later.");
-            router.replace("/userProfile");
-            return;
-          }
-
-        }
-        catch(error) {
-          console.log("Error while unfollowing:", (error as Error).message);
-          alert("Server error, please try again later.");
+        if (!response.ok) {
+          alert("Error while unfollowing. Try again later.");
+          router.replace("/userProfile");
+          return;
         }
 
       }
-      
-      unfollowUser()
+      catch(error) {
+        console.log("Error while unfollowing:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+
+    }
+    
+    unfollowUserAPI()
 
   };
 
   const blockUser = (id: string) => {
     setFollowing(prev => prev.filter(f => f.id !== id));
+    
+    const blockFollowing = async () => {
+      const token = await Storage.getItem("token");
+
+      console.log("block following user")
+
+      //block a follower of yours
+      try {
+        const response = await fetch(`${API_URL}/api/block/block-user/${id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        console.log("got following")
+
+        if (!response.ok) {
+          alert("Error while blocking user. Try again later.");
+          router.replace("/userProfile");
+          return;
+        }
+      }
+      catch(error) {
+        console.log("Error while blocking user:", (error as Error).message);
+        alert("Server error, please try again later.");
+      }
+    }
+    blockFollowing()
   };
 
   //to remove the auto-generated header... remove if we hate this!
@@ -161,6 +194,7 @@ export default function FollowingScreen() {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: 5,
       backgroundColor: colors.topBackground,
       borderRadius: 20,
       padding: 12,
@@ -170,6 +204,9 @@ export default function FollowingScreen() {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
+      flexShrink: 1,
+      flexGrow: 1,
+      minWidth: 0,
     },
     avatar: {
       width: 50,
@@ -181,6 +218,8 @@ export default function FollowingScreen() {
       fontWeight: "600",
       fontSize: 16,
       color: colors.text,
+      flexShrink: 1,
+      minWidth: 0,
     },
     name: {
       fontSize: 14,
@@ -224,11 +263,11 @@ export default function FollowingScreen() {
           <View style={styles.userCard}>
             <View style={styles.userInfo}>
               <Image source={item.image} style={styles.avatar} />
-              <View>
-                <Text style={styles.username}>{item.username}</Text>
+              <View style={{flexShrink: 1, minWidth: 0}}>
+                <Text  numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
               </View>
             </View>
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flexDirection: "row", gap: 8, flexShrink: 0, alignItems: "center" }}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
                 onPress={() => unfollow(item.id)}
