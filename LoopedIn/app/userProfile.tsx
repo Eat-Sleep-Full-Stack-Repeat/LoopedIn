@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Image,
   FlatList,
-  Dimensions,
   Pressable,
   TextInput,
   Alert,
@@ -14,6 +13,7 @@ import {
   Keyboard,
   Platform,
   useWindowDimensions,
+  TouchableOpacity,
 } from "react-native";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,25 +24,31 @@ import { useNavigation } from "@react-navigation/native";
 import SettingsOverlay from "@/components/settingsoverlay";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
+import { Colors } from "@/Styles/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { Feather } from "@expo/vector-icons";
 
+/* ----------------------------- Types ----------------------------- */
 type User = {
   userName: string;
   userBio: string | null;
-  avatarUrl?: string | null; // signed URL from backend
+  avatarUrl?: string | null;
   posts?: any[];
   savedPosts?: any[];
 };
 
 type UploadAvatarResponse = {
-  avatarUrl: string; // signed url 
+  avatarUrl: string;
 };
 
-const PROFILE_URL = `${API_URL}/api/profile`; // GET / PATCH
-const UPLOAD_AVATAR_URL = `${API_URL}/api/profile/avatar`; // POST multipart
+/* --------------------------- Constants --------------------------- */
+const PROFILE_URL = `${API_URL}/api/profile`;
+const UPLOAD_AVATAR_URL = `${API_URL}/api/profile/avatar`;
 
-//Textbox really didn't like being typed in, using memo to avoid re-renders
+/* --------------------- Header --------------------- */
 const ProfileHeader = React.memo(function ProfileHeader(props: {
   insetsTop: number;
+  colors: ReturnType<typeof getColors>;
   editing: boolean;
   draftBio: string;
   setDraftBio: (s: string) => void;
@@ -59,9 +65,11 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
   chooseAvatar: () => void;
   router: any;
   avatarSize: number;
+  onLogout: () => void;
 }) {
   const {
     insetsTop,
+    colors,
     editing,
     draftBio,
     setDraftBio,
@@ -78,85 +86,99 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
     chooseAvatar,
     router,
     avatarSize,
+    onLogout,
   } = props;
 
+  const s = themedStyles(colors);
+
+  const placeholderBio =
+    !editing && (!originalUser?.userBio || originalUser?.userBio.trim() === "")
+      ? "Click Edit to make your bio!"
+      : originalUser?.userBio ?? "";
+
   return (
-    <View style={[styles.headerOuter, { paddingTop: insetsTop + 8 }]}>
-      <View style={styles.headerInner}>
-        <View style={styles.topAccountManagement}>
-          <Text> DMs </Text>
-          <Pressable onPress={() => setSettingsOpen(true)}>
-            <Text>Settings</Text>
+    <View style={[s.headerOuter, { paddingTop: insetsTop + 8 }]}>
+      <View style={s.headerBg} />
+      <View style={s.headerInner}>
+        <View style={s.topAccountManagement}>
+          <Pressable style={s.iconCol} onPress={() => router.push("/dms")}>
+            <Feather name="message-circle" size={24} color={colors.text} />
+            <Text style={[s.iconLabel, { color: colors.text }]}>DMs</Text>
+          </Pressable>
+
+          <Pressable style={s.iconCol} onPress={() => setSettingsOpen(true)}>
+            <Feather name="settings" size={24} color={colors.text} />
+            <Text style={[s.iconLabel, { color: colors.text }]}>Settings</Text>
           </Pressable>
         </View>
 
         {/* avatar + username */}
-        <View style={styles.userInfoContainer}>
-          <Pressable
-            onPress={editing ? chooseAvatar : undefined}
-            disabled={!editing}
-            style={({ pressed }) => [{ opacity: editing && pressed ? 0.8 : 1 }]}
-          >
-            <Image
-              source={effectiveAvatarSource}
-              style={[
-                styles.avatar,
-                { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
-              ]}
-            />
-          </Pressable>
+        <View style={s.userInfoContainer}>
+          <View style={{ position: "relative" }}>
+            <Pressable
+              onPress={editing ? chooseAvatar : undefined}
+              disabled={!editing}
+              style={({ pressed }) => [{ opacity: editing && pressed ? 0.8 : 1 }]}
+            >
+              <Image
+                source={effectiveAvatarSource}
+                style={[
+                  s.avatar,
+                  { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+                ]}
+              />
+            </Pressable>
+            {editing && (
+              <View style={s.pencilBadge}>
+                <Feather name="edit-2" size={14} color={colors.badgeIcon} />
+              </View>
+            )}
+          </View>
 
           <View>
-            <Text style={{ fontSize: 20 }}>{originalUser?.userName ?? "User"}</Text>
+            <Text style={[s.userName, { color: colors.text }]}>
+              {originalUser?.userName ?? "User"}
+            </Text>
 
             <View style={{ flexDirection: "row", gap: 20 }}>
-              {/* Followers (placeholder) */}
-              <Pressable
-                style={{ flexDirection: "column", alignItems: "center" }}
-                onPress={() => router.push("/followers")}
-              >
-                <View style={styles.countCircles}>
-                  <Text style={{ fontSize: 24, color: "#C1521E" }}>0</Text>
+              <Pressable style={s.countCol} onPress={() => router.push("/followers")}>
+                <View style={s.countCircles}>
+                  <Text style={[s.countNum, { color: colors.decorativeText }]}>0</Text>
                 </View>
-                <Text style={{ fontSize: 14 }}> Followers </Text>
+                <Text style={[s.countLabel, { color: colors.text }]}>Followers</Text>
               </Pressable>
 
-              {/* Following (placeholder) */}
-              <Pressable
-                style={{ flexDirection: "column", alignItems: "center" }}
-                onPress={() => router.push("/following")}
-              >
-                <View style={styles.countCircles}>
-                  <Text style={{ fontSize: 24, color: "#C1521E" }}>0</Text>
+              <Pressable style={s.countCol} onPress={() => router.push("/following")}>
+                <View style={s.countCircles}>
+                  <Text style={[s.countNum, { color: colors.decorativeText }]}>0</Text>
                 </View>
-                <Text style={{ fontSize: 14 }}> Following </Text>
+                <Text style={[s.countLabel, { color: colors.text }]}>Following</Text>
               </Pressable>
             </View>
           </View>
         </View>
 
         {/* bio */}
-        <View style={styles.bioContainer}>
-          <Text style={{ fontSize: 14 }}> Bio </Text>
+        <View style={s.bioContainer}>
+          <Text style={[s.bioTitle, { color: colors.text }]}>Bio</Text>
           {editing ? (
             <TextInput
               value={draftBio}
               onChangeText={setDraftBio}
-              style={styles.bioInput}
-              placeholder="Tell people about yourself"
+              style={s.bioInput}
               multiline
               blurOnSubmit={false}
             />
           ) : (
-            <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14 }}>{originalUser?.userBio ?? ""}</Text>
+            <View style={s.bioContentContainer}>
+              <Text style={[s.bioText, { color: colors.text }]}>{placeholderBio}</Text>
             </View>
           )}
         </View>
 
         {/* Edit / Save / Discard */}
         {editing ? (
-          <View style={styles.editRow}>
+          <View style={s.editRow}>
             <Pressable
               onPress={
                 saving
@@ -166,46 +188,50 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                       saveChanges();
                     }
               }
-              style={[styles.primaryBtn, saving && { opacity: 0.6 }]}
+              style={[s.primaryBtn, saving && { opacity: 0.6 }]}
             >
               {saving ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.buttonOnPrimary} />
               ) : (
-                <Text style={{ fontSize: 14, color: "#fff", fontWeight: "600" }}>
-                  Save changes
-                </Text>
+                <Text style={s.primaryBtnText}>Save changes</Text>
               )}
             </Pressable>
             <Pressable
               onPress={saving ? undefined : discardChanges}
-              style={[styles.secondaryBtn, saving && { opacity: 0.6 }]}
+              style={[s.secondaryBtn, saving && { opacity: 0.6 }]}
             >
-              <Text style={{ fontSize: 14, fontWeight: "600" }}>Discard</Text>
+              <Text style={s.secondaryBtnText}>Discard</Text>
             </Pressable>
           </View>
         ) : (
-          <Pressable style={styles.editProfileButton} onPress={startEditing}>
-            <Text style={{ fontSize: 14 }}> Edit Profile </Text>
-          </Pressable>
+          <View style={s.actionsColumn}>
+            <Pressable style={s.editProfileButton} onPress={startEditing}>
+              <Text style={s.editProfileButtonText}>Edit Profile</Text>
+            </Pressable>
+
+            <TouchableOpacity style={s.logoutButton} onPress={onLogout}>
+              <Text style={s.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Post tab navigation */}
         {activeTab === "posts" ? (
-          <View style={styles.postTabs}>
-            <View style={styles.postTabText}>
-              <Text style={{ color: "#C1521E" }}> My Posts </Text>
+          <View style={s.postTabs}>
+            <View style={s.postTabText}>
+              <Text style={{ color: colors.decorativeText }}>My Posts</Text>
             </View>
             <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
-              <Text> Saved Posts </Text>
+              <Text style={{ color: colors.text }}>Saved Posts</Text>
             </Pressable>
           </View>
         ) : (
-          <View style={styles.postTabs}>
+          <View style={s.postTabs}>
             <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
-              <Text> My Posts </Text>
+              <Text style={{ color: colors.text }}>My Posts</Text>
             </Pressable>
-            <View style={styles.postTabText}>
-              <Text style={{ color: "#C1521E" }}> Saved Posts </Text>
+            <View style={s.postTabText}>
+              <Text style={{ color: colors.decorativeText }}>Saved Posts</Text>
             </View>
           </View>
         )}
@@ -214,14 +240,19 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
   );
 });
 
-//Sceen component
+/* --------------------------- Screen --------------------------- */
 export default function UserProfile() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  // Responsive bits, isTablet is used to determine it it is normal phone proportions or not, could be useful in later frontends
+  // THEME
+  const { currentTheme } = useTheme();
+  const colors = getColors(currentTheme);
+  const s = themedStyles(colors);
+
+  // Responsive bits
   const isTablet = width >= 768;
   const CONTENT_MAX = isTablet ? 720 : width;
   const NUM_COLUMNS = width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
@@ -230,6 +261,10 @@ export default function UserProfile() {
   const [originalUser, setOriginalUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Token gate
+  const [tokenChecked, setTokenChecked] = useState(false);
+  const [hasToken, setHasToken] = useState<boolean | null>(null);
 
   // Posts tab
   const [activeTab, setTab] = useState<"posts" | "saved">("posts");
@@ -255,10 +290,25 @@ export default function UserProfile() {
     !!originalUser &&
     (draftBio !== (originalUser.userBio ?? "") || draftAvatarUri !== null);
 
-  //Profile loading
+  /* ------------------ Gate: check token first ------------------ */
   useEffect(() => {
-    let abort = new AbortController();
+    let mounted = true;
+    (async () => {
+      const token = await Storage.getItem("token");
+      if (!mounted) return;
+      setHasToken(!!token);
+      setTokenChecked(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
+  /* ----------------------- Load profile ----------------------- */
+  useEffect(() => {
+    if (!tokenChecked || !hasToken) return;
+
+    let abort = new AbortController();
     (async () => {
       try {
         setLoading(true);
@@ -297,9 +347,9 @@ export default function UserProfile() {
     })();
 
     return () => abort.abort();
-  }, []);
+  }, [tokenChecked, hasToken]);
 
-  //Safety net preventing leaving with unsaved changes
+  /* ------------- Guard leaving when there are changes ------------- */
   useEffect(() => {
     const beforeRemove = (e: any) => {
       if (!isDirty) return;
@@ -314,6 +364,7 @@ export default function UserProfile() {
             style: "destructive",
             onPress: () => {
               discardChanges();
+              // @ts-ignore
               navigation.dispatch(e.data.action);
             },
           },
@@ -321,6 +372,8 @@ export default function UserProfile() {
         ]
       );
     };
+
+    // @ts-ignore
     const sub = navigation.addListener("beforeRemove", beforeRemove);
 
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -343,7 +396,7 @@ export default function UserProfile() {
     };
   }, [isDirty, draftBio, draftAvatarUri, originalUser]);
 
-  //Editing/Saving/Discard handlers
+  /* -------------------- Handlers -------------------- */
   const startEditing = () => {
     if (!originalUser) return;
     setDraftBio(originalUser.userBio ?? "");
@@ -369,24 +422,35 @@ export default function UserProfile() {
 
       let newAvatarUrl: string | undefined;
 
-      // Upload avatar if picked 
+      // Upload avatar if picked
       if (draftAvatarUri) {
-        const manipulated = await ImageManipulator.manipulateAsync(
-          draftAvatarUri,
-          [{ resize: { width: 512 } }],
-          { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
-        );
+        let processedUri = draftAvatarUri;
+        try {
+          const canManipulate =
+            Platform.OS !== "web" &&
+            typeof ImageManipulator?.manipulateAsync === "function";
+          if (canManipulate) {
+            const manipulated = await ImageManipulator.manipulateAsync(
+              draftAvatarUri,
+              [{ resize: { width: 512 } }],
+              { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+            );
+            processedUri = manipulated.uri;
+          }
+        } catch {
+          processedUri = draftAvatarUri;
+        }
 
         const form = new FormData();
 
         if (Platform.OS === "web") {
-          const resp = await fetch(manipulated.uri);
+          const resp = await fetch(processedUri);
           const blob = await resp.blob();
           const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
           form.append("file", file);
         } else {
           form.append("file", {
-            uri: manipulated.uri,
+            uri: processedUri,
             name: "avatar.jpg",
             type: "image/jpeg",
           } as any);
@@ -402,9 +466,7 @@ export default function UserProfile() {
           const t = await uploadRes.text().catch(() => "");
           throw new Error(`Upload avatar failed (${uploadRes.status}): ${t}`);
         }
-        const json = (await uploadRes.json().catch(() => ({}))) as
-          | UploadAvatarResponse
-          | any;
+        const json = (await uploadRes.json().catch(() => ({}))) as UploadAvatarResponse;
         newAvatarUrl = json?.avatarUrl;
       }
 
@@ -430,10 +492,7 @@ export default function UserProfile() {
           throw new Error(`PATCH /api/profile failed (${patchRes.status}): ${t}`);
         }
 
-        let updated: any = {};
-        try {
-          updated = await patchRes.json();
-        } catch {}
+        const updated = await patchRes.json().catch(() => ({} as any));
 
         setOriginalUser((prev) =>
           prev
@@ -460,27 +519,26 @@ export default function UserProfile() {
 
   //Image picker, uses built in crop ui if on iOS/Android
   const chooseAvatar = async () => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== "granted") {
-    Alert.alert("Permission needed", "Allow photo library access to choose an avatar.");
-    return;
-  }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Allow photo library access to choose an avatar.");
+      return;
+    }
 
-  const result = await ImagePicker.launchImageLibraryAsync({
-    allowsEditing: true,    // native crop UI on iOS/Android
-    aspect: [1, 1],
-    quality: 0.95,
-    selectionLimit: 1,
-  });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.95,
+      selectionLimit: 1,
+    });
 
-  if (result.canceled) return;
-  const localUri = result.assets?.[0]?.uri;
-  if (!localUri) return;
+    if (result.canceled) return;
+    const localUri = result.assets?.[0]?.uri;
+    if (!localUri) return;
 
-  setDraftAvatarUri(localUri);
-  if (!editing) setEditing(true);
-};
-
+    setDraftAvatarUri(localUri);
+    if (!editing) setEditing(true);
+  };
 
   const handlePostPress = () => {
     if (!originalUser) return;
@@ -494,37 +552,85 @@ export default function UserProfile() {
     setPosts(originalUser.savedPosts ?? []);
   };
 
+  const handleLogout = async () => {
+    await Storage.removeItem("token");
+    router.push("/login");
+  };
+
+  /* ----------------------- Login Gate Screens ----------------------- */
+  if (!tokenChecked) {
+    return (
+      <View style={s.container}>
+        <View style={s.centerFill}>
+          <ActivityIndicator />
+          <Text style={{ marginTop: 8, color: colors.text }}>Preparing…</Text>
+        </View>
+        <BottomNavButton />
+      </View>
+    );
+  }
+
+  if (tokenChecked && hasToken === false) {
+    return (
+      <View style={s.container}>
+        <View style={[s.centerFill, { paddingHorizontal: 24 }]}>
+          <Text style={{ color: colors.text, fontSize: 18, textAlign: "center", marginBottom: 12 }}>
+            You need to log in to access this page.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/login")}
+            style={[s.primaryBtn, { paddingHorizontal: 20, minWidth: 160 }]}
+          >
+            <Text style={s.primaryBtnText}>Go to Log In</Text>
+          </TouchableOpacity>
+        </View>
+        <BottomNavButton />
+      </View>
+    );
+  }
+
+  /* ----------------------- Loading / Error ----------------------- */
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 8 }}>Loading…</Text>
+      <View style={s.container}>
+        <View style={s.centerFill}>
+          <ActivityIndicator />
+          <Text style={{ marginTop: 8, color: colors.text }}>Loading…</Text>
+        </View>
+        <BottomNavButton />
       </View>
     );
   }
 
   if (loadError || !originalUser) {
     return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
-        <Text>{loadError ? `Error: ${loadError}` : "No user loaded"}</Text>
-        <Pressable onPress={() => router.replace("/")}>
-          <Text>Go Home</Text>
-        </Pressable>
+      <View style={s.container}>
+        <View style={s.centerFill}>
+          <Text style={{ color: colors.text }}>
+            {loadError ? `Error: ${loadError}` : "No user loaded"}
+          </Text>
+          <Pressable onPress={() => router.replace("/")}>
+            <Text style={{ color: colors.link, marginTop: 8 }}>Go Home</Text>
+          </Pressable>
+        </View>
+        <BottomNavButton />
       </View>
     );
   }
 
+  /* --------------------------- Render --------------------------- */
   const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS - 10;
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <FlatList
         data={currentPosts}
         numColumns={NUM_COLUMNS}
-        key={NUM_COLUMNS} 
+        key={NUM_COLUMNS}
         ListHeaderComponent={
           <ProfileHeader
             insetsTop={insets.top}
+            colors={colors}
             editing={editing}
             draftBio={draftBio}
             setDraftBio={setDraftBio}
@@ -541,6 +647,7 @@ export default function UserProfile() {
             chooseAvatar={chooseAvatar}
             router={router}
             avatarSize={AVATAR}
+            onLogout={handleLogout}
           />
         }
         renderItem={({ item }) => (
@@ -565,6 +672,7 @@ export default function UserProfile() {
           maxWidth: CONTENT_MAX,
           paddingBottom: insets.bottom + 100,
           paddingTop: 10,
+          backgroundColor: colors.background,
         }}
         keyboardShouldPersistTaps="always"
         removeClippedSubviews={false}
@@ -575,123 +683,191 @@ export default function UserProfile() {
       <SettingsOverlay
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        onLogout={() => {}}
+        onLogout={handleLogout}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F2E5", 
-  },
+/* ---------------------- Theme helpers ---------------------- */
+function getColors(themeKey: string) {
+  const base = Colors[themeKey];
+  return {
+    ...base,
+    mutedText: base?.mutedText ?? "#8a8a8a",
+    link: base?.link ?? "#2f6fed",
+    badgeBg: base?.badgeBg ?? "#00000088",
+    badgeIcon: base?.badgeIcon ?? "#ffffff",
+    buttonOnPrimary: base?.buttonOnPrimary ?? (base?.decorativeText || "#000"),
+  };
+}
 
-  headerOuter: {
-    backgroundColor: "#E0D5DD",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    paddingBottom: 16,
-    marginBottom: 12,
-  },
-  headerInner: {
-    alignSelf: "center",
-    width: "100%",
-    maxWidth: 720,
-    paddingHorizontal: 16,
-  },
-
-  topAccountManagement: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 20,
-    marginTop: 20,
-    marginBottom: 20,
-    marginRight: 4,
-  },
-  userInfoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-  },
-  avatar: {
-    backgroundColor: "#F8F2E5",
-  },
-  countCircles: {
-    backgroundColor: "#F7B557",
-    width: 50,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 25,
-    flexDirection: "row",
-  },
-
-  bioContainer: {
-    flexDirection: "column",
-    marginHorizontal: 30,
-    marginBottom: 16,
-    marginTop: 10,
-  },
-  bioContentContainer: {
-    backgroundColor: "#F8F2E5",
-    padding: 10,
-    borderRadius: 15,
-  },
-  bioInput: {
-    backgroundColor: "#F8F2E5",
-    padding: 10,
-    borderRadius: 15,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-
-  postTabs: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 40,
-    marginTop: 8,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  postTabText: {
-    backgroundColor: "#F7B557",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 15,
-  },
-
-  editProfileButton: {
-    backgroundColor: "#F8F2E5",
-    marginBottom: 20,
-    marginHorizontal: 85,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderRadius: 15,
-  },
-  editRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 12,
-    marginBottom: 20,
-    marginHorizontal: 30,
-  },
-  primaryBtn: {
-    backgroundColor: "#C1521E",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    minWidth: 130,
-    alignItems: "center",
-  },
-  secondaryBtn: {
-    backgroundColor: "#F8F2E5",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    minWidth: 110,
-    alignItems: "center",
-  },
-});
-
+/* ---------------------------- Styles ---------------------------- */
+const themedStyles = (colors: ReturnType<typeof getColors>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centerFill: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    headerOuter: {
+      position: "relative",
+      backgroundColor: "transparent",
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+      paddingBottom: 16,
+      marginBottom: 12,
+      overflow: "hidden",
+    },
+    headerBg: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.topBackground,
+    },
+    headerInner: {
+      alignSelf: "center",
+      width: "100%",
+      maxWidth: 720,
+      paddingHorizontal: 16,
+    },
+    topAccountManagement: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 20,
+      marginTop: 20,
+      marginBottom: 20,
+      marginRight: 4,
+    },
+    iconCol: { alignItems: "center" },
+    iconLabel: { fontSize: 12, marginTop: 4 },
+    userInfoContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 16,
+    },
+    userName: { fontSize: 20, fontWeight: "600" },
+    avatar: { backgroundColor: colors.boxBackground },
+    pencilBadge: {
+      position: "absolute",
+      right: -2,
+      bottom: -2,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: colors.badgeBg,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "#00000022",
+    },
+    countCol: { alignItems: "center" },
+    countCircles: {
+      backgroundColor: colors.decorativeBackground,
+      width: 50,
+      height: 50,
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 25,
+      flexDirection: "row",
+    },
+    countNum: { fontSize: 24 },
+    countLabel: { fontSize: 14, marginTop: 4 },
+    bioContainer: {
+      flexDirection: "column",
+      marginHorizontal: 30,
+      marginBottom: 16,
+      marginTop: 10,
+    },
+    bioTitle: { fontSize: 14, marginBottom: 6 },
+    bioContentContainer: {
+      backgroundColor: colors.boxBackground,
+      padding: 10,
+      borderRadius: 15,
+    },
+    bioText: { fontSize: 14 },
+    bioInput: {
+      backgroundColor: colors.boxBackground,
+      color: colors.text,
+      padding: 10,
+      borderRadius: 15,
+      minHeight: 80,
+      textAlignVertical: "top",
+    },
+    postTabs: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 40,
+      marginTop: 8,
+      marginBottom: 20,
+      alignItems: "center",
+    },
+    postTabText: {
+      backgroundColor: colors.decorativeBackground,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: 15,
+    },
+    actionsColumn: {
+      gap: 12,
+      marginBottom: 8,
+      paddingHorizontal: 30,
+    },
+    editProfileButton: {
+      backgroundColor: colors.boxBackground,
+      paddingVertical: 10,
+      alignItems: "center",
+      borderRadius: 15,
+    },
+    editProfileButtonText: {
+      fontSize: 14,
+      color: colors.text,
+    },
+    logoutButton: {
+      backgroundColor: colors.boxBackground,
+      paddingVertical: 10,
+      alignItems: "center",
+      borderRadius: 15,
+    },
+    logoutButtonText: {
+      fontSize: 14,
+      color: colors.text,
+    },
+    editRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 12,
+      marginBottom: 20,
+      marginHorizontal: 30,
+    },
+    primaryBtn: {
+      backgroundColor: colors.decorativeBackground,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      minWidth: 130,
+      alignItems: "center",
+    },
+    primaryBtnText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.decorativeText,
+    },
+    secondaryBtn: {
+      backgroundColor: colors.boxBackground,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      minWidth: 110,
+      alignItems: "center",
+    },
+    secondaryBtnText: { fontSize: 14, fontWeight: "600", color: colors.text },
+  });

@@ -7,6 +7,9 @@ const { pool } = require('../backend_connection');
 //jwt-checker before revealing any sensitive info
 const authenticateToken = require('../middleware/authenticate');
 
+// ⬇️ NEW: import signer
+const { getSignedFile } = require('../s3_connection');
+
 //------------------------ FOLLOW/FOLLOWER API SETUP -------------------------------
 //for currently logged-in user only
 
@@ -16,7 +19,7 @@ router.get("/get-followers", authenticateToken, async (req, res) => {
         console.log("get followers test")
 
         //get all usernames and pfps of followers
-        query =
+        let query =
         `SELECT u.fld_profile_pic, u.fld_username, u.fld_user_pk
          FROM following_blocked.tbl_follow AS f INNER JOIN login.tbl_user AS u
             ON u.fld_user_pk = f.fld_user_id
@@ -24,8 +27,24 @@ router.get("/get-followers", authenticateToken, async (req, res) => {
         `
         const followers  = await pool.query(query, [req.userID.trim()])
 
+        // adds a signed URL (avatarUrl) for each row, if a key exists
+        const rows = await Promise.all(
+          followers.rows.map(async (row) => {
+            let avatarUrl = null;
+            if (row.fld_profile_pic) {
+              const key = row.fld_profile_pic.includes('/')
+                ? row.fld_profile_pic
+                : `avatars/${row.fld_profile_pic}`;
+              const folder = key.split('/')[0];
+              const fileName = key.split('/').slice(1).join('/');
+              avatarUrl = await getSignedFile(folder, fileName);
+            }
+            return { ...row, avatarUrl };
+          })
+        );
+
         //return followers (none to many)
-        res.status(200).json(followers.rows)
+        res.status(200).json(rows)
     }
     catch(error) {
         console.log("Error while fetching followers:", error)
@@ -39,7 +58,7 @@ router.get("/get-following", authenticateToken, async (req, res) => {
     try {
         console.log("get following");
         //get all usernames and pfps of people user is following
-        query = `
+        let query = `
         SELECT u.fld_profile_pic, u.fld_username, u.fld_user_pk
 	    FROM following_blocked.tbl_follow AS f INNER JOIN login.tbl_user AS u
 		    ON u.fld_user_pk = f.fld_follower_id
@@ -48,9 +67,24 @@ router.get("/get-following", authenticateToken, async (req, res) => {
 
         const following = await pool.query(query, [req.userID.trim()])
 
+        // adds signed URL (avatarUrl) per row
+        const rows = await Promise.all(
+          following.rows.map(async (row) => {
+            let avatarUrl = null;
+            if (row.fld_profile_pic) {
+              const key = row.fld_profile_pic.includes('/')
+                ? row.fld_profile_pic
+                : `avatars/${row.fld_profile_pic}`;
+              const folder = key.split('/')[0];
+              const fileName = key.split('/').slice(1).join('/');
+              avatarUrl = await getSignedFile(folder, fileName);
+            }
+            return { ...row, avatarUrl };
+          })
+        );
 
         //return who user is following (none to many)
-        res.status(200).json(following.rows)
+        res.status(200).json(rows)
     }
 
     catch(error) {
@@ -68,7 +102,7 @@ router.delete("/unfollow-user", authenticateToken, async (req, res) => {
         const { followingID } = req.body
 
         //fetch the connection id -> just a safety thing
-        query = `
+        let query = `
         SELECT fld_connection_pk
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
@@ -81,7 +115,6 @@ router.delete("/unfollow-user", authenticateToken, async (req, res) => {
             res.status(404).json({ message: "Cannot unfollow user: never followed in the first place." })
             return;
         }
-
 
         //now unfollow user
         query = `
@@ -111,7 +144,7 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
         const { otherUserID } = req.body
 
         //check if you're blocked by user
-        query = `
+        let query = `
         SELECT fld_block_pk
 	    FROM following_blocked.tbl_block
 	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
@@ -179,7 +212,7 @@ router.delete("/remove-follower", authenticateToken, async (req, res) => {
         const { followerID } = req.body
 
         //fetch the connection id -> just a safety thing
-        query = `
+        let query = `
         SELECT fld_connection_pk
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;

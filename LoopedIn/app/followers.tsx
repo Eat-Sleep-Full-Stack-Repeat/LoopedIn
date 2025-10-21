@@ -51,10 +51,13 @@ export default function FollowersScreen() {
 
         //if followers
         const format_followers = data.map((row: any) => ({
-          id: row.fld_user_pk,
-          username: row.fld_username,
-          image: row.fld_profile_pic ?? require("@/assets/images/icons8-cat-profile-100.png")
-        }))
+          id: row.fld_user_pk ?? row.id,
+          username: row.fld_username ?? row.username,
+          image:
+          typeof row.avatarUrl === "string" && /^https?:\/\//i.test(row.avatarUrl)
+          ? { uri: row.avatarUrl }
+          : require("@/assets/images/icons8-cat-profile-100.png"),
+        }));
 
         setFollowers(format_followers)
 
