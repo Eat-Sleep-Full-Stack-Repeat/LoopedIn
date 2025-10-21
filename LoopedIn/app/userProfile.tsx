@@ -22,6 +22,8 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
 import SettingsOverlay from "@/components/settingsoverlay";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+
 
 export default function UserProfile() {
   const { currentTheme } = useTheme();
@@ -317,15 +319,20 @@ export default function UserProfile() {
 
   // Logout - can be updated later or moved to settings overlay
   const handleLogout = async () => {
-    //later, delete necessary items from local or async storage
-
-    //remove JWT
+    // later, delete necessary items from local or async storage
+    try {
+      await GoogleSignin.revokeAccess().catch(() => {});
+      await GoogleSignin.signOut();
+    } catch (_) {
+    }
+  
+    // remove JWT
     await Storage.removeItem("token");
-
+  
     setTimeout(() => {
-      router.push("/"); //index for dev purposes; later should be login
+      router.push("/"); // index for dev purposes; later should be login
     }, 0);
-
+  
     console.log("Logged out!");
   };
 
