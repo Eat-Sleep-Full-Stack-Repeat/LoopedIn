@@ -2,15 +2,93 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from '../utils/config';
+import { GoogleSignin } from "@react-native-google-signin/google-signin"
+import { googleLogin } from "../utils/google";
+
+type UserInfoState = {
+  userInfo?: any;
+};
+
+let configured = false;
 
 export default function Login() {
   const {currentTheme} = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
+  //---------------------------------------------------------------------------------
 
+  
+      const WEB_CLIENT_ID = "483164962369-01iaiktisu321r3fac75a41k7hlcto5b.apps.googleusercontent.com"
+      const IOS_CLIENT_ID = "483164962369-0rjbb7bdm9iml8212adh7jians10qrij.apps.googleusercontent.com"
+      const ANDROID_CLIENT_ID = "483164962369-01iaiktisu321r3fac75a41k7hlcto5b.apps.googleusercontent.com"
+    
+      const [, setState] = useState<UserInfoState>({});
+    
+      useEffect(() => {
+        if (configured) return;
+        GoogleSignin.configure({
+          webClientId: WEB_CLIENT_ID,
+          iosClientId: IOS_CLIENT_ID,
+          scopes: ["email"],
+          offlineAccess: true,
+          forceCodeForRefreshToken: true,
+        });
+        configured = true;
+      }, []);
+    
+      const onGooglePress = googleLogin(setState);
+
+      const onGooglePressAndSend = async () => {
+        try {
+          const userInfo = await onGooglePress();
+
+          if (!userInfo) {
+            alert("Google sign-in was not completed. Please try again.");
+            return;
+          }
+
+          const { idToken } = await GoogleSignin.getTokens();
+
+          if(!idToken) {
+            alert ("Did not receive Google Token, Try again!")
+            return;
+          }
+        
+          const email = userInfo.user?.email;
+          const googleId = userInfo.user?.id;
+
+          if(!email|| !googleId) {
+            alert("Please Try again!")
+            return;
+          }
+
+          const resp = await fetch(`${API_URL}/api/google/google`,{
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              idToken, 
+              email,
+              googleId,
+            }),
+          });
+          const data = await resp.json();
+          
+          if(resp.ok && data?.token){
+            await Storage.setItem ("token", data.token);
+            router.push("/userProfile");
+          } else {
+            console.log ("Google login server failed:", data?.message || data);
+          }
+        } catch (e) {
+          console.log ("Google login -> server error:", e);
+          alert("Sever error, please try again!");
+        }
+      };
+  
   //---------------------------------------------------------------------------------
 
   //declaring/defining helper fxns used in main native login fxn
@@ -263,7 +341,8 @@ const [password, onChangePassword] = useState('');
                     marginTop: 40,
                     backgroundColor: "#F2F0EF",
                 }}> 
-                <TouchableOpacity onPress={()=> console.log ("Google Login tapped")}
+                <TouchableOpacity
+                onPress={onGooglePressAndSend}
                 style ={{
                     alignSelf:"center",
                 }}
