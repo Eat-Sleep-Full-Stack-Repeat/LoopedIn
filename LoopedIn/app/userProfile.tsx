@@ -129,9 +129,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
               />
             </Pressable>
             {editing && (
-              <View style={s.pencilBadge}>
+              <Pressable style={s.pencilBadge} onPress={editing ? chooseAvatar : undefined}>
                 <Feather name="edit-2" size={14} color={colors.badgeIcon} />
-              </View>
+              </Pressable>
             )}
           </View>
 
@@ -553,8 +553,18 @@ export default function UserProfile() {
   };
 
   const handleLogout = async () => {
+    //later, delete necessary items from local or async storage
+
+    //remove JWT
     await Storage.removeItem("token");
-    router.push("/login");
+
+    setTimeout(() => {
+      router.push("/"); //index for dev purposes; later should be login
+      setSettingsOpen(false);
+    }, 0);
+
+    console.log("Logged out!");
+
   };
 
   /* ----------------------- Login Gate Screens ----------------------- */
