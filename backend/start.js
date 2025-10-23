@@ -2,6 +2,28 @@
 const express = require("express");
 const app = express();
 
+// to permit incoming data from frontend
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      console.log("Blocked by CORS:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    // include PATCH and OPTIONS
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    // allow the headers you send (add Accept and X-Requested-With just in case)
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+    credentials: true,
+    optionsSuccessStatus: 204,
+  })
+);
+
+// respond to all preflight requests
+app.options("*", cors());
+
 //random port number -> can change if we want something different
 const port = 5000;
 
@@ -11,9 +33,6 @@ const { pool } = require("./backend_connection");
 //middleware to handle post and put requests
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-//to permit incoming data from frontend
-const cors = require("cors");
 
 //allows weird android emulator origins
 const allowedOrigins = process.env.APP_ORIGINS?.split(",") || [];
@@ -74,15 +93,17 @@ const profileWork = require('./api/profile');
 const followWork = require('./api/follow');
 const blockWork = require('./api/block');
 const secondFile = require('./api/newFeature'); //delete this example upon creation of new file
+const avatarRoutes = require("./api/avatar");
+
 
 
 //get ready to use that bad boy ("mount")
 app.use('/api/login', loginProcess);
-app.use('/api/profile', profileWork);
+app.use('/api', profileWork);
 app.use('/api/follow', followWork);
 app.use('/api/block', blockWork)
 app.use('/api/newFeature', secondFile);
-
+app.use('/api', avatarRoutes);
 
 
 // -------------------- RUNNING SERVER --------------------------- 
