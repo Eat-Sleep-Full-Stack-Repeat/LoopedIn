@@ -37,9 +37,16 @@ const pool=new Pool({
 
 //connecting to database
 pool.connect()
-.then(()=>{console.log("Connected to Postgres database!")})
+.then((client)=>{
+    console.log("Connected to Postgres database!");
+    client.release();
+})
 //if failed to connect, show error
-.catch((error)=>{console.log("Error connecting to database", error)})
+.catch((error)=>{console.log("Error connecting to database", error)});
+
+pool.on("error", (err) => {
+    console.error("Postgres pool error:", err);
+});
 
 //exporting connection for use
 module.exports={pool}
