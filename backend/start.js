@@ -94,16 +94,17 @@ const followWork = require('./api/follow');
 const blockWork = require('./api/block');
 const secondFile = require('./api/newFeature'); //delete this example upon creation of new file
 const avatarRoutes = require("./api/avatar");
-
+const googleLogin = require('./api/google');
 
 
 //get ready to use that bad boy ("mount")
 app.use('/api/login', loginProcess);
-app.use('/api', profileWork);
+app.use('/api/profile', profileWork);
 app.use('/api/follow', followWork);
-app.use('/api/block', blockWork)
+app.use('/api/block', blockWork);
 app.use('/api/newFeature', secondFile);
 app.use('/api', avatarRoutes);
+app.use('/api/google', googleLogin);
 
 
 // -------------------- RUNNING SERVER --------------------------- 
