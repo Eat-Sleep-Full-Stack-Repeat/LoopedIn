@@ -5,7 +5,7 @@ const authenticateToken = require("../middleware/authenticate");
 const { getSignedFile } = require("../s3_connection");
 
 // GET /api/profile
-router.get("/profile", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const userPk = req.userID?.trim?.() || req.userID;
 
@@ -44,7 +44,7 @@ router.get("/profile", authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/profile  (accept userBio and/or avatarUrl OR avatarKey)
-router.patch("/profile", authenticateToken, express.json(), async (req, res) => {
+router.patch("/", authenticateToken, express.json(), async (req, res) => {
   try {
     const userPk = req.userID?.trim?.() || req.userID;
     const { userBio, avatarUrl, avatarKey } = req.body || {};
