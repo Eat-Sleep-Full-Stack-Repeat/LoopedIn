@@ -5,10 +5,21 @@ const app = express();
 // to permit incoming data from frontend
 const cors = require("cors");
 
+// to allow traffic from Expo Go & LAN
+const allowedPatterns = [
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,        // emulator or LAN 10.x.x.x
+  /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/,       // LAN 192.168.x.x
+  /^exp:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/,        // Expo Go URLs
+];
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      if (!origin) return callback(null, true);
+      if (allowedPatterns.some((pattern) => pattern.test(origin))) {
+        return callback(null, true);
+      }
       console.log("Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
