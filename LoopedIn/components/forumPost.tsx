@@ -9,7 +9,6 @@ type ForumPost = {
   title: string;
   username: string;
   content: string;
-  filterTags: string[];
   datePosted: Date;
 };
 
@@ -102,20 +101,6 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
         >
           {postInfo.content}
         </Text>
-      </View>
-      {/* tags underneath the content */}
-      <View style={styles.allTagsContainer}>
-        {postInfo.filterTags.map((tag, index) => (
-          <View key={index} style={styles.individualTag}>
-            <Text
-              style={{ color: colors.decorativeText }}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {tag}
-            </Text>
-          </View>
-        ))}
       </View>
       <View style={styles.postDate}>
         <Text style={{ color: colors.text }}>

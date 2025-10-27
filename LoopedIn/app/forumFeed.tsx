@@ -15,6 +15,9 @@ import { useEffect, useState } from "react";
 // FIXME remove the following import once backend is set up
 import mockUser from "./mockData";
 import ForumPostView from "@/components/forumPost";
+import API_URL from "@/utils/config";
+import { Storage } from "../utils/storage";
+import { router } from "expo-router";
 
 /*
 Ideas for backend implementation:
@@ -23,13 +26,24 @@ Ideas for backend implementation:
 */
 
 type ForumPost = {
-  id: number,
+  id: number;
   title: string;
+  profilePic: Image;
   username: string;
   content: string;
-  filterTags: string[];
+  postImages: Image;
   datePosted: Date;
 };
+
+type BackendPost = {
+  fld_post_pk: string;
+  fld_header: string;
+  fld_profile_pic: Image;
+  fld_username: string;
+  fld_body: string;
+  fld_pic: Image;
+  fld_timestamp: string;
+}
 
 export default function ForumFeed() {
   // Constants and functions
@@ -38,52 +52,94 @@ export default function ForumFeed() {
   const insets = useSafeAreaInsets();
   const [selectedFilter, setFilter] = useState<string>("All");
   //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
-  const [seeMorePressed, setSeeMorePressed] = useState(false); 
+  const [seeMorePressed, setSeeMorePressed] = useState(false);
   const [showFooter, setshowFooter] = useState(true);
   const [forumData, setForumData] = useState<ForumPost[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   const userData = mockUser;
   const filters = ["All", "Crochet", "Knit"];
 
+  const limit = 10;
+  let lastTimeStamp: Date;
+
   useEffect(() => {
-    // FIXME: need to fetch the initial 10 forum posts here
-   setForumData(userData.forumPosts.slice(0, 10));
-  }, [])
+    fetchData();
+  }, []);
 
   const searchFunctionality = () => {
     // FIXME: handle searching the forums here
     console.log("Search pressed");
   };
 
-  const handleFilterPress = () => {
-    //FIXME: handle when user wants to filter forum by tags
-    console.log("Tag filter pressed");
-  };
-
   const handleSeeMorePress = (origin: string) => {
     //FIXME: handle when user wants to see all saved posts
-    console.log("See more was pressed", origin)
+    console.log("See more was pressed", origin);
     if (origin === "recent") {
       setSeeMorePressed(true);
       setshowFooter(false);
     }
-  }
+  };
 
   useEffect(() => {
     console.log("Filter is now: ", selectedFilter);
     // FIXME add filter logic here!
   }, [selectedFilter]);
 
-
-  //changes forum posts from only displaying 10 to an infinite scroll
-  useEffect(() => {
-    // FIXME: would need to update this to instead continuously load more data
-    if (seeMorePressed) {
-      setForumData(userData.forumPosts);
+  const fetchData = async () => {
+    const token = await Storage.getItem("token");
+    if (loadingMore || !hasMore) { //if already loading more data or there is no more data in database then return
+      return;
     }
-  }, [seeMorePressed])
+    setLoadingMore(true);
 
+    try {
+      // need to check if there is a stored timeStamp -> If not, it will be undefined
+      const includeBefore = lastTimeStamp ? `&before=${lastTimeStamp.toISOString()}` : "";
 
+      const res = await fetch(`${API_URL}/api/forum/get-forums?limit=${limit}${includeBefore}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+
+      console.log("fetched forum data");
+
+      if (!res.ok){
+        alert("Error when fetching new forum posts");
+        router.replace("/");
+        return;
+      }
+
+      const responseData = await res.json();
+
+      // update with the new feed
+      let tempArray: ForumPost[] = responseData.newFeed.map((post: BackendPost) => ({
+        id: Number(post.fld_post_pk),
+        profilePic: post.fld_profile_pic,
+        title: post.fld_header,
+        username: post.fld_username,
+        content: post.fld_body,
+        datePosted: new Date(post.fld_timestamp),
+      }));
+
+      setForumData(prev => [...prev, ...tempArray]);
+      setHasMore(responseData.hasMore);
+      lastTimeStamp = tempArray[tempArray.length - 1].datePosted;
+
+      console.log(`The new timestamp is: ${lastTimeStamp}`);
+
+    } catch (e) {
+      console.log("Error when trying to fetch forum data:", e);
+    } finally {
+      // even if fetching data fails, we will update loading more
+      setLoadingMore(false);
+    }
+  };
 
   // Styles will go here
   const styles = StyleSheet.create({
@@ -92,7 +148,7 @@ export default function ForumFeed() {
       paddingTop: insets.top,
       flexDirection: "column",
       backgroundColor: colors.background,
-      justifyContent: "center"
+      justifyContent: "center",
     },
     searchBar: {
       flexDirection: "row",
@@ -150,9 +206,8 @@ export default function ForumFeed() {
     },
     savedPostsHeader: {
       flexDirection: "row",
-      justifyContent: "space-between"
-  },
-    
+      justifyContent: "space-between",
+    },
   });
 
   const headerView = () => (
@@ -187,7 +242,15 @@ export default function ForumFeed() {
                     : styles.buttonNotPressed,
                 ]}
               >
-                <Text style={[filterOption === selectedFilter ? {color: colors.decorativeText} : {color: colors.text}]}>{filterOption}</Text>
+                <Text
+                  style={[
+                    filterOption === selectedFilter
+                      ? { color: colors.decorativeText }
+                      : { color: colors.text },
+                  ]}
+                >
+                  {filterOption}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -197,34 +260,31 @@ export default function ForumFeed() {
       {/* Saved forum posts */}
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
-            <Text style={styles.refineHeaderText}> Saved Posts </Text>
-            <Pressable onPress={() => handleSeeMorePress("saved")}> 
-                <Text style={{color: colors.text}}>
-                    See More {">"}
-                </Text>
-            </Pressable>
+          <Text style={styles.refineHeaderText}> Saved Posts </Text>
+          <Pressable onPress={() => handleSeeMorePress("saved")}>
+            <Text style={{ color: colors.text }}>See More {">"}</Text>
+          </Pressable>
         </View>
       </View>
-        <FlatList
-          data={userData.savedForums.slice(0, 10)}
-          horizontal={true}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <ForumPostView postInfo={item}/>
-          )}
-          contentContainerStyle={{ gap: 15, marginBottom: 20, paddingHorizontal: 15 }}
-        />
+      <FlatList
+        data={userData.savedForums.slice(0, 10)}
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({ item }) => <ForumPostView postInfo={item} />}
+        contentContainerStyle={{
+          gap: 15,
+          marginBottom: 20,
+          paddingHorizontal: 15,
+        }}
+      />
 
       {/* recent posts header - content is in flatlist below */}
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
-              <Text style={styles.refineHeaderText}>
-                Recent Posts
-              </Text>
+          <Text style={styles.refineHeaderText}>Recent Posts</Text>
         </View>
       </View>
     </View>
-
   );
 
   // Page view
@@ -234,25 +294,23 @@ export default function ForumFeed() {
         // will only show 10 posts - user can then select "see more"
         data={forumData}
         renderItem={({ item }) => (
-          <View style={{alignItems: "center", marginHorizontal: 20}}>
-            <ForumPostView postInfo={item}/>
+          <View style={{ alignItems: "center", marginHorizontal: 20 }}>
+            <ForumPostView postInfo={item} />
           </View>
         )}
         ListHeaderComponent={headerView}
-        ItemSeparatorComponent={() => <View style={{height: 15}} />}
-        ListFooterComponent={ showFooter ? (
-        <View>
-          <Pressable onPress={() => handleSeeMorePress("recent")}>
-                <Text style={{color: colors.text}}>
-                  See More {'>'}
-                </Text>
-              </Pressable>
-        </View>) : null}
-        ListFooterComponentStyle={{alignItems: "center", marginTop: 20}}
+        ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
           backgroundColor: colors.background,
         }}
+        onEndReached={() => (fetchData)}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={() => (
+          <View>
+            <Text> Loading more posts... </Text>
+          </View>
+        )}
       />
       <BottomNavButton />
     </View>
