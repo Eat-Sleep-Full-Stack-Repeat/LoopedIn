@@ -1,47 +1,43 @@
-interface colorsType {
-    warning: string,
-    dark: {
-        text: string,
-        decorativeText: string,
-        decorativeBackground: string,
-        topBackground: string,
-        background: string
-    },
-    light: {
-        text: string,
-        decorativeText: string,
-        decorativeBackground: string,
-        topBackground: string,
-        background: string
-    }
-}
-
 export const Colors = {
-    warning: "red",
-    dark: {
-        text: "#FFFFFF", //main text on page
-        decorativeText: "#FFFFFF", //white text in circles
-        decorativeBackground: "#B57C2B", //orange background of circles
-        topBackground: "#87617C", //light purple background
-        background: "#000000", //cream background
-        boxBackground: "#9C7C93", //lighter purple
-        welcomeText: "#87617C", //purple
-        linkText: "#4753FF", //lighter blue
-        settingsText: "#F9F7F5",
-        settingsMenuText: "#F9F7F5",
-        warning: "#FF7F7F",
-    },
-    light: {
-        text: "#000000", //main text on page
-        decorativeText: "#C1521E", //orange text
-        decorativeBackground: "#F7B557", //orange background of circles
-        topBackground: "#E0D5DD", //light purple background
-        background: "#F8F2E5", //cream background
-        boxBackground: "#F8F2E5", //cream background
-        welcomeText: "#C296B6", //light purple text
-        linkText: "blue",
-        settingsText: "rgba(0,0,0,0.45)",
-        settingsMenuText: "#111827",
-        warning: "#B91C1C",
-    }
-}
+  warning: "red",
+
+  dark: {
+    text: "#FFFFFF",
+    decorativeText: "#FFFFFF",
+    decorativeBackground: "#B57C2B",
+    topBackground: "#87617C",
+    background: "#000000",
+    boxBackground: "#9C7C93",
+    welcomeText: "#87617C",
+    linkText: "#4753FF",
+    settingsText: "#F9F7F5",
+    settingsMenuText: "#F9F7F5",
+    warning: "#FF7F7F",
+
+    // 🌙 Explore-specific (dark)
+    exploreBackground: "#1A1A1A",
+    exploreCardBackground: "#2C2C2C",
+    exploreBorder: "#444444",
+    exploreFilterSelected: "#B57C2B",
+  },
+
+  light: {
+    text: "#000000",
+    decorativeText: "#C1521E",
+    decorativeBackground: "#F7B557",
+    topBackground: "#E0D5DD",
+    background: "#F8F2E5",
+    boxBackground: "#F8F2E5",
+    welcomeText: "#C296B6",
+    linkText: "blue",
+    settingsText: "rgba(0,0,0,0.45)",
+    settingsMenuText: "#111827",
+    warning: "#B91C1C",
+
+    // 🌞 Explore-specific (light)
+    exploreBackground: "#F7F2E7",
+    exploreCardBackground: "#FFFFFF",
+    exploreBorder: "#E0E0E0",
+    exploreFilterSelected: "#F4B860",
+  },
+};
