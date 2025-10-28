@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { View, StyleSheet, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import { Colors } from "@/Styles/colors";
 
 const handleProfilePress = () => {
   router.replace("/userProfile");
@@ -16,11 +18,12 @@ const handleExplorePress = () => {
 };
 
 const handleProjectTrackerPress = () => {
-  // FIXME: update when project tracker screen is ready
   router.replace("/");
 };
 
 const BottomNavButton = () => {
+  const { currentTheme } = useTheme();
+  const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
 
   const styles = StyleSheet.create({
@@ -30,10 +33,10 @@ const BottomNavButton = () => {
       justifyContent: "space-evenly",
       alignItems: "center",
       borderWidth: 2,
-      borderColor: "#C0C0C0",
+      borderColor: colors.topBackground,
       width: "90%",
       padding: 10,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: colors.background,
       alignSelf: "center",
       borderRadius: 50,
       shadowColor: "#000",
@@ -46,7 +49,7 @@ const BottomNavButton = () => {
       alignItems: "center",
     },
     iconText: {
-      color: "#000000",
+      color: colors.text,
       fontSize: 12,
       marginTop: 2,
     },
@@ -60,7 +63,7 @@ const BottomNavButton = () => {
           <MaterialCommunityIcons
             name="account-circle-outline"
             size={40}
-            color="#000000"
+            color={colors.text}
           />
           <Text style={styles.iconText}>profile</Text>
         </View>
@@ -69,7 +72,11 @@ const BottomNavButton = () => {
       {/* Tracker */}
       <Pressable onPress={handleProjectTrackerPress}>
         <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name="notebook" size={40} color="#000000" />
+          <MaterialCommunityIcons
+            name="notebook"
+            size={40}
+            color={colors.text}
+          />
           <Text style={styles.iconText}>tracker</Text>
         </View>
       </Pressable>
@@ -77,7 +84,11 @@ const BottomNavButton = () => {
       {/* Explore */}
       <Pressable onPress={handleExplorePress}>
         <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name="home" size={40} color="#000000" />
+          <MaterialCommunityIcons
+            name="home"
+            size={40}
+            color={colors.text}
+          />
           <Text style={styles.iconText}>explore</Text>
         </View>
       </Pressable>
@@ -85,7 +96,11 @@ const BottomNavButton = () => {
       {/* Forums */}
       <Pressable onPress={handleForumPress}>
         <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name="forum-outline" size={40} color="#000000" />
+          <MaterialCommunityIcons
+            name="forum-outline"
+            size={40}
+            color={colors.text}
+          />
           <Text style={styles.iconText}>forums</Text>
         </View>
       </Pressable>
