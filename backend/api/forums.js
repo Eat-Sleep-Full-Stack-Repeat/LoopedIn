@@ -11,6 +11,7 @@ const authenticateToken = require("../middleware/authenticate");
 // everything in req.query is from the fetch URL query
 router.get("/get-forums", async (req, res) => {
   console.log("reached the get request for forums");
+  console.log("This is the query: ", req.query);
   try {
     const limit = parseInt(req.query.limit); // number of posts to return -> determined by front-end
     //const queryTime = new Date(res.query.before); // which posts to query (determined by date posted)
@@ -29,33 +30,35 @@ router.get("/get-forums", async (req, res) => {
         FROM login.tbl_user AS u 
         INNER JOIN forums.tbl_forum_post AS ff 
             ON u.fld_user_pk = ff.fld_creator
-        ORDER BY ff.fld_timestamp DESC
-        LIMIT $1 + 1;
+        ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+        LIMIT ($1 + 1);
         `;
 
         returnedFeed = await pool.query(query, [limit]);
     } else {
       // loads more data after the initial batch (uses timestamp of last returned post to get more -> ensures working with same set of data)
-      const queryTime = res.query.before;
+      console.log("Inside the else branch");
       query = `
         SELECT u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk 
         FROM login.tbl_user AS u 
         INNER JOIN forums.tbl_forum_post AS ff 
             ON u.fld_user_pk = ff.fld_creator
-        WHERE ff.fld_timestamp < $1
-        ORDER BY ff.fld_timestamp DESC
-        LIMIT $2 + 1;
+        WHERE ROW(ff.fld_timestamp, ff.fld_post_pk) < ROW($1, $2)
+        ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+        LIMIT ($3 + 1);
         `;
 
-        returnedFeed = await pool.query(query, [queryTime, limit]);
+        returnedFeed = await pool.query(query, [req.query.before, req.query.postID, limit]);
     }
     // if the number of rows returned is less than the limit then there is no more forum feed to fetch
     if (returnedFeed.rowCount <= limit) {
       morePosts = false;
     }
 
+    console.log(JSON.stringify(returnedFeed.rows));
+
     console.log(
-      `Has more is ${morePosts} and returning the following data to front-end: ${returnedFeed}`
+      `Has more is ${morePosts} and returning the following data to front-end: ${returnedFeed.rows}`
     );
 
     // return the posts and whether there is more data to fetch

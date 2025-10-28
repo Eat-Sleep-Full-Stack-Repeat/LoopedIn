@@ -1,15 +1,15 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { StyleSheet, View, Image, Text, Pressable } from "react-native";
+import { StyleSheet, View, Image, Text, Pressable, Dimensions } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useState } from "react";
 
 type ForumPost = {
-  id: number;
+  id: string;
   title: string;
   username: string;
   content: string;
-  datePosted: Date;
+  datePosted: string;
 };
 
 type ForumPostViewProps = {
@@ -27,7 +27,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       paddingVertical: 10,
       backgroundColor: colors.topBackground,
       borderRadius: 15,
-      width: 350,
+      width: Dimensions.get("window").width - 40,
     },
     forumTitle: {
       fontSize: 14,
@@ -104,7 +104,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       </View>
       <View style={styles.postDate}>
         <Text style={{ color: colors.text }}>
-          {postInfo.datePosted.toDateString()}
+          {new Date(postInfo.datePosted).toDateString()}
         </Text>
       </View>
     </View>
