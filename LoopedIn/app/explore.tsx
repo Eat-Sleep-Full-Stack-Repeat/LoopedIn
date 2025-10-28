@@ -12,15 +12,15 @@ import { Stack } from "expo-router";
 import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ExplorePage() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const [selectedFilter, setSelectedFilter] = useState("All");
   const filters = ["All", "Crochet", "Knit"];
+  const insets = useSafeAreaInsets();
 
-  // ✅ Reusable icon component for automatic tint
   const ThemedIcon = ({ source }: { source: any }) => (
     <Image
       source={source}
@@ -34,7 +34,9 @@ export default function ExplorePage() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      paddingTop: insets.top,
       backgroundColor: colors.exploreBackground,
+      justifyContent: "center",
     },
     pageTitle: {
       fontSize: 28,
@@ -134,9 +136,15 @@ export default function ExplorePage() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      {/* ✅ Disable transition animation for Explore only */}
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          animation: "none", // disables slide-in animation
+        }}
+      />
 
-      <GestureHandlerRootView style={styles.container}>
+      <View style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Text style={styles.pageTitle}>Explore</Text>
 
@@ -212,7 +220,8 @@ export default function ExplorePage() {
         </ScrollView>
 
         <BottomNavButton />
-      </GestureHandlerRootView>
+      </View>
     </>
   );
 }
+
