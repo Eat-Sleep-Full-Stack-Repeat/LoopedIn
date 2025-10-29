@@ -27,6 +27,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 /* ----------------------------- Types ----------------------------- */
 type User = {
@@ -552,20 +553,25 @@ export default function UserProfile() {
     setPosts(originalUser.savedPosts ?? []);
   };
 
+  // Logout - can be updated later or moved to settings overlay
   const handleLogout = async () => {
-    //later, delete necessary items from local or async storage
-
-    //remove JWT
+    // later, delete necessary items from local or async storage
+    try {
+      await GoogleSignin.revokeAccess().catch(() => {});
+      await GoogleSignin.signOut();
+    } catch (_) {
+    }
+  
+    // remove JWT
     await Storage.removeItem("token");
-
+  
     setTimeout(() => {
-      router.push("/"); //index for dev purposes; later should be login
-      setSettingsOpen(false);
+      router.push("/"); // index for dev purposes; later should be login
     }, 0);
-
+  
     console.log("Logged out!");
-
   };
+
 
   /* ----------------------- Login Gate Screens ----------------------- */
   if (!tokenChecked) {

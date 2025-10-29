@@ -1,5 +1,7 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import { useRouter } from "expo-router";
+import { Storage } from "../utils/storage";
 import React, { useEffect } from "react";
 import {
   Modal,
@@ -25,6 +27,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -96,6 +99,28 @@ export default function SettingsOverlay({
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await GoogleSignin.revokeAccess().catch(() => {});
+      await GoogleSignin.signOut();
+    } catch (error) {
+      console.log("Google sign-out failed:", error);
+    }
+
+    try {
+      await Storage.removeItem("token");
+    } catch (error) {
+      console.log("Failed to clear auth token:", error);
+    }
+
+    onLogout?.();
+
+    setTimeout(() => {
+      router.push("/");
+    }, 0);
+  };
 
   /* ---------- Helpers ---------- */
   function SectionHeader({ label }: { label: string }) {
@@ -287,7 +312,7 @@ export default function SettingsOverlay({
                   />
 
                   <SectionHeader label=" " />
-                  <MenuItem label="Log Out" destructive onPress={onLogout} />
+                  <MenuItem label="Log Out" destructive onPress={handleLogout} />
                 </ScrollView>
               </SafeAreaView>
             </Animated.View>
