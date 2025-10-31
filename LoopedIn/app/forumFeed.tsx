@@ -16,12 +16,7 @@ import { useRouter } from "expo-router";
 // FIXME remove the following import once backend is set up
 import mockUser from "./mockData";
 import ForumPostView from "@/components/forumPost";
-
-/*
-Ideas for backend implementation:
-- Display saved posts from most newly saved -> oldest saved posts
-- Display all other posts based on when they were posted
-*/
+import ForumSearchOverlay from "@/components/forumSearchOverlay";
 
 type ForumPost = {
   id: number,
@@ -33,37 +28,32 @@ type ForumPost = {
 };
 
 export default function ForumFeed() {
-  // Constants and functions
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [selectedFilter, setFilter] = useState<string>("All");
-  //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [seeMorePressed, setSeeMorePressed] = useState(false); 
   const [showFooter, setshowFooter] = useState(true);
   const [forumData, setForumData] = useState<ForumPost[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const userData = mockUser;
   const filters = ["All", "Crochet", "Knit"];
 
   useEffect(() => {
-    // FIXME: need to fetch the initial 10 forum posts here
    setForumData(userData.forumPosts.slice(0, 10));
   }, [])
 
   const searchFunctionality = () => {
-    // FIXME: handle searching the forums here
-    console.log("Search pressed");
+    setSearchOpen(true);
   };
 
   const handleFilterPress = () => {
-    //FIXME: handle when user wants to filter forum by tags
     console.log("Tag filter pressed");
   };
 
   const handleSeeMorePress = (origin: string) => {
-    //FIXME: handle when user wants to see all saved posts
     console.log("See more was pressed", origin)
     if (origin === "recent") {
       setSeeMorePressed(true);
@@ -77,21 +67,14 @@ export default function ForumFeed() {
 
   useEffect(() => {
     console.log("Filter is now: ", selectedFilter);
-    // FIXME add filter logic here!
   }, [selectedFilter]);
 
-
-  //changes forum posts from only displaying 10 to an infinite scroll
   useEffect(() => {
-    // FIXME: would need to update this to instead continuously load more data
     if (seeMorePressed) {
       setForumData(userData.forumPosts);
     }
   }, [seeMorePressed])
 
-
-
-  // Styles will go here
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -246,14 +229,11 @@ export default function ForumFeed() {
         </View>
       </View>
     </View>
-
   );
 
-  // Page view
   return (
     <View style={styles.container}>
       <FlatList
-        // will only show 10 posts - user can then select "see more"
         data={forumData}
         renderItem={({ item }) => (
           <View style={{alignItems: "center", marginHorizontal: 20}}>
@@ -276,9 +256,18 @@ export default function ForumFeed() {
           backgroundColor: colors.background,
         }}
       />
+
       <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
         <Feather name="plus" size={28} color={colors.decorativeText} />
       </Pressable>
+
+      {/* ▼ NEW: slide-in search overlay (kept to end so it overlays everything) */}
+      <ForumSearchOverlay
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        forumData={forumData}
+      />
+
       <BottomNavButton />
     </View>
   );
