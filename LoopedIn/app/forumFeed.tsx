@@ -13,7 +13,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import BottomNavButton from "@/components/bottomNavBar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "expo-router";
 // FIXME remove the following import once backend is set up
 import mockUser from "./mockData";
 import ForumPostView from "@/components/forumPost";
@@ -53,6 +54,7 @@ export default function ForumFeed() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [selectedFilter, setFilter] = useState<string>("All");
   //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [forumData, setForumData] = useState<ForumPost[]>([]);
@@ -84,6 +86,10 @@ export default function ForumFeed() {
   const handleSeeMorePress = (origin: string) => {
     //FIXME: handle when user wants to see all saved posts
     console.log("See more was pressed", origin);
+  };
+
+  const handleCreatePost = () => {
+    router.push("/newforumpost");
   };
 
   useEffect(() => {
@@ -281,6 +287,7 @@ export default function ForumFeed() {
       flexDirection: "column",
       backgroundColor: colors.background,
       justifyContent: "center",
+      position: "relative",
     },
     searchBar: {
       flexDirection: "row",
@@ -339,6 +346,22 @@ export default function ForumFeed() {
     savedPostsHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
+    },
+    floatingButton: {
+      position: "absolute",
+      right: 20,
+      bottom: insets.bottom + 90,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.decorativeBackground,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 5,
     },
   });
 
@@ -481,6 +504,9 @@ export default function ForumFeed() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
           }
         />
+        <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
+          <Feather name="plus" size={28} color={colors.decorativeText} />
+        </Pressable>
         <BottomNavButton />
       </View>
     </GestureHandlerRootView>
