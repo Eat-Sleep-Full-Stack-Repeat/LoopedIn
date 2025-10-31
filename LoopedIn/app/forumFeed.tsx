@@ -56,6 +56,7 @@ export default function ForumFeed() {
   const [selectedFilter, setFilter] = useState<string>("All");
   //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [forumData, setForumData] = useState<ForumPost[]>([]);
+  const [savedForumData, setSavedForumData] = useState<ForumPost[]>([]);
   const loadingMore = useRef<true | false>(false);
   const hasMore = useRef(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,6 +73,7 @@ export default function ForumFeed() {
 
   useEffect(() => {
     fetchData();
+    fetchSavedData();
   }, []);
 
   const searchFunctionality = () => {
@@ -105,22 +107,28 @@ export default function ForumFeed() {
       return 
     } else {
       console.log("Going to refresh")
-      setRefreshing(true);
       lastPostID.current = null;
       lastTimeStamp.current = null;
       hasMore.current = true;
       setForumData([]);
-      // setting a quick timeout to prevent race conditions (need to empty data first)
-      setTimeout(() => {
-        try {
+      setSavedForumData([]);
+      setRefreshing(true);
+    }
+  }
+
+  // need to use useEffect to ensure previous data is flushed before fetching new data
+  useEffect(() => {
+    if (refreshing) {
+      try {
         fetchData();
+        fetchSavedData();
       } catch (e) {
         console.log("error when refreshing data", e);
       } finally {
         setRefreshing(false);
-      }}, 0)
     }
-  }
+    }
+}, [refreshing])
 
   const fetchData = async () => {
     const token = await Storage.getItem("token");
@@ -212,6 +220,58 @@ export default function ForumFeed() {
       loadingMore.current = false;
     }
   };
+
+  const fetchSavedData = async () => {
+    const token = await Storage.getItem("token");
+
+    try {
+      let craftURL = ``;
+      craftFilter.forEach(element => {
+        let tempElement = element.replace(/"/g, '');
+        craftURL = craftURL + `&craft[]=${tempElement}`
+      });
+
+      console.log('Passing back this craft variables: ', craftURL);
+
+      const res = await fetch(
+        `${API_URL}/api/forum/get-saved-forums?limit=${limit}${craftURL}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        alert("Error when fetching new forum posts");
+        router.replace("/");
+        return;
+      }
+
+      const responseData = await res.json();
+
+      // update with the new feed
+      let tempArray: ForumPost[] = responseData.newFeed.map(
+        (post: BackendPost) => ({
+          id: post.fld_post_pk,
+          profilePic: post.fld_profile_pic,
+          title: post.fld_header,
+          username: post.fld_username,
+          content: post.fld_body,
+          datePosted: post.fld_timestamp,
+        })
+      );
+
+      setSavedForumData(tempArray);
+
+    } catch (e) {
+      console.log("error when fetching saved posts");
+    }
+
+  }
 
   // Styles will go here
   const styles = StyleSheet.create({
@@ -339,7 +399,7 @@ export default function ForumFeed() {
         </View>
       </View>
       <FlatList
-        data={[]}
+        data={savedForumData}
         horizontal={true}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => <ForumPostView postInfo={item} />}
@@ -347,7 +407,20 @@ export default function ForumFeed() {
           gap: 15,
           marginBottom: 20,
           paddingHorizontal: 15,
+          flexGrow: 1
         }}
+        ListEmptyComponent={() => {
+          if (loadingMore.current) {
+            return <ActivityIndicator size="small" color={colors.text} style={{flexGrow: 1, alignItems: "center", justifyContent: "center"}}/>
+          } else {
+            return (
+              <View style={{paddingVertical: 40, justifyContent: "center", alignItems: "center", marginLeft: 30}}>
+                <Text style={{color: colors.settingsText, textAlign: "center", fontWeight: "bold"}}> No saved posts </Text>
+              </View>
+            )
+          }
+        }}
+        style={{flexGrow: 1}}
       />
 
       {/* recent posts header - content is in flatlist below */}
@@ -385,7 +458,11 @@ export default function ForumFeed() {
             if (loadingMore.current) {
               return <ActivityIndicator size="small" color={colors.text}/>
             } else {
-              <Text style={{color: colors.text}}> No Posts! </Text>;
+              return (
+                <View style={{paddingVertical: 40, marginLeft: 50}}>
+                  <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Recent Posts </Text>
+                </View>
+              )
             }
           }}
           ListFooterComponent={() => {

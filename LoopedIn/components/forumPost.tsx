@@ -42,6 +42,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       fontSize: 14,
       fontWeight: "bold",
       color: colors.text,
+      flexShrink: 1, 
     },
     topForumPost: {
       flexDirection: "row",
@@ -92,7 +93,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
           </View>
           )}
           
-          <View>
+          <View style={{ flexShrink: 1, maxWidth: '85%'}}>
             <Text
               style={styles.forumTitle}
               numberOfLines={1}
