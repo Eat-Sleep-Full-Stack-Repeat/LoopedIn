@@ -11,6 +11,7 @@ type ForumPost = {
   username: string;
   content: string;
   datePosted: string;
+  profilePic: string | null;
 };
 
 type User = {
@@ -19,7 +20,7 @@ type User = {
   numFriends: number;
   userBio: string;
   tags: Tag[];
-  profilePic: ImageSourcePropType;
+  profilePic: string | null;
   posts: ImageSourcePropType[];
   savedPosts: ImageSourcePropType[];
   savedForums: ForumPost[];
@@ -52,6 +53,7 @@ const mockUser: User = {
       content:
         "test post #1 a lot of data here to test the ellipsize thing hidfhsifhdshfiohesihfioehsifhsiehifhsdi  fesihfidshiof  fhisdh fodsh o",
       datePosted: "2004, 6, 13",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '2',
@@ -59,6 +61,7 @@ const mockUser: User = {
       username: "user #2",
       content: "test post #2",
       datePosted: "2010, 1, 20",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '3',
@@ -66,6 +69,7 @@ const mockUser: User = {
       username: "user #3",
       content: "test post #3",
       datePosted: "2025, 3, 5",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '4',
@@ -73,6 +77,7 @@ const mockUser: User = {
       username: "user #4",
       content: "test post #4",
       datePosted: "1991, 12, 25",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
   ],
   forumPosts: [
@@ -83,6 +88,7 @@ const mockUser: User = {
       content:
         "test post #1 a lot of data here to test the ellipsize thing hidfhsifhdshfiohesihfioehsifhsiehifhsdi  fesihfidshiof  fhisdh fodsh o",
       datePosted: "2004, 6, 13",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '2',
@@ -90,6 +96,7 @@ const mockUser: User = {
       username: "user #2",
       content: "test post #2",
       datePosted: "2010, 1, 20",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '3',
@@ -97,6 +104,7 @@ const mockUser: User = {
       username: "user #3",
       content: "test post #3",
       datePosted: "2025, 3, 5",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '4',
@@ -104,6 +112,7 @@ const mockUser: User = {
       username: "user #4",
       content: "test post #4",
       datePosted: "1991, 12, 25",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '5',
@@ -112,6 +121,7 @@ const mockUser: User = {
       content:
         "test post #1 a lot of data here to test the ellipsize thing hidfhsifhdshfiohesihfioehsifhsiehifhsdi  fesihfidshiof  fhisdh fodsh o",
       datePosted: "2004, 6, 13",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '6',
@@ -119,6 +129,7 @@ const mockUser: User = {
       username: "user #2",
       content: "test post #2",
       datePosted: "2010, 1, 20",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '7',
@@ -126,6 +137,7 @@ const mockUser: User = {
       username: "user #3",
       content: "test post #3",
       datePosted: "2025, 3, 5",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '8',
@@ -133,6 +145,7 @@ const mockUser: User = {
       username: "user #4",
       content: "test post #4",
       datePosted: "1991, 12, 25",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '9',
@@ -141,6 +154,7 @@ const mockUser: User = {
       content:
         "test post #1 a lot of data here to test the ellipsize thing hidfhsifhdshfiohesihfioehsifhsiehifhsdi  fesihfidshiof  fhisdh fodsh o",
       datePosted: "2004, 6, 13",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '10',
@@ -148,6 +162,7 @@ const mockUser: User = {
       username: "user #2",
       content: "test post #2",
       datePosted: "2010, 1, 20",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '11',
@@ -155,6 +170,7 @@ const mockUser: User = {
       username: "user #3",
       content: "test post #3",
       datePosted: "2025, 3, 5",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
     {
       id: '12',
@@ -162,6 +178,7 @@ const mockUser: User = {
       username: "user #4",
       content: "test post #4",
       datePosted: "1991, 12, 25",
+      profilePic: require("@/assets/images/icons8-cat-profile-100.png"),
     },
   ],
 };

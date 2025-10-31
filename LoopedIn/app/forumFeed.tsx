@@ -8,6 +8,7 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -30,7 +31,7 @@ Ideas for backend implementation:
 type ForumPost = {
   id: string;
   title: string;
-  profilePic: Image;
+  profilePic: string | null;
   username: string;
   content: string;
   postImages: Image;
@@ -40,7 +41,7 @@ type ForumPost = {
 type BackendPost = {
   fld_post_pk: string;
   fld_header: string;
-  fld_profile_pic: Image;
+  fld_profile_pic: string | null;
   fld_username: string;
   fld_body: string;
   fld_pic: Image;
@@ -56,7 +57,7 @@ export default function ForumFeed() {
   //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [forumData, setForumData] = useState<ForumPost[]>([]);
   const loadingMore = useRef<true | false>(false);
-  const [hasMore, setHasMore] = useState(true);
+  const hasMore = useRef(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const userData = mockUser;
@@ -65,6 +66,9 @@ export default function ForumFeed() {
   const limit = 10;
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
+
+  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit"]);
+
 
   useEffect(() => {
     fetchData();
@@ -82,8 +86,18 @@ export default function ForumFeed() {
 
   useEffect(() => {
     console.log("Filter is now: ", selectedFilter);
-    // FIXME add filter logic here!
+    if (selectedFilter === "All") { // pass all craft filters to backend
+      setCraftFilter(["Crochet", "Knit"]);
+    } else { //pass specific craft to backend
+      setCraftFilter([selectedFilter]);
+    }
   }, [selectedFilter]);
+
+  // originally had this in the above use effect but a race condition caused it to show a white screen sometimes
+  // This makes sure the craftFilter is fully updated before fetching the new data
+  useEffect(() => {
+    handleRefresh();
+  }, [craftFilter])
 
   const handleRefresh = async() => {
     console.log("in handlerefresh functionality");
@@ -94,6 +108,7 @@ export default function ForumFeed() {
       setRefreshing(true);
       lastPostID.current = null;
       lastTimeStamp.current = null;
+      hasMore.current = true;
       setForumData([]);
       // setting a quick timeout to prevent race conditions (need to empty data first)
       setTimeout(() => {
@@ -109,7 +124,7 @@ export default function ForumFeed() {
 
   const fetchData = async () => {
     const token = await Storage.getItem("token");
-    if (loadingMore.current || !hasMore) {
+    if (loadingMore.current || !hasMore.current) {
       //if already loading more data or there is no more data in database then return
       return;
     }
@@ -126,10 +141,18 @@ export default function ForumFeed() {
         ? `&postID=${lastPostID.current}`
         : "";
 
+      let craftURL = ``;
+      craftFilter.forEach(element => {
+        let tempElement = element.replace(/"/g, '');
+        craftURL = craftURL + `&craft[]=${tempElement}`
+      });
+
+
       console.log("The include before variable is: ", includeBefore);
+      console.log('Passing back this craft variables: ', craftURL);
 
       const res = await fetch(
-        `${API_URL}/api/forum/get-forums?limit=${limit}${includeBefore}${includePostID}`,
+        `${API_URL}/api/forum/get-forums?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
         {
           method: "GET",
           headers: {
@@ -165,6 +188,7 @@ export default function ForumFeed() {
       console.log("The post ids returned before filtering: \n")
       tempArray.forEach((item) => {
         console.log(item.id)
+        console.log("The URL in each item is: ", item.profilePic)
       })
 
       //double check the returned posts to make sure no duplicates are put into forumData
@@ -175,7 +199,7 @@ export default function ForumFeed() {
       console.log("Going to add this many items to the forums array: ", filteredArray.length);
 
       setForumData((prev) => [...prev, ...filteredArray]);
-      setHasMore(responseData.hasMore);
+      hasMore.current = (responseData.hasMore);
       console.log("The last item in the array is: ", tempArray[tempArray.length - 1])
       lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
       console.log("Current timestamp is: ", lastTimeStamp.current);
@@ -315,7 +339,7 @@ export default function ForumFeed() {
         </View>
       </View>
       <FlatList
-        data={userData.savedForums.slice(0, 10)}
+        data={[]}
         horizontal={true}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => <ForumPostView postInfo={item} />}
@@ -359,21 +383,19 @@ export default function ForumFeed() {
           onEndReachedThreshold={0.5}
           ListEmptyComponent={() => {
             if (loadingMore.current) {
-              return <ActivityIndicator />;
+              return <ActivityIndicator size="small" color={colors.text}/>
             } else {
-              <Text> No Posts! </Text>;
+              <Text style={{color: colors.text}}> No Posts! </Text>;
             }
           }}
           ListFooterComponent={() => {
             if (forumData.length > 0) {
-              if (!hasMore) {
-                return <Text> No More Data To Load </Text>;
-              } else if (loadingMore.current) {
-                return (
-                  <ActivityIndicator size="small" color={colors.topBackground} />
-                );
+              if (!hasMore.current) {
+                return <Text style={{ color: colors.text }}> No More Data To Load </Text>;
               } else {
-                return <Text> IDK why this is not working {":("} </Text>;
+                return (
+                  <ActivityIndicator size="small" color={colors.text} />
+                );
               }
             }
           }}

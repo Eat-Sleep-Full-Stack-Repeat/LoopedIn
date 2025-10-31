@@ -10,6 +10,7 @@ type ForumPost = {
   username: string;
   content: string;
   datePosted: string;
+  profilePic: string | null;
 };
 
 type ForumPostViewProps = {
@@ -19,6 +20,14 @@ type ForumPostViewProps = {
 const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
+
+  let avatarSize;
+
+  if (Dimensions.get("window").width >= 768) {
+    avatarSize = 120;
+  } else {
+    avatarSize = 100;
+  }
 
   const styles = StyleSheet.create({
     forumPost: {
@@ -72,9 +81,17 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
         }}
       >
         <View style={styles.topForumPost}>
-          <Image
+          {postInfo.profilePic ? (
+            <Image source={{ uri: postInfo.profilePic}} style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2, backgroundColor: colors.boxBackground }}/>
+          ):(
+          <View>
+            <Image
             source={require("@/assets/images/icons8-cat-profile-50.png")}
+            style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2 }}
           />
+          </View>
+          )}
+          
           <View>
             <Text
               style={styles.forumTitle}
