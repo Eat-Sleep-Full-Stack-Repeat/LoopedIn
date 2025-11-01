@@ -7,15 +7,21 @@ import {
   FlatList,
   Pressable,
   Image,
+  ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import BottomNavButton from "@/components/bottomNavBar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "expo-router";
 // FIXME remove the following import once backend is set up
 import mockUser from "./mockData";
 import ForumPostView from "@/components/forumPost";
+import API_URL from "@/utils/config";
+import { Storage } from "../utils/storage";
+import { router } from "expo-router";
+import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
 
 /*
 Ideas for backend implementation:
@@ -24,12 +30,23 @@ Ideas for backend implementation:
 */
 
 type ForumPost = {
-  id: number,
+  id: string;
   title: string;
+  profilePic: string | null;
   username: string;
   content: string;
-  filterTags: string[];
-  datePosted: Date;
+  postImages: Image;
+  datePosted: string;
+};
+
+type BackendPost = {
+  fld_post_pk: string;
+  fld_header: string;
+  fld_profile_pic: string | null;
+  fld_username: string;
+  fld_body: string;
+  fld_pic: Image;
+  fld_timestamp: string;
 };
 
 export default function ForumFeed() {
@@ -40,36 +57,36 @@ export default function ForumFeed() {
   const router = useRouter();
   const [selectedFilter, setFilter] = useState<string>("All");
   //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
-  const [seeMorePressed, setSeeMorePressed] = useState(false); 
-  const [showFooter, setshowFooter] = useState(true);
   const [forumData, setForumData] = useState<ForumPost[]>([]);
+  const [savedForumData, setSavedForumData] = useState<ForumPost[]>([]);
+  const loadingMore = useRef<true | false>(false);
+  const hasMore = useRef(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const userData = mockUser;
   const filters = ["All", "Crochet", "Knit"];
 
+  const limit = 10;
+  const lastTimeStamp = useRef<string | null>(null);
+  const lastPostID = useRef<number | null>(null);
+
+  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit"]);
+
+
   useEffect(() => {
-    // FIXME: need to fetch the initial 10 forum posts here
-   setForumData(userData.forumPosts.slice(0, 10));
-  }, [])
+    fetchData();
+    fetchSavedData();
+  }, []);
 
   const searchFunctionality = () => {
     // FIXME: handle searching the forums here
     console.log("Search pressed");
   };
 
-  const handleFilterPress = () => {
-    //FIXME: handle when user wants to filter forum by tags
-    console.log("Tag filter pressed");
-  };
-
   const handleSeeMorePress = (origin: string) => {
     //FIXME: handle when user wants to see all saved posts
-    console.log("See more was pressed", origin)
-    if (origin === "recent") {
-      setSeeMorePressed(true);
-      setshowFooter(false);
-    }
-  }
+    console.log("See more was pressed", origin);
+  };
 
   const handleCreatePost = () => {
     router.push("/newforumpost");
@@ -77,19 +94,190 @@ export default function ForumFeed() {
 
   useEffect(() => {
     console.log("Filter is now: ", selectedFilter);
-    // FIXME add filter logic here!
+    if (selectedFilter === "All") { // pass all craft filters to backend
+      setCraftFilter(["Crochet", "Knit"]);
+    } else { //pass specific craft to backend
+      setCraftFilter([selectedFilter]);
+    }
   }, [selectedFilter]);
 
-
-  //changes forum posts from only displaying 10 to an infinite scroll
+  // originally had this in the above use effect but a race condition caused it to show a white screen sometimes
+  // This makes sure the craftFilter is fully updated before fetching the new data
   useEffect(() => {
-    // FIXME: would need to update this to instead continuously load more data
-    if (seeMorePressed) {
-      setForumData(userData.forumPosts);
+    handleRefresh();
+  }, [craftFilter])
+
+  const handleRefresh = async() => {
+    console.log("in handlerefresh functionality");
+    if (refreshing) {
+      return 
+    } else {
+      console.log("Going to refresh")
+      lastPostID.current = null;
+      lastTimeStamp.current = null;
+      hasMore.current = true;
+      setForumData([]);
+      setSavedForumData([]);
+      setRefreshing(true);
     }
-  }, [seeMorePressed])
+  }
+
+  // need to use useEffect to ensure previous data is flushed before fetching new data
+  useEffect(() => {
+    if (refreshing) {
+      try {
+        fetchData();
+        fetchSavedData();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
+    }
+    }
+}, [refreshing])
+
+  const fetchData = async () => {
+    const token = await Storage.getItem("token");
+    if (loadingMore.current || !hasMore.current) {
+      //if already loading more data or there is no more data in database then return
+      return;
+    }
+
+    loadingMore.current = true;
+
+    try {
+      // need to check if there is a stored timeStamp -> If not, it will be undefined
+      const includeBefore = lastTimeStamp.current
+        ? `&before=${lastTimeStamp.current}`
+        : "";
+
+      const includePostID = lastPostID.current
+        ? `&postID=${lastPostID.current}`
+        : "";
+
+      let craftURL = ``;
+      craftFilter.forEach(element => {
+        let tempElement = element.replace(/"/g, '');
+        craftURL = craftURL + `&craft[]=${tempElement}`
+      });
 
 
+      console.log("The include before variable is: ", includeBefore);
+      console.log('Passing back this craft variables: ', craftURL);
+
+      const res = await fetch(
+        `${API_URL}/api/forum/get-forums?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      console.log("fetched forum data");
+
+      if (!res.ok) {
+        alert("Error when fetching new forum posts");
+        router.replace("/");
+        return;
+      }
+
+      const responseData = await res.json();
+
+      // update with the new feed
+      let tempArray: ForumPost[] = responseData.newFeed.map(
+        (post: BackendPost) => ({
+          id: post.fld_post_pk,
+          profilePic: post.fld_profile_pic,
+          title: post.fld_header,
+          username: post.fld_username,
+          content: post.fld_body,
+          datePosted: post.fld_timestamp,
+        })
+      );
+
+      console.log("The post ids returned before filtering: \n")
+      tempArray.forEach((item) => {
+        console.log(item.id)
+        console.log("The URL in each item is: ", item.profilePic)
+      })
+
+      //double check the returned posts to make sure no duplicates are put into forumData
+      let filteredArray: ForumPost[] = tempArray.filter(
+        (post) => !forumData.some((checkPost) => checkPost.id === post.id)
+      );
+
+      console.log("Going to add this many items to the forums array: ", filteredArray.length);
+
+      setForumData((prev) => [...prev, ...filteredArray]);
+      hasMore.current = (responseData.hasMore);
+      console.log("The last item in the array is: ", tempArray[tempArray.length - 1])
+      lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
+      console.log("Current timestamp is: ", lastTimeStamp.current);
+      lastPostID.current = Number(tempArray[tempArray.length - 1].id);
+      console.log("Current post ID is: ", lastPostID);
+    } catch (e) {
+      console.log("Error when trying to fetch forum data:", e);
+    } finally {
+      // even if fetching data fails, we will update loading more
+      loadingMore.current = false;
+    }
+  };
+
+  const fetchSavedData = async () => {
+    const token = await Storage.getItem("token");
+
+    try {
+      let craftURL = ``;
+      craftFilter.forEach(element => {
+        let tempElement = element.replace(/"/g, '');
+        craftURL = craftURL + `&craft[]=${tempElement}`
+      });
+
+      console.log('Passing back this craft variables: ', craftURL);
+
+      const res = await fetch(
+        `${API_URL}/api/forum/get-saved-forums?limit=${limit}${craftURL}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        alert("Error when fetching new forum posts");
+        router.replace("/");
+        return;
+      }
+
+      const responseData = await res.json();
+
+      // update with the new feed
+      let tempArray: ForumPost[] = responseData.newFeed.map(
+        (post: BackendPost) => ({
+          id: post.fld_post_pk,
+          profilePic: post.fld_profile_pic,
+          title: post.fld_header,
+          username: post.fld_username,
+          content: post.fld_body,
+          datePosted: post.fld_timestamp,
+        })
+      );
+
+      setSavedForumData(tempArray);
+
+    } catch (e) {
+      console.log("error when fetching saved posts");
+    }
+
+  }
 
   // Styles will go here
   const styles = StyleSheet.create({
@@ -209,7 +397,15 @@ export default function ForumFeed() {
                     : styles.buttonNotPressed,
                 ]}
               >
-                <Text style={[filterOption === selectedFilter ? {color: colors.decorativeText} : {color: colors.text}]}>{filterOption}</Text>
+                <Text
+                  style={[
+                    filterOption === selectedFilter
+                      ? { color: colors.decorativeText }
+                      : { color: colors.text },
+                  ]}
+                >
+                  {filterOption}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -219,67 +415,100 @@ export default function ForumFeed() {
       {/* Saved forum posts */}
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
-            <Text style={styles.refineHeaderText}> Saved Posts </Text>
-            <Pressable onPress={() => handleSeeMorePress("saved")}> 
-                <Text style={{color: colors.text}}>
-                    See More {">"}
-                </Text>
-            </Pressable>
+          <Text style={styles.refineHeaderText}> Saved Posts </Text>
+          <Pressable onPress={() => handleSeeMorePress("saved")}>
+            <Text style={{ color: colors.text }}>See More {">"}</Text>
+          </Pressable>
         </View>
       </View>
-        <FlatList
-          data={userData.savedForums.slice(0, 10)}
-          horizontal={true}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <ForumPostView postInfo={item}/>
-          )}
-          contentContainerStyle={{ gap: 15, marginBottom: 20, paddingHorizontal: 15 }}
-        />
+      <FlatList
+        data={savedForumData}
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        renderItem={({ item }) => <ForumPostView postInfo={item} />}
+        contentContainerStyle={{
+          gap: 15,
+          marginBottom: 20,
+          paddingHorizontal: 15,
+          flexGrow: 1
+        }}
+        ListEmptyComponent={() => {
+          if (loadingMore.current) {
+            return <ActivityIndicator size="small" color={colors.text} style={{flexGrow: 1, alignItems: "center", justifyContent: "center"}}/>
+          } else {
+            return (
+              <View style={{paddingVertical: 40, justifyContent: "center", alignItems: "center", marginLeft: 30}}>
+                <Text style={{color: colors.settingsText, textAlign: "center", fontWeight: "bold"}}> No saved posts </Text>
+              </View>
+            )
+          }
+        }}
+        style={{flexGrow: 1}}
+      />
 
       {/* recent posts header - content is in flatlist below */}
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
-              <Text style={styles.refineHeaderText}>
-                Recent Posts
-              </Text>
+          <Text style={styles.refineHeaderText}>Recent Posts</Text>
         </View>
       </View>
     </View>
-
   );
 
   // Page view
   return (
-    <View style={styles.container}>
-      <FlatList
-        // will only show 10 posts - user can then select "see more"
-        data={forumData}
-        renderItem={({ item }) => (
-          <View style={{alignItems: "center", marginHorizontal: 20}}>
-            <ForumPostView postInfo={item}/>
-          </View>
-        )}
-        ListHeaderComponent={headerView}
-        ItemSeparatorComponent={() => <View style={{height: 15}} />}
-        ListFooterComponent={ showFooter ? (
-        <View>
-          <Pressable onPress={() => handleSeeMorePress("recent")}>
-                <Text style={{color: colors.text}}>
-                  See More {'>'}
-                </Text>
-              </Pressable>
-        </View>) : null}
-        ListFooterComponentStyle={{alignItems: "center", marginTop: 20}}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 100,
-          backgroundColor: colors.background,
-        }}
-      />
-      <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
-        <Feather name="plus" size={28} color={colors.decorativeText} />
-      </Pressable>
-      <BottomNavButton />
-    </View>
+    <GestureHandlerRootView>
+
+      <View style={styles.container}>
+        <FlatList
+          // will only show 10 posts - user can then select "see more"
+          data={forumData}
+          renderItem={({ item }) => (
+            <View style={{ alignItems: "center", marginHorizontal: 20 }}>
+              <ForumPostView postInfo={item} />
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={headerView}
+          ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 100,
+            backgroundColor: colors.background,
+          }}
+          onEndReached={fetchData}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={() => {
+            if (loadingMore.current) {
+              return <ActivityIndicator size="small" color={colors.text}/>
+            } else {
+              return (
+                <View style={{paddingVertical: 40, marginLeft: 50}}>
+                  <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Recent Posts </Text>
+                </View>
+              )
+            }
+          }}
+          ListFooterComponent={() => {
+            if (forumData.length > 0) {
+              if (!hasMore.current) {
+                return <Text style={{ color: colors.text }}> No More Data To Load </Text>;
+              } else {
+                return (
+                  <ActivityIndicator size="small" color={colors.text} />
+                );
+              }
+            }
+          }}
+          ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+          }
+        />
+        <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
+          <Feather name="plus" size={28} color={colors.decorativeText} />
+        </Pressable>
+        <BottomNavButton />
+      </View>
+    </GestureHandlerRootView>
   );
 }

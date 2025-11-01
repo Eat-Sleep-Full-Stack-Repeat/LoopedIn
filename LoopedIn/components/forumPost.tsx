@@ -1,16 +1,16 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { StyleSheet, View, Image, Text, Pressable } from "react-native";
+import { StyleSheet, View, Image, Text, Pressable, Dimensions } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useState } from "react";
 
 type ForumPost = {
-  id: number;
+  id: string;
   title: string;
   username: string;
   content: string;
-  filterTags: string[];
-  datePosted: Date;
+  datePosted: string;
+  profilePic: string | null;
 };
 
 type ForumPostViewProps = {
@@ -21,6 +21,14 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
 
+  let avatarSize;
+
+  if (Dimensions.get("window").width >= 768) {
+    avatarSize = 120;
+  } else {
+    avatarSize = 100;
+  }
+
   const styles = StyleSheet.create({
     forumPost: {
       flexDirection: "column",
@@ -28,12 +36,13 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       paddingVertical: 10,
       backgroundColor: colors.topBackground,
       borderRadius: 15,
-      width: 350,
+      width: Dimensions.get("window").width - 40,
     },
     forumTitle: {
       fontSize: 14,
       fontWeight: "bold",
       color: colors.text,
+      flexShrink: 1, 
     },
     topForumPost: {
       flexDirection: "row",
@@ -73,10 +82,18 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
         }}
       >
         <View style={styles.topForumPost}>
-          <Image
-            source={require("@/assets/images/icons8-cat-profile-50.png")}
-          />
+          {postInfo.profilePic ? (
+            <Image source={{ uri: postInfo.profilePic}} style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2, backgroundColor: colors.boxBackground }}/>
+          ):(
           <View>
+            <Image
+            source={require("@/assets/images/icons8-cat-profile-50.png")}
+            style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2 }}
+          />
+          </View>
+          )}
+          
+          <View style={{ flexShrink: 1, maxWidth: '85%'}}>
             <Text
               style={styles.forumTitle}
               numberOfLines={1}
@@ -103,23 +120,9 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
           {postInfo.content}
         </Text>
       </View>
-      {/* tags underneath the content */}
-      <View style={styles.allTagsContainer}>
-        {postInfo.filterTags.map((tag, index) => (
-          <View key={index} style={styles.individualTag}>
-            <Text
-              style={{ color: colors.decorativeText }}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {tag}
-            </Text>
-          </View>
-        ))}
-      </View>
       <View style={styles.postDate}>
         <Text style={{ color: colors.text }}>
-          {postInfo.datePosted.toDateString()}
+          {new Date(postInfo.datePosted).toDateString()}
         </Text>
       </View>
     </View>
