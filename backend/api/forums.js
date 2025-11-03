@@ -4,7 +4,27 @@ const { pool } = require("../backend_connection");
 
 //jwt-checker before revealing any sensitive info
 const authenticateToken = require("../middleware/authenticate");
-const { getSignedFile } = require("../s3_connection");
+const { getSignedFile, uploadFile } = require("../s3_connection");
+const { generateColor } = require("../functions/color_generator");
+
+const multer = require("multer");
+const path = require("path");
+const crypto = require("crypto");
+
+//-------------------- MULTER SETUP ---------------------------
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Unsupported file type. Use jpg, png, webp, or gif."));
+    }
+    cb(null, true);
+  },
+});
 
 //------------------------ FORUMS -------------------------------
 
@@ -161,5 +181,161 @@ router.get("/get-saved-forums", authenticateToken, async (req, res) => {
     res.status(500).json(e);
   }
 });
+
+
+
+
+//create forum post
+router.post("/forum-post", upload.single("file"), authenticateToken, async (req, res) => {
+  try {
+    console.log(req.body);
+
+    data = JSON.parse(req.body.data);
+
+    //obtain thy variables
+    const { filter, title, content, tags } = data
+
+    console.log(filter, title, content, tags)
+
+    if (typeof filter === undefined || filter.length == 0) {
+      res.status(403).json({message: "filter needs to be filled"});
+      return;
+    }
+
+    //need this for later
+    let tag_ids = [];
+    
+    //dates in UTC
+    const now = new Date();
+    const date = now.toISOString();
+
+    //get ID
+    query = `
+    SELECT fld_tags_pk
+    FROM tags.tbl_tags
+    WHERE fld_tag_name = $1;
+    `
+    const filterID = await pool.query(query, [filter]);
+
+    if (filterID.rowCount < 1) {
+      res.status(404).json({message: "filter tag does not exist"});
+      return;
+    }
+
+    console.log("filter ID: ", filterID.rows[0].fld_tags_pk);
+    tag_ids.push(filterID.rows[0].fld_tags_pk);
+
+
+    //insert new tags (if they don't already exist)
+    for (const tag of tags) {
+      let color = generateColor();
+
+      //we're inserting tags into db & checking if they exist or not
+      query = `
+      INSERT INTO tags.tbl_tags(fld_tag_name, fld_tag_color)
+      VALUES($1, $2)
+      ON CONFLICT ($1) DO NOTHING;
+      `
+      await pool.query(query, [tag, color]);
+
+      //fetch tagID, regardless if it's newly inserted or not
+      query = `
+      SELECT fld_tags_pk
+      FROM tags.tbl_tags
+      WHERE fld_tag_name = $1;
+      `
+      let tagID = await pool.query(query, [tag]);
+      console.log("[forum post creation] fetched tagID: ", tagID);
+      tag_ids.push(tagID);
+    }
+    console.log("inserted tags");
+
+
+    //if image was uploaded -> check because image is optional
+    if (req.file) {
+      console.log("[create forum post]: going the image route");
+
+
+      //upload file & create new post
+      const ext = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+      }[req.file.mimetype] ||
+      path.extname(req.file.originalname || "").replace(/^\./, "") ||
+      "jpg";
+      
+      //S3 variablesss
+      const folderName = "forum_posts";
+      const fileName = `${req.userID.trim()}-${Date.now()}-${crypto.randomBytes(6).toString("hex")}.${ext}`;
+
+      //upload file to S3
+      await uploadFile(req.file.buffer, fileName, folderName, req.file.mimetype);
+      console.log(`[forum post creation] uploaded ${folderName}/${fileName} to S3`);
+
+
+      //create new post
+      query = `
+      INSERT INTO forums.tbl_forum_post (fld_creator, fld_header, fld_body, fld_pic, fld_timestamp)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING fld_post_pk;
+      `
+      const postID = await pool.query(query, [req.userID.trim(), title, content, `${folderName}/${fileName}`, date]);
+
+      //create tag-post relationship
+      query = `
+      INSERT INTO forums.tbl_forum_tag(fld_post, fld_tag)
+      VALUES ($1, $2)
+      ON CONFLICT ($1, $2) DO NOTHING;
+      `
+
+      //insert tags into many to many relationship
+      for (let i = 0; i < tag_ids.length; i++) {
+        await pool.query(query, [postID.rows[0].fld_post_pk, filterID.rows[0].fld_tags_pk]);
+      }
+
+      console.log("successful post creation");
+      res.status(200).json({message: "successful post creation"})
+    }
+
+    else {
+      console.log("[create forum post]: going the non-image route")
+      //create new post
+      query = `
+      INSERT INTO forums.tbl_forum_post (fld_creator, fld_header, fld_body, fld_timestamp)
+      VALUES ($1, $2, $3, $4)
+      RETURNING fld_post_pk;
+      `
+
+      const postID = await pool.query(query, [req.userID.trim(), title, content, date]);
+      console.log("[create forum post]: created post and fetched ID");
+
+      //create tag-post relationship
+
+
+      //insert tags into many to many relationship
+      for (let i = 0; i < tag_ids.length; i++) {
+        query = `
+        INSERT INTO forums.tbl_forum_tag(fld_post, fld_tag)
+        VALUES ($1, $2)
+        ON CONFLICT (fld_post, fld_tag) DO NOTHING;
+        `
+        console.log("POST ID: ", postID.rows[0].fld_post_pk, "TAGS ID:", tag_ids[i]);
+        await pool.query(query, [postID.rows[0].fld_post_pk, tag_ids[i]]);
+      }
+
+
+      console.log("successful post creation");
+      res.status(200).json({message: "successful post creation"})
+    }
+  }
+
+  catch(error) {
+    console.log("Error creating post: ", error)
+    res.status(500).json(error)
+  }
+})
+
 
 module.exports = router;

@@ -16,6 +16,8 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import API_URL from "@/utils/config";
+import { Storage } from "../utils/storage";
 
 type CraftOption = {
   id: string;
@@ -60,13 +62,55 @@ export default function Newformpost() {
     setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     console.log("Create Post pressed", {
       selectedFilter,
       postTitle,
       postContent,
       tags,
     });
+
+    //make body payload variable so i can send it
+    const body_payload = {
+      filter: selectedFilter,
+      title: postTitle,
+      content: postContent,
+      tags: tags
+    }
+
+    //token
+    const token = await Storage.getItem("token");
+
+    //FIXME: add images + send them (if exist) to backend
+    //right now, I just have my payload data
+    let formData = new FormData();
+    formData.append("data", JSON.stringify(body_payload));
+
+    try {
+      const response = await fetch(`${API_URL}/api/forum/forum-post`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: formData
+      });
+
+      if (!response.ok) {
+        console.log("\nnew forum post response:", response);
+        alert("Whomp whomp. Could not create post. Try again later.");
+        router.replace("/forumFeed");
+      }
+
+      console.log("Post created successfully!");
+      router.replace("/forumFeed");
+
+    }
+    catch(error) {
+      console.log("Error creating post: ", error);
+      alert("Could not create forum post. Please try again later.");
+    }
+    
   };
 
   const styles = StyleSheet.create({
@@ -283,7 +327,7 @@ export default function Newformpost() {
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTap="handled"
+        keyboardShouldPersistTaps="handled"
       >
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
