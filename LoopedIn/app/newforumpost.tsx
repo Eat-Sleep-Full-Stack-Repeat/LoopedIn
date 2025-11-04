@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/Styles/colors";
@@ -99,11 +100,20 @@ export default function Newformpost() {
       if (!response.ok) {
         console.log("\nnew forum post response:", response);
         alert("Whomp whomp. Could not create post. Try again later.");
-        router.replace("/forumFeed");
+        return;
       }
 
+      
       console.log("Post created successfully!");
-      router.replace("/forumFeed");
+
+      //so you can see success message. we will need to delete this once we have a page to show the post
+      Alert.alert(
+        "Yippee!",
+        "Post Successfully Created!",
+        [{
+          text: "OK",
+          onPress: () => router.replace("/forumFeed"),
+        },]);
 
     }
     catch(error) {

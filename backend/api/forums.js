@@ -5,6 +5,7 @@ const { pool } = require("../backend_connection");
 //jwt-checker before revealing any sensitive info
 const authenticateToken = require("../middleware/authenticate");
 const { getSignedFile, uploadFile } = require("../s3_connection");
+
 const { generateColor } = require("../functions/color_generator");
 
 const multer = require("multer");
@@ -202,6 +203,11 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
       return;
     }
 
+    if (content.length == 0 || title.length == 0 || content.length > 10000 || title.length > 150) {
+      res.status(403).json({message: "Cannot have empty fields"});
+      return;
+    }
+
     //need this for later
     let tag_ids = [];
     
@@ -228,13 +234,19 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
 
     //insert new tags (if they don't already exist)
     for (const tag of tags) {
+      //no dup tags regardless of what the filter is
+      if (tag.toLowerCase() == "crochet" || tag.toLowerCase() == "knit") {
+            continue;
+      }
+
       let color = generateColor();
+      console.log("color: ", color);
 
       //we're inserting tags into db & checking if they exist or not
       query = `
       INSERT INTO tags.tbl_tags(fld_tag_name, fld_tag_color)
       VALUES($1, $2)
-      ON CONFLICT ($1) DO NOTHING;
+      ON CONFLICT (fld_tag_name) DO NOTHING;
       `
       await pool.query(query, [tag, color]);
 
@@ -245,8 +257,7 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
       WHERE fld_tag_name = $1;
       `
       let tagID = await pool.query(query, [tag]);
-      console.log("[forum post creation] fetched tagID: ", tagID);
-      tag_ids.push(tagID);
+      tag_ids.push(tagID.rows[0].fld_tags_pk);
     }
     console.log("inserted tags");
 
@@ -292,7 +303,8 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
 
       //insert tags into many to many relationship
       for (let i = 0; i < tag_ids.length; i++) {
-        await pool.query(query, [postID.rows[0].fld_post_pk, filterID.rows[0].fld_tags_pk]);
+        console.log("POST ID: ", postID.rows[0].fld_post_pk, "TAGS ID:", tag_ids[i]);
+        await pool.query(query, [postID.rows[0].fld_post_pk, tag_ids[i]]);
       }
 
       console.log("successful post creation");
