@@ -79,6 +79,19 @@ export default function Newformpost() {
       tags: tags
     }
 
+    if (postTitle.length == 0 || postContent.length == 0) {
+      alert("Cannot have empty fields.")
+      return;
+    }
+    if (postTitle.length > 150) {
+      alert("Your forum's title cannot have more than 150 charceters.")
+      return;
+    }
+    if (postContent.length > 10000) {
+      alert("Your forum's body cannot have more than 10,000 charceters.")
+      return;
+    }
+
     //token
     const token = await Storage.getItem("token");
 
@@ -98,7 +111,6 @@ export default function Newformpost() {
       });
 
       if (!response.ok) {
-        console.log("\nnew forum post response:", response);
         alert("Whomp whomp. Could not create post. Try again later.");
         return;
       }
