@@ -22,6 +22,8 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { router } from "expo-router";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
+import ForumSearchOverlay from "@/components/forumSearchOverlay";
+
 
 /*
 Ideas for backend implementation:
@@ -50,7 +52,6 @@ type BackendPost = {
 };
 
 export default function ForumFeed() {
-  // Constants and functions
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
@@ -62,6 +63,7 @@ export default function ForumFeed() {
   const loadingMore = useRef<true | false>(false);
   const hasMore = useRef(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const userData = mockUser;
   const filters = ["All", "Crochet", "Knit"];
@@ -79,8 +81,7 @@ export default function ForumFeed() {
   }, []);
 
   const searchFunctionality = () => {
-    // FIXME: handle searching the forums here
-    console.log("Search pressed");
+    setSearchOpen(true);
   };
 
   const handleSeeMorePress = (origin: string) => {
@@ -455,14 +456,12 @@ export default function ForumFeed() {
     </View>
   );
 
-  // Page view
   return (
     <GestureHandlerRootView>
 
       <View style={styles.container}>
         <FlatList
-          // will only show 10 posts - user can then select "see more"
-          data={forumData}
+            data={forumData}
           renderItem={({ item }) => (
             <View style={{ alignItems: "center", marginHorizontal: 20 }}>
               <ForumPostView postInfo={item} />
@@ -504,10 +503,19 @@ export default function ForumFeed() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
           }
         />
-        <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
+  
+      <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
           <Feather name="plus" size={28} color={colors.decorativeText} />
         </Pressable>
-        <BottomNavButton />
+  
+      {/*slide-in search overlay */}
+      <ForumSearchOverlay
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        forumData={forumData}
+      />
+
+      <BottomNavButton />
       </View>
     </GestureHandlerRootView>
   );
