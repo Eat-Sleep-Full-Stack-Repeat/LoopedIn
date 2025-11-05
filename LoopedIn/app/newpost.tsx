@@ -144,7 +144,7 @@ export default function NewPost() {
       borderWidth: 2,
       borderStyle: "dashed",
       borderColor: colors.decorativeBackground,
-      backgroundColor: colors.boxBackground,
+      backgroundColor: "transparent",
       justifyContent: "center",
       alignItems: "center",
     },
