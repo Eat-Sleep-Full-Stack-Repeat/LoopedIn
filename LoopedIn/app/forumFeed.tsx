@@ -22,6 +22,8 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { router } from "expo-router";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
+import ForumSearchOverlay from "@/components/forumSearchOverlay";
+
 
 /*
 Ideas for backend implementation:
@@ -506,7 +508,7 @@ export default function ForumFeed() {
           <Feather name="plus" size={28} color={colors.decorativeText} />
         </Pressable>
   
-      {/* ▼ NEW: slide-in search overlay (kept to end so it overlays everything) */}
+      {/*slide-in search overlay */}
       <ForumSearchOverlay
         visible={searchOpen}
         onClose={() => setSearchOpen(false)}
