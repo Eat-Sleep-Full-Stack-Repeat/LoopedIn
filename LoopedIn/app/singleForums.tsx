@@ -28,11 +28,20 @@ type Post = {
   username: string;
   date: string;
   body: string;
-  hasImagePlaceholder?: boolean; //Use to show/hide image placeholder, can be reworked later to just check if post has the imageurl populated
+  hasImagePlaceholder?: boolean;
   imageUri?: string | null;
 };
 
 const SCREEN_W = Dimensions.get("window").width;
+
+//cap the max width of the image 
+const POST_IMAGE_MAX_WIDTH = 480;
+
+// hide the reply action on comments at or beyond this depth
+const MAX_REPLY_DEPTH = 4;
+
+// depth at which we start hiding replies behind "See more"
+const HIDE_AFTER_DEPTH = 2;
 
 export default function ForumPostDetail() {
   const { currentTheme } = useTheme();
@@ -53,7 +62,7 @@ export default function ForumPostDetail() {
       date: "Today at 2:34 PM",
       body:
         "A brief snippet of a forum post here. And keep going as long as the person has something to say.\n\nMore text to simulate a longer body for layout.\n\nCool that tab works here!",
-      hasImagePlaceholder: true, // Change to false to test without image!
+      hasImagePlaceholder: true,
       imageUri: null,
     }),
     []
@@ -62,7 +71,7 @@ export default function ForumPostDetail() {
   const comments: Comment[] = useMemo(
     () => [
       {
-        id: "c1", //id scheme is generic, nothing here relys on it so we can change/fix later
+        id: "c1",
         username: "woolwizard",
         date: "3h ago",
         text: "Wow that is so amazing!!",
@@ -104,7 +113,7 @@ export default function ForumPostDetail() {
         username: "knittheory",
         date: "5h ago",
         text:
-          "Here’s a longer comment to show wrapping across multiple lines. Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.",
+          "Here’s a longer comment to show wrapping across multiple lines. Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.",
       },
       {
         id: "c3",
@@ -112,7 +121,7 @@ export default function ForumPostDetail() {
         date: "yesterday",
         text: "Very helpful post, thanks!",
         children: [
-             {
+          {
             id: "c3-1",
             username: "knitknight",
             date: "2h ago",
@@ -126,25 +135,22 @@ export default function ForumPostDetail() {
                 children: [],
               },
               {
-                  
-                    id: "c3-2-1",
-                    username: "weavewave",
-                    date: "45m ago",
-                    text: "Following for updates!",
-                    children: [
-                      {
-                        id: "c3-1-1-1-1",
-                        username: "fiberfox",
-                        date: "20m ago",
-                        text: "Same here—looks great!",
-                      },
-                    ],
-                  
-                
+                id: "c3-2-1",
+                username: "weavewave",
+                date: "45m ago",
+                text: "Following for updates!",
+                children: [
+                  {
+                    id: "c3-1-1-1-1",
+                    username: "fiberfox",
+                    date: "20m ago",
+                    text: "Same here—looks great!",
+                  },
+                ],
               },
             ],
           },
-        ]
+        ],
       },
     ],
     []
@@ -196,13 +202,14 @@ export default function ForumPostDetail() {
     postUser: { color: colors.text, marginRight: 8, fontWeight: "600" },
     postDate: { color: colors.text, fontSize: 12 },
     postBody: { color: colors.text, marginTop: 8, lineHeight: 20 },
+
     imagePlaceholder: {
-      width: SCREEN_W - 8 * 2 - 16 * 2,
-      height: (SCREEN_W - 8 * 2 - 16 * 2) * 0.65,
       borderRadius: 12,
       backgroundColor: colors.boxBackground,
       marginTop: 14,
+      alignSelf: "center",
     },
+
     actionRow: { flexDirection: "row", gap: 14, marginTop: 14, alignItems: "center" },
     actionBtn: {
       flexDirection: "row",
@@ -274,53 +281,79 @@ export default function ForumPostDetail() {
     divider: { height: 10 },
   });
 
-  const PostCard = () => (
-    <View style={styles.postCard}>
-      <View style={styles.postHeaderRow}>
-        <View style={styles.avatarCircle} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.postTitle}>{post.title}</Text>
-          <View style={styles.postUserRow}>
-            <Text style={styles.postUser}>{post.username}</Text>
-            <Text style={styles.postDate}>{post.date}</Text>
+  const PostCard = () => {
+    const marginX = 8 + 16; 
+    const naturalWidth = SCREEN_W - marginX * 2;
+    const w = Math.min(naturalWidth, POST_IMAGE_MAX_WIDTH);
+    const h = w * 0.65;
+
+    return (
+      <View style={styles.postCard}>
+        <View style={styles.postHeaderRow}>
+          <View style={styles.avatarCircle} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.postTitle}>{post.title}</Text>
+            <View style={styles.postUserRow}>
+              <Text style={styles.postUser}>{post.username}</Text>
+              <Text style={styles.postDate}>{post.date}</Text>
+            </View>
           </View>
         </View>
+
+        <Text style={styles.postBody}>{post.body}</Text>
+
+        {post.imageUri ? (
+          <Image
+            source={{ uri: post.imageUri }}
+            style={[styles.imagePlaceholder, { width: w, height: h }]}
+            resizeMode="cover"
+          />
+        ) : post.hasImagePlaceholder ? (
+          <View style={[styles.imagePlaceholder, { width: w, height: h }]} />
+        ) : null}
+
+        <View style={styles.actionRow}>
+          <Pressable style={styles.actionBtn}>
+            <Feather name="heart" size={18} color={colors.text} />
+            <Text style={styles.actionText}>Like</Text>
+          </Pressable>
+          <Pressable style={styles.actionBtn}>
+            <Feather name="bookmark" size={18} color={colors.text} />
+            <Text style={styles.actionText}>Save</Text>
+          </Pressable>
+          <Pressable style={styles.actionBtn}>
+            <Feather name="message-circle" size={18} color={colors.text} />
+            <Text style={styles.actionText}>Reply</Text>
+          </Pressable>
+        </View>
       </View>
+    );
+  };
 
-      <Text style={styles.postBody}>{post.body}</Text>
+  const bubbleLeftForDepth = (depth: number) => 10 + depth * 12;
 
-      {post.imageUri ? (
-        <Image source={{ uri: post.imageUri }} style={styles.imagePlaceholder} resizeMode="cover" />
-      ) : post.hasImagePlaceholder ? (
-        <View style={styles.imagePlaceholder} />
-      ) : null}
-
-      <View style={styles.actionRow}>
-        <Pressable style={styles.actionBtn}>
-          <Feather name="heart" size={18} color={colors.text} />
-          <Text style={styles.actionText}>Like</Text>
-        </Pressable>
-        <Pressable style={styles.actionBtn}>
-          <Feather name="bookmark" size={18} color={colors.text} />
-          <Text style={styles.actionText}>Save</Text>
-        </Pressable>
-        <Pressable style={styles.actionBtn}>
-          <Feather name="message-circle" size={18} color={colors.text} />
-          <Text style={styles.actionText}>Reply</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-
-  const bubbleLeftForDepth = (depth: number) =>
-    10 + depth * 12;
-
-  const renderCommentBranch = (node: Comment, depth: number): React.ReactNode => { //The 3's here represent the max comment chains before prompting "see more"
+  const renderCommentBranch = (
+    node: Comment,
+    depth: number,
+    ancestorExpanded: boolean = false
+  ): React.ReactNode => {
     const children = node.children || [];
-    const hasDeepChildren = depth >= 3 && children.length > 0;
-    const isExpanded = !!expanded[node.id];
+
+    const isGateDepth = depth >= HIDE_AFTER_DEPTH;
+    const thisNodeExpanded = !!expanded[node.id];
+
+    // Determine visibility of this node's children
     const showChildren =
-      depth < 3 || (depth >= 3 && isExpanded);
+      !isGateDepth /* above gate => always show */ ||
+      ancestorExpanded /* ancestor gate already opened => show */ ||
+      thisNodeExpanded; /* user opened gate here => show */
+
+    // Show a single "See more replies" at the first gated node in a branch
+    const shouldShowSeeMore =
+      isGateDepth &&
+      children.length > 0 &&
+      !ancestorExpanded &&
+      !thisNodeExpanded;
 
     return (
       <View key={node.id} style={styles.commentWrap}>
@@ -338,38 +371,41 @@ export default function ForumPostDetail() {
           <Text style={styles.commentText}>{node.text}</Text>
 
           <View style={styles.commentActions}>
-            <Pressable style={styles.smallAction}>
-              <Feather name="heart" size={14} color={colors.text} />
-              <Text style={styles.smallIconText}>Like</Text>
-            </Pressable>
-            <Pressable style={styles.smallAction}>
-              <Feather name="message-circle" size={14} color={colors.text} />
-              <Text style={styles.smallIconText}>Reply</Text>
-            </Pressable>
+            {depth < MAX_REPLY_DEPTH && (
+              <Pressable style={styles.smallAction}>
+                <Feather name="message-circle" size={14} color={colors.text} />
+                <Text style={styles.smallIconText}>Reply</Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
         {showChildren &&
-          children.map((child) => renderCommentBranch(child, depth + 1))}
+          children.map((child) =>
+            renderCommentBranch(
+              child,
+              depth + 1,
+              // Once expanded at this node (or an ancestor), descendants should not show their own gates
+              ancestorExpanded || (isGateDepth && thisNodeExpanded)
+            )
+          )}
 
-        {hasDeepChildren && !isExpanded && (
+        {shouldShowSeeMore && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
             style={[styles.seeMoreChip, { marginLeft: bubbleLeftForDepth(depth) }]}
           >
-            <Text style={{ color: colors.text, fontWeight: "600" }}>
-              See more replies
-            </Text>
+            <Text style={{ color: colors.text, fontWeight: "600" }}>See more replies</Text>
           </Pressable>
         )}
-        {hasDeepChildren && isExpanded && (
+
+        
+        {isGateDepth && thisNodeExpanded && !ancestorExpanded && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
             style={[styles.seeMoreChip, { marginLeft: bubbleLeftForDepth(depth) }]}
           >
-            <Text style={{ color: colors.text, fontWeight: "600" }}>
-              Hide replies
-            </Text>
+            <Text style={{ color: colors.text, fontWeight: "600" }}>Hide replies</Text>
           </Pressable>
         )}
       </View>
