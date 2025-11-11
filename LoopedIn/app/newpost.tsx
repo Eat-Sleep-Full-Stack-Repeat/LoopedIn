@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActionSheetIOS,
   Alert,
+  Dimensions,
   Image,
   ImageSourcePropType,
   KeyboardAvoidingView,
@@ -25,6 +26,13 @@ type CraftOption = {
   icon?: ImageSourcePropType;
 };
 
+type PhotoCard = {
+  id: string;
+  altText: string;
+  hasImage: boolean;
+  source?: "camera" | "cameraRoll";
+};
+
 const craftOptions: CraftOption[] = [
   {
     id: "Crochet",
@@ -44,13 +52,25 @@ export default function NewPost() {
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [selectedCraft, setSelectedCraft] = useState<string>("Crochet");
-  const CAPTION_LIMIT = 150;
-  const ALT_TEXT_LIMIT = 10000;
+  const CAPTION_LIMIT = 1000;
+  const PHOTO_LIMIT = 5;
+  const CARD_ALT_TEXT_LIMIT = 100;
+  const CARD_WIDTH = Math.min(Dimensions.get("window").width - 64, 400);
   const [caption, setCaption] = useState<string>("");
-  const [postText, setPostText] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState<string>("");
   const [postVisibility, setPostVisibility] = useState<"public" | "private">("public");
+  const createEmptyPhotoCard = (): PhotoCard => ({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    altText: "",
+    hasImage: false,
+  });
+  const [photoCards, setPhotoCards] = useState<PhotoCard[]>([createEmptyPhotoCard()]);
+  const photoScrollRef = useRef<ScrollView | null>(null);
+  const formScrollRef = useRef<ScrollView | null>(null);
+  const previousPhotoCountRef = useRef<number>(photoCards.length);
+  const [captionSectionY, setCaptionSectionY] = useState(0);
+  const [tagSectionY, setTagSectionY] = useState(0);
 
   const handleAddTag = () => {
     const trimmed = newTag.trim();
@@ -65,7 +85,21 @@ export default function NewPost() {
     setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleUploadPress = () => {
+  const handleUploadPress = (cardId: string) => {
+    const onSuccess = (source: "camera" | "cameraRoll") => {
+      setPhotoCards((prev) =>
+        prev.map((card) =>
+          card.id === cardId
+            ? {
+                ...card,
+                hasImage: true,
+                source,
+              }
+            : card
+        )
+      );
+    };
+
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -75,8 +109,10 @@ export default function NewPost() {
         (buttonIndex) => {
           if (buttonIndex === 1) {
             console.log("Upload from camera roll selected");
+            onSuccess("cameraRoll");
           } else if (buttonIndex === 2) {
             console.log("Camera selected");
+            onSuccess("camera");
           }
         }
       );
@@ -84,11 +120,17 @@ export default function NewPost() {
       Alert.alert("Upload Image", undefined, [
         {
           text: "Upload From Camera Roll",
-          onPress: () => console.log("Upload from camera roll selected"),
+          onPress: () => {
+            console.log("Upload from camera roll selected");
+            onSuccess("cameraRoll");
+          },
         },
         {
           text: "Camera",
-          onPress: () => console.log("Camera selected"),
+          onPress: () => {
+            console.log("Camera selected");
+            onSuccess("camera");
+          },
         },
         {
           text: "Cancel",
@@ -96,6 +138,49 @@ export default function NewPost() {
         },
       ]);
     }
+  };
+
+  const handleAddPhotoCard = () => {
+    setPhotoCards((prev) => {
+      if (prev.length >= PHOTO_LIMIT) {
+        return prev;
+      }
+      return [...prev, createEmptyPhotoCard()];
+    });
+  };
+
+  const handleAltTextChange = (cardId: string, text: string) => {
+    setPhotoCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? { ...card, altText: text.slice(0, CARD_ALT_TEXT_LIMIT) }
+          : card
+      )
+    );
+  };
+
+  const handleRemovePhotoCard = (cardId: string) => {
+    setPhotoCards((prev) => {
+      const filtered = prev.filter((card) => card.id !== cardId);
+      if (filtered.length === 0) {
+        return [createEmptyPhotoCard()];
+      }
+      return filtered;
+    });
+  };
+
+  useEffect(() => {
+    if (photoCards.length > previousPhotoCountRef.current) {
+      photoScrollRef.current?.scrollToEnd({ animated: true });
+    }
+    previousPhotoCountRef.current = photoCards.length;
+  }, [photoCards.length]);
+
+  const scrollToSection = (offset: number) => {
+    formScrollRef.current?.scrollTo({
+      y: Math.max(offset - 40, 0),
+      animated: true,
+    });
   };
 
   const styles = StyleSheet.create({
@@ -135,22 +220,118 @@ export default function NewPost() {
       textAlign: "center",
     },
     uploadContainer: {
-      alignItems: "center",
+      width: "100%",
     },
-    uploadBox: {
-      width: 300,
-      height: 300,
+    photosWrapper: {
+      marginTop: 8,
+      width: "100%",
+    },
+    photoScrollContent: {
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+    },
+    photoCard: {
+      width: CARD_WIDTH,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: colors.topBackground,
+      backgroundColor: colors.boxBackground,
+      padding: 20,
+    },
+    photoCardSpacing: {
+      marginRight: 16,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    removePhotoButton: {
+      width: 32,
+      height: 32,
       borderRadius: 16,
-      borderWidth: 2,
-      borderStyle: "dashed",
-      borderColor: colors.decorativeBackground,
-      backgroundColor: "transparent",
+      borderWidth: 1,
+      borderColor: colors.decorativeText,
       justifyContent: "center",
       alignItems: "center",
+      backgroundColor: `${colors.decorativeBackground}33`,
     },
-    uploadText: {
+    uploadArea: {
+      height: 200,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.decorativeText,
+      borderStyle: "dashed",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 24,
+      gap: 10,
+      marginBottom: 16,
+    },
+    uploadTitle: {
       color: colors.text,
-      fontSize: 30,
+      fontSize: 16,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    uploadSubtitle: {
+      color: `${colors.text}aa`,
+      fontSize: 14,
+      textAlign: "center",
+    },
+    cardAltWrapper: {
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.background,
+    },
+    cardAltInput: {
+      minHeight: 50,
+      color: colors.text,
+      fontSize: 14,
+    },
+    cardCounterText: {
+      color: `${colors.text}99`,
+      fontSize: 12,
+      marginTop: 8,
+      textAlign: "left",
+    },
+    photoHelperText: {
+      marginTop: 16,
+      color: `${colors.text}aa`,
+      fontSize: 14,
+    },
+    addCardRow: {
+      marginTop: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 16,
+    },
+    photoCountText: {
+      color: colors.text,
+      fontWeight: "600",
+    },
+    addPhotoFab: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: colors.decorativeText,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    addPhotoFabDisabled: {
+      opacity: 0.4,
     },
     refineSection: {
       marginTop: 20,
@@ -226,14 +407,15 @@ export default function NewPost() {
       backgroundColor: colors.boxBackground,
       borderRadius: 12,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 30,
       borderWidth: 1,
       borderColor: colors.topBackground,
       color: colors.text,
       fontSize: 16,
     },
-    multilineInput: {
-      minHeight: 100,
+    captionInput: {
+      minHeight: 90,
+      paddingTop: 15,
       textAlignVertical: "top",
     },
     tagSection: {
@@ -321,6 +503,19 @@ export default function NewPost() {
     postOptionTextSelected: {
       color: colors.decorativeText,
     },
+    submitButton: {
+      marginTop: 32,
+      paddingVertical: 16,
+      borderRadius: 20,
+      backgroundColor: colors.decorativeBackground,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    submitButtonText: {
+      color: colors.decorativeText,
+      fontSize: 18,
+      fontWeight: "700",
+    },
   });
 
   return (
@@ -330,6 +525,7 @@ export default function NewPost() {
       keyboardVerticalOffset={insets.top}
     >
       <ScrollView
+        ref={formScrollRef}
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -343,9 +539,84 @@ export default function NewPost() {
         </View>
 
         <View style={styles.uploadContainer}>
-          <Pressable style={styles.uploadBox} onPress={handleUploadPress}>
-            <Text style={styles.uploadText}>Upload an Image</Text>
-          </Pressable>
+          <View style={styles.photosWrapper}>
+            <ScrollView
+              ref={photoScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.photoScrollContent}
+              scrollEnabled={photoCards.length > 1}
+              pagingEnabled
+              decelerationRate="fast"
+              snapToInterval={CARD_WIDTH + 16}
+              snapToAlignment="start"
+            >
+              {photoCards.map((card, index) => (
+                <View
+                  key={card.id}
+                  style={[
+                    styles.photoCard,
+                    index !== photoCards.length - 1 && styles.photoCardSpacing,
+                  ]}
+                >
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>Photo {index + 1}</Text>
+                    <Pressable
+                      style={styles.removePhotoButton}
+                      onPress={() => handleRemovePhotoCard(card.id)}
+                    >
+                      <Feather name="trash-2" size={16} color={colors.decorativeText} />
+                    </Pressable>
+                  </View>
+                  <Pressable style={styles.uploadArea} onPress={() => handleUploadPress(card.id)}>
+                    <Feather name="image" size={40} color={colors.decorativeText} />
+                    <Text style={styles.uploadTitle}>Upload a photo</Text>
+                    <Text style={styles.uploadSubtitle}>
+                      Tap to choose from your library or camera.
+                    </Text>
+                  </Pressable>
+                  <View style={styles.cardAltWrapper}>
+                    <TextInput
+                      value={card.altText}
+                      onChangeText={(text) => handleAltTextChange(card.id, text)}
+                      placeholder="Describe this photo for accessibility (max 100 characters)"
+                      placeholderTextColor={`${colors.decorativeText}cc`}
+                      style={styles.cardAltInput}
+                      multiline
+                      maxLength={CARD_ALT_TEXT_LIMIT}
+                    />
+                    <Text style={styles.cardCounterText}>
+                      {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+          <Text style={styles.photoHelperText}>
+            Add up to 5 cards. Each card holds one photo with its own alt text.
+          </Text>
+          <View style={styles.addCardRow}>
+            <Text style={styles.photoCountText}>
+              {photoCards.length}/{PHOTO_LIMIT}
+            </Text>
+            <Pressable
+              style={[
+                styles.addPhotoFab,
+                photoCards.length >= PHOTO_LIMIT && styles.addPhotoFabDisabled,
+              ]}
+              onPress={handleAddPhotoCard}
+              disabled={photoCards.length >= PHOTO_LIMIT}
+            >
+              <Feather
+                name="plus"
+                size={20}
+                color={
+                  photoCards.length >= PHOTO_LIMIT ? colors.text : colors.decorativeText
+                }
+              />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.refineSection}>
@@ -388,7 +659,10 @@ export default function NewPost() {
           </View>
         </View>
 
-        <View style={styles.formSection}>
+        <View
+          style={styles.formSection}
+          onLayout={(event) => setCaptionSectionY(event.nativeEvent.layout.y)}
+        >
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>Caption</Text>
             <Text style={styles.counterText}>
@@ -400,30 +674,16 @@ export default function NewPost() {
             onChangeText={(text) => setCaption(text.slice(0, CAPTION_LIMIT))}
             placeholder="Add a caption"
             placeholderTextColor={`${colors.text}99`}
-            style={styles.input}
+            style={[styles.input, styles.captionInput]}
             maxLength={CAPTION_LIMIT}
-          />
-        </View>
-
-        <View style={styles.formSection}>
-          <View style={styles.inputHeaderRow}>
-            <Text style={styles.inputLabel}>Alt Text</Text>
-            <Text style={styles.counterText}>
-              {postText.length}/{ALT_TEXT_LIMIT}
-            </Text>
-          </View>
-          <TextInput
-            value={postText}
-            onChangeText={(text) => setPostText(text.slice(0, ALT_TEXT_LIMIT))}
-            placeholder="Describe the image for accessibility..."
-            placeholderTextColor={`${colors.text}99`}
             multiline
-            style={[styles.input, styles.multilineInput]}
-            maxLength={ALT_TEXT_LIMIT}
+            onFocus={() => scrollToSection(captionSectionY)}
           />
         </View>
-
-        <View style={styles.tagSection}>
+        <View
+          style={styles.tagSection}
+          onLayout={(event) => setTagSectionY(event.nativeEvent.layout.y)}
+        >
           <Text style={[styles.inputLabel, { marginBottom: 10 }]}>Tags (Up to 5)</Text>
           <View style={styles.tagList}>
             {tags.map((tag) => (
@@ -439,6 +699,7 @@ export default function NewPost() {
               placeholder="Add a tag"
               placeholderTextColor={`${colors.text}99`}
               style={styles.tagInput}
+              onFocus={() => scrollToSection(tagSectionY)}
             />
             <Pressable
               onPress={handleAddTag}
@@ -511,6 +772,10 @@ export default function NewPost() {
             </Text>
           </Pressable>
         </View>
+
+        <Pressable style={styles.submitButton} onPress={() => console.log("Submit pressed")}>
+          <Text style={styles.submitButtonText}>Submit</Text>
+        </Pressable>
 
         <View style={styles.contentSpacer} />
       </ScrollView>
