@@ -68,9 +68,9 @@ export default function Index() {
         <Text style={{ color: colors.text }}>Following Page</Text>
       </TouchableOpacity>
 
-      {/* ✅ New "My Posts" link */}
+      {/* My Posts page link */}
       <TouchableOpacity
-        onPress={() => router.push("/myposts")}
+        onPress={() => router.push("/myposts" as never)}
         style={{ marginTop: 20 }}
       >
         <Text style={{ color: colors.text }}>My Posts Page</Text>
