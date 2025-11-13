@@ -6,7 +6,7 @@ import {
   Pressable,
   FlatList,
   Image,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -32,16 +32,14 @@ type Post = {
   imageUri?: string | null;
 };
 
-const SCREEN_W = Dimensions.get("window").width;
-
-//cap the max width of the image 
-const POST_IMAGE_MAX_WIDTH = 480;
-
 // hide the reply action on comments at or beyond this depth
 const MAX_REPLY_DEPTH = 4;
 
 // depth at which we start hiding replies behind "See more"
 const HIDE_AFTER_DEPTH = 2;
+
+// cap image width to a fraction of the screen width
+const IMAGE_MAX_FRACTION = 0.7; // 90% of screen width
 
 export default function ForumPostDetail() {
   const { currentTheme } = useTheme();
@@ -49,6 +47,7 @@ export default function ForumPostDetail() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const navigation = useNavigation();
+  const { width: SCREEN_W } = useWindowDimensions();
 
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
@@ -284,7 +283,12 @@ export default function ForumPostDetail() {
   const PostCard = () => {
     const marginX = 8 + 16; 
     const naturalWidth = SCREEN_W - marginX * 2;
-    const w = Math.min(naturalWidth, POST_IMAGE_MAX_WIDTH);
+
+    // max width is a fraction of the dynamic screen width
+    const maxWidth = SCREEN_W * IMAGE_MAX_FRACTION;
+
+    // use whichever is smaller: content width or fractional screen width
+    const w = Math.min(naturalWidth, maxWidth);
     const h = w * 0.65;
 
     return (
@@ -313,10 +317,6 @@ export default function ForumPostDetail() {
         ) : null}
 
         <View style={styles.actionRow}>
-          <Pressable style={styles.actionBtn}>
-            <Feather name="heart" size={18} color={colors.text} />
-            <Text style={styles.actionText}>Like</Text>
-          </Pressable>
           <Pressable style={styles.actionBtn}>
             <Feather name="bookmark" size={18} color={colors.text} />
             <Text style={styles.actionText}>Save</Text>
@@ -399,7 +399,6 @@ export default function ForumPostDetail() {
           </Pressable>
         )}
 
-        
         {isGateDepth && thisNodeExpanded && !ancestorExpanded && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
