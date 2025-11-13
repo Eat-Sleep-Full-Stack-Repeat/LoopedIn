@@ -1,4 +1,10 @@
-import React, { useMemo, useState, useCallback, useLayoutEffect } from "react";
+import React, {
+  useMemo,
+  useState,
+  useCallback,
+  useLayoutEffect,
+  useEffect,
+} from "react";
 import {
   View,
   Text,
@@ -40,6 +46,9 @@ const HIDE_AFTER_DEPTH = 2;
 
 // cap image width to a fraction of the screen width
 const IMAGE_MAX_FRACTION = 0.7; // 90% of screen width
+
+// fallback aspect ratio for placeholder / unknown image size
+const FALLBACK_ASPECT_RATIO = 0.65;
 
 export default function ForumPostDetail() {
   const { currentTheme } = useTheme();
@@ -283,13 +292,41 @@ export default function ForumPostDetail() {
   const PostCard = () => {
     const marginX = 8 + 16; 
     const naturalWidth = SCREEN_W - marginX * 2;
-
-    // max width is a fraction of the dynamic screen width
     const maxWidth = SCREEN_W * IMAGE_MAX_FRACTION;
+    const imageWidth = Math.min(naturalWidth, maxWidth);
 
-    // use whichever is smaller: content width or fractional screen width
-    const w = Math.min(naturalWidth, maxWidth);
-    const h = w * 0.65;
+    // State to hold the original image size 
+    const [intrinsicSize, setIntrinsicSize] = useState<{
+      width: number;
+      height: number;
+    } | null>(null);
+
+    useEffect(() => {
+      if (post.imageUri) {
+        Image.getSize(
+          post.imageUri,
+          (w, h) => {
+            setIntrinsicSize({ width: w, height: h });
+          },
+          () => {
+            // if we fail to get size, just fall back
+            setIntrinsicSize(null);
+          }
+        );
+      } else {
+        setIntrinsicSize(null);
+      }
+    }, [post.imageUri]);
+
+    let imageHeight: number;
+    if (intrinsicSize && intrinsicSize.width > 0) {
+      // keep the aspect ratio (so vertical images are tall, not squashed)
+      const ratio = intrinsicSize.height / intrinsicSize.width;
+      imageHeight = imageWidth * ratio;
+    } else {
+      // if fails to load, use fallback ratio
+      imageHeight = imageWidth * FALLBACK_ASPECT_RATIO;
+    }
 
     return (
       <View style={styles.postCard}>
@@ -309,11 +346,19 @@ export default function ForumPostDetail() {
         {post.imageUri ? (
           <Image
             source={{ uri: post.imageUri }}
-            style={[styles.imagePlaceholder, { width: w, height: h }]}
+            style={[
+              styles.imagePlaceholder,
+              { width: imageWidth, height: imageHeight },
+            ]}
             resizeMode="cover"
           />
         ) : post.hasImagePlaceholder ? (
-          <View style={[styles.imagePlaceholder, { width: w, height: h }]} />
+          <View
+            style={[
+              styles.imagePlaceholder,
+              { width: imageWidth, height: imageHeight },
+            ]}
+          />
         ) : null}
 
         <View style={styles.actionRow}>
@@ -359,7 +404,7 @@ export default function ForumPostDetail() {
       <View key={node.id} style={styles.commentWrap}>
         <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth) }]}>
           <View style={styles.commentHeaderRow}>
-            <View style={styles.commentAvatarInline} />
+            <View className="commentAvatarInline" style={styles.commentAvatarInline} />
             <View style={styles.commentHeaderText}>
               <Text style={styles.commentUser} numberOfLines={1}>
                 {node.username}
@@ -395,7 +440,9 @@ export default function ForumPostDetail() {
             onPress={() => toggleExpanded(node.id)}
             style={[styles.seeMoreChip, { marginLeft: bubbleLeftForDepth(depth) }]}
           >
-            <Text style={{ color: colors.text, fontWeight: "600" }}>See more replies</Text>
+            <Text style={{ color: colors.text, fontWeight: "600" }}>
+              See more replies
+            </Text>
           </Pressable>
         )}
 
@@ -404,7 +451,9 @@ export default function ForumPostDetail() {
             onPress={() => toggleExpanded(node.id)}
             style={[styles.seeMoreChip, { marginLeft: bubbleLeftForDepth(depth) }]}
           >
-            <Text style={{ color: colors.text, fontWeight: "600" }}>Hide replies</Text>
+            <Text style={{ color: colors.text, fontWeight: "600" }}>
+              Hide replies
+            </Text>
           </Pressable>
         )}
       </View>
