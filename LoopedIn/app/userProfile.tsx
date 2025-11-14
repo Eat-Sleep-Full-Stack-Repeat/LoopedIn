@@ -552,6 +552,10 @@ export default function UserProfile() {
     setPosts(originalUser.savedPosts ?? []);
   };
 
+  const handleCreatePost = () => {
+    router.push("/newpost");
+  };
+
   const handleLogout = async () => {
     //later, delete necessary items from local or async storage
 
@@ -687,6 +691,13 @@ export default function UserProfile() {
         keyboardShouldPersistTaps="always"
         removeClippedSubviews={false}
       />
+
+      <Pressable
+        style={[s.floatingButton, { bottom: insets.bottom + 90 }]}
+        onPress={handleCreatePost}
+      >
+        <Feather name="plus" size={28} color={colors.decorativeText} />
+      </Pressable>
 
       <BottomNavButton />
 
@@ -880,4 +891,19 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       alignItems: "center",
     },
     secondaryBtnText: { fontSize: 14, fontWeight: "600", color: colors.text },
+    floatingButton: {
+      position: "absolute",
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.decorativeBackground,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 5,
+    },
   });
