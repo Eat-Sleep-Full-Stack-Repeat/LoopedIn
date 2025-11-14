@@ -62,6 +62,13 @@ export default function Index() {
       </TouchableOpacity>
 
       <TouchableOpacity
+        onPress={() => router.push("/singleForums")}
+        style={{ marginTop: 20 }}
+      >
+        <Text style={{ color: colors.text }}>Single Forums</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         onPress={() => router.push("/following")}
         style={{ marginTop: 20 }}
       >
