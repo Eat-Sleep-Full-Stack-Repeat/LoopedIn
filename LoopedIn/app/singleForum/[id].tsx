@@ -16,15 +16,18 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useRouter, useNavigation } from "expo-router";
+import { useRouter, useNavigation, useLocalSearchParams } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import API_URL from "@/utils/config";
+import { Storage } from "../../utils/storage";
 
 type Comment = {
   id: string;
   username: string;
   date: string;
   text: string;
+  profileuri: string | null;
   children?: Comment[];
 };
 
@@ -32,10 +35,20 @@ type Post = {
   id: string;
   title: string;
   username: string;
-  date: string;
-  body: string;
-  hasImagePlaceholder?: boolean;
-  imageUri?: string | null;
+  dateposted: string;
+  content: string;
+  profileuri: string | null;
+  //hasImagePlaceholder?: boolean;
+  imageuri?: string | null;
+};
+
+type ForumPost = {
+  id: string;
+  title: string;
+  profilePic: string | null;
+  username: string;
+  content: string;
+  datePosted: string;
 };
 
 // hide the reply action on comments at or beyond this depth
@@ -57,112 +70,75 @@ export default function ForumPostDetail() {
   const router = useRouter();
   const navigation = useNavigation();
   const { width: SCREEN_W } = useWindowDimensions();
+  const {id} = useLocalSearchParams();
+  const postID = id as string;
+  const [passedComments, setPassedComments] = useState<Comment[]>([]);
+  const comments: Comment[] = useMemo(() => passedComments, [passedComments]);
+  const [post, setPostInfo] = useState<Post | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
   }, [navigation]);
 
-  const post: Post = useMemo(
-    () => ({
-      id: "p1",
-      title: "Title of this forum post",
-      username: "Username",
-      date: "Today at 2:34 PM",
-      body:
-        "A brief snippet of a forum post here. And keep going as long as the person has something to say.\n\nMore text to simulate a longer body for layout.\n\nCool that tab works here!",
-      hasImagePlaceholder: true,
-      imageUri: null,
-    }),
-    []
-  );
+  
 
-  const comments: Comment[] = useMemo(
-    () => [
-      {
-        id: "c1",
-        username: "woolwizard",
-        date: "3h ago",
-        text: "Wow that is so amazing!!",
-        children: [
-          {
-            id: "c1-1",
-            username: "knitknight",
-            date: "2h ago",
-            text: "Agreed! Love the texture.",
-            children: [
-              {
-                id: "c1-1-1",
-                username: "crochetcat",
-                date: "1h ago",
-                text: "Pattern link please?",
-                children: [
-                  {
-                    id: "c1-1-1-1",
-                    username: "weavewave",
-                    date: "45m ago",
-                    text: "Following for updates!",
-                    children: [
-                      {
-                        id: "c1-1-1-1-1",
-                        username: "fiberfox",
-                        date: "20m ago",
-                        text: "Same here—looks great!",
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
+  useEffect(() => {
+    fetchPostInfo();
+    fetchComments();
+  }, [postID])
+
+  const fetchPostInfo = async () => {
+    const token = await Storage.getItem("token");
+    try {
+      const res = await fetch(
+        `${API_URL}/api/forum/get-single-post?id=${postID}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        ],
-      },
-      {
-        id: "c2",
-        username: "knittheory",
-        date: "5h ago",
-        text:
-          "Here’s a longer comment to show wrapping across multiple lines. Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.",
-      },
-      {
-        id: "c3",
-        username: "weavewave",
-        date: "yesterday",
-        text: "Very helpful post, thanks!",
-        children: [
-          {
-            id: "c3-1",
-            username: "knitknight",
-            date: "2h ago",
-            text: "Agreed! Love the texture.",
-            children: [
-              {
-                id: "c3-1-1",
-                username: "crochetcat",
-                date: "1h ago",
-                text: "Pattern link please?",
-                children: [],
-              },
-              {
-                id: "c3-2-1",
-                username: "weavewave",
-                date: "45m ago",
-                text: "Following for updates!",
-                children: [
-                  {
-                    id: "c3-1-1-1-1",
-                    username: "fiberfox",
-                    date: "20m ago",
-                    text: "Same here—looks great!",
-                  },
-                ],
-              },
-            ],
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 404) {
+        alert("Could not find that post");
+        router.back();
+      }
+
+      const responseData = await res.json();
+      console.log("The response data is: ", responseData);
+      setPostInfo(responseData.postInfo);
+
+    } catch (e) {
+      console.log("Error when fetching post data", e)
+    }
+  }
+
+
+  const fetchComments = async () => {
+    const token = await Storage.getItem("token");
+    try {
+      const res = await fetch(
+        `${API_URL}/api/forum/get-post-comments?id=${postID}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        ],
-      },
-    ],
-    []
-  );
+          credentials: "include",
+        }
+      );
+
+      const responseData = await res.json();
+      setPassedComments(prevItems => [ ...prevItems, ...responseData.commentTree]);
+      
+    } catch (e) {
+      console.log("Error when getting the comments", e);
+    }
+  }
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggleExpanded = useCallback((id: string) => {
@@ -301,22 +277,22 @@ export default function ForumPostDetail() {
       height: number;
     } | null>(null);
 
-    useEffect(() => {
-      if (post.imageUri) {
-        Image.getSize(
-          post.imageUri,
-          (w, h) => {
-            setIntrinsicSize({ width: w, height: h });
-          },
-          () => {
-            // if we fail to get size, just fall back
-            setIntrinsicSize(null);
-          }
-        );
-      } else {
-        setIntrinsicSize(null);
-      }
-    }, [post.imageUri]);
+    // useEffect(() => {
+    //   if (post.imageuri) {
+    //     Image.getSize(
+    //       post.imageuri,
+    //       (w, h) => {
+    //         setIntrinsicSize({ width: w, height: h });
+    //       },
+    //       () => {
+    //         // if we fail to get size, just fall back
+    //         setIntrinsicSize(null);
+    //       }
+    //     );
+    //   } else {
+    //     setIntrinsicSize(null);
+    //   }
+    // }, [post.imageuri]);
 
     let imageHeight: number;
     if (intrinsicSize && intrinsicSize.width > 0) {
@@ -328,38 +304,64 @@ export default function ForumPostDetail() {
       imageHeight = imageWidth * FALLBACK_ASPECT_RATIO;
     }
 
+    console.log("Going to use this post information to render: ", post)
+
+    // adding this to get rid of typeErrors and in case the post information can not be fetched
+    if (!post){
+      return (
+        <View>
+          <Text> Could not load the post information for some reason </Text>
+        </View>
+      )
+    }
+
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeaderRow}>
-          <View style={styles.avatarCircle} />
+          {post.profileuri ? (
+                <Image source={{ uri: post.profileuri}} style={styles.avatarCircle}/>
+              ):(
+              <View>
+                <Image
+                source={require("@/assets/images/icons8-cat-profile-50.png")}
+                style={styles.avatarCircle}
+              />
+              </View>
+              )}
           <View style={{ flex: 1 }}>
             <Text style={styles.postTitle}>{post.title}</Text>
             <View style={styles.postUserRow}>
               <Text style={styles.postUser}>{post.username}</Text>
-              <Text style={styles.postDate}>{post.date}</Text>
+              {post.dateposted ? (
+                <Text style={styles.postDate}>{new Date(post.dateposted).toDateString()}</Text>
+              ) : (
+                <Text style={styles.postDate}> Unknown Date</Text>
+              )}
             </View>
           </View>
         </View>
 
-        <Text style={styles.postBody}>{post.body}</Text>
+        <Text style={styles.postBody}>{post.content}</Text>
 
-        {post.imageUri ? (
+        {post.imageuri ? (
           <Image
-            source={{ uri: post.imageUri }}
+            source={{ uri: post.imageuri }}
             style={[
               styles.imagePlaceholder,
               { width: imageWidth, height: imageHeight },
             ]}
             resizeMode="cover"
           />
-        ) : post.hasImagePlaceholder ? (
-          <View
-            style={[
-              styles.imagePlaceholder,
-              { width: imageWidth, height: imageHeight },
-            ]}
-          />
-        ) : null}
+        ) 
+        // : post.hasImagePlaceholder ? (
+        //   <View
+        //     style={[
+        //       styles.imagePlaceholder,
+        //       { width: imageWidth, height: imageHeight },
+        //     ]}
+        //   />
+        // ) 
+        : null}
 
         <View style={styles.actionRow}>
           <Pressable style={styles.actionBtn}>
@@ -372,6 +374,8 @@ export default function ForumPostDetail() {
           </Pressable>
         </View>
       </View>
+
+
     );
   };
 
@@ -404,12 +408,21 @@ export default function ForumPostDetail() {
       <View key={node.id} style={styles.commentWrap}>
         <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth) }]}>
           <View style={styles.commentHeaderRow}>
-            <View className="commentAvatarInline" style={styles.commentAvatarInline} />
+            {node.profileuri ? (
+                <Image source={{ uri: node.profileuri}} style={styles.commentAvatarInline}/>
+              ):(
+              <View>
+                <Image
+                source={require("@/assets/images/icons8-cat-profile-50.png")}
+                style={styles.commentAvatarInline}
+              />
+              </View>
+              )}
             <View style={styles.commentHeaderText}>
               <Text style={styles.commentUser} numberOfLines={1}>
                 {node.username}
               </Text>
-              <Text style={styles.commentDate}>{node.date}</Text>
+              <Text style={styles.commentDate}>{new Date(node.date).toDateString()}</Text>
             </View>
           </View>
 
@@ -460,6 +473,8 @@ export default function ForumPostDetail() {
     );
   };
 
+  console.log("comments array", comments);
+
   return (
     <View style={styles.screen}>
       <Pressable style={styles.backFab} onPress={() => router.back()}>
@@ -468,7 +483,7 @@ export default function ForumPostDetail() {
 
       <FlatList
         data={comments}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={
           <>
             <PostCard />

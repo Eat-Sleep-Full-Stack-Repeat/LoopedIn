@@ -3,6 +3,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { StyleSheet, View, Image, Text, Pressable, Dimensions } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useState } from "react";
+import { router } from "expo-router";
 
 type ForumPost = {
   id: string;
@@ -29,6 +30,19 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
     avatarSize = 100;
   }
 
+  const forumPressed = () => {
+    if (postInfo) {
+      router.push({pathname: "/singleForum/[id]", params: { id: postInfo.id.toString()}});
+    } else {
+      console.log("tried to pass an empty post :(");
+    }
+  }
+
+  const profilePress = () => {
+    //FIXME: figure out how to route to the correct user
+    router.push("/otherUserProfile");
+  }
+
   const styles = StyleSheet.create({
     forumPost: {
       flexDirection: "column",
@@ -53,6 +67,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       marginHorizontal: 20,
       marginBottom: 10,
       flex: 1,
+      paddingTop: 5,
     },
     postDate: {
       flexDirection: "row",
@@ -73,59 +88,65 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   });
 
   return (
-    <View style={styles.forumPost}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingTop: 5,
-        }}
-      >
-        <View style={styles.topForumPost}>
-          {postInfo.profilePic ? (
-            <Image source={{ uri: postInfo.profilePic}} style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2, backgroundColor: colors.boxBackground }}/>
-          ):(
-          <View>
-            <Image
-            source={require("@/assets/images/icons8-cat-profile-50.png")}
-            style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2 }}
-          />
-          </View>
-          )}
-          
-          <View style={{ flexShrink: 1, maxWidth: '85%'}}>
-            <Text
-              style={styles.forumTitle}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {postInfo.title}
-            </Text>
-            <Text
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={{ color: colors.text }}
-            >
-              {postInfo.username}
-            </Text>
+    <Pressable onPress={forumPressed}>
+      <View style={styles.forumPost}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            paddingTop: 5,
+          }}
+        >
+          <View style={styles.topForumPost}>
+            <Pressable onPress={profilePress}>
+              {postInfo.profilePic ? (
+                <Image source={{ uri: postInfo.profilePic}} style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2, backgroundColor: colors.boxBackground }}/>
+              ):(
+              <View>
+                <Image
+                source={require("@/assets/images/icons8-cat-profile-50.png")}
+                style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2 }}
+              />
+              </View>
+              )}
+            </Pressable>
+            
+            <View style={{ flexShrink: 1, maxWidth: '85%'}}>
+              <Text
+                style={styles.forumTitle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {postInfo.title}
+              </Text>
+              <Pressable onPress={profilePress}>
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={{ color: colors.text }}
+                >
+                  {postInfo.username}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
+        <View style={styles.forumContent}>
+          <Text
+            ellipsizeMode="tail"
+            numberOfLines={2}
+            style={{ color: colors.text }}
+          >
+            {postInfo.content}
+          </Text>
+        </View>
+        <View style={styles.postDate}>
+          <Text style={{ color: colors.text }}>
+            {new Date(postInfo.datePosted).toDateString()}
+          </Text>
+        </View>
       </View>
-      <View style={styles.forumContent}>
-        <Text
-          ellipsizeMode="tail"
-          numberOfLines={2}
-          style={{ color: colors.text }}
-        >
-          {postInfo.content}
-        </Text>
-      </View>
-      <View style={styles.postDate}>
-        <Text style={{ color: colors.text }}>
-          {new Date(postInfo.datePosted).toDateString()}
-        </Text>
-      </View>
-    </View>
+    </Pressable>
   );
 };
 
