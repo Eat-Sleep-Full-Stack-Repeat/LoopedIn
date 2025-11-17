@@ -392,7 +392,7 @@ router.post(
 
 // ------------------------- LOAD SINGLE POST ----------------------
 router.get("/get-single-post", authenticateToken, async (req, res) => {
-  const postID = parseInt(req.query.id);
+  const postID = req.query.id;
   try {
     //query for the post data
     let query;
@@ -419,7 +419,7 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
       res.status(404);
     }
 
-    if (returnedPostInfo.rowCount > 0) {
+    if (returnedPostInfo.rowCount > 1) {
       console.log("Query returned more than 1 row. Not possible for a single post")
       res.status(500);
     }
@@ -449,6 +449,7 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
 
 // ------------------------- FORUM COMMENTS -----------------------
 router.get("/get-post-comments", authenticateToken, async (req, res) => {
+  console.log("Inside the backend for the get comments")
   function buildCommentsTree(flatList) {
     const nodeMap = {};
     const rootNodes = [];
@@ -471,46 +472,81 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
   try {
     // FIXME: Update with the correct postID
     const filterPostID = req.query.id;
+    console.log("The filter used to find the post is: ", filterPostID)
     let query;
     let returnedComments;
+    let hasMore = true;
     //FIXME: Add in the timestamp and comment ID info to make sure the newest posts are fetched first and then oldest
-    query = `
-    WITH RECURSIVE postComments AS (
-      (SELECT c.fld_comment_pk AS id, 
-              c.fld_post AS postID, 
-              c.fld_commenter AS commenterID, 
-              c.fld_parent_comment AS parentID, 
-              c.fld_comment_depth AS depth, 
-              c.fld_body AS text, 
-              c.fld_timestamp AS date, 
-              u.fld_username AS username, 
-              u.fld_profile_pic AS profileURI
-      FROM forums.tbl_forum_comment c
-      JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
-      WHERE fld_post = $1 AND fld_parent_comment IS NULL
-      ORDER BY c.fld_timestamp DESC
-      LIMIT 10)
-      UNION ALL
-        SELECT  c.fld_comment_pk AS id, 
+    if ((req.query.before === "undefined") | (req.query.before === "null") | (!req.query.before)){
+      query = `
+      WITH RECURSIVE postComments AS (
+        (SELECT c.fld_comment_pk AS id, 
                 c.fld_post AS postID, 
                 c.fld_commenter AS commenterID, 
                 c.fld_parent_comment AS parentID, 
                 c.fld_comment_depth AS depth, 
                 c.fld_body AS text, 
-                c.fld_timestamp AS date, 
+                CAST (c.fld_timestamp AS TIMESTAMPTZ) AS date, 
                 u.fld_username AS username, 
                 u.fld_profile_pic AS profileURI
         FROM forums.tbl_forum_comment c
         JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
-        INNER JOIN postComments p ON p.id = c.fld_parent_comment
-    ) SELECT * FROM postComments
-    ORDER BY date DESC;
-    `;
-
-    returnedComments = await pool.query(query, [filterPostID]);
-    console.log(
-      "yippee got the list of comments! Going to put then in the correct hierarchy now", JSON.stringify(returnedComments)
-    );
+        WHERE fld_post = $1 AND fld_parent_comment IS NULL
+        ORDER BY c.fld_timestamp DESC
+        LIMIT 11)
+        UNION ALL
+          SELECT  c.fld_comment_pk AS id, 
+                  c.fld_post AS postID, 
+                  c.fld_commenter AS commenterID, 
+                  c.fld_parent_comment AS parentID, 
+                  c.fld_comment_depth AS depth, 
+                  c.fld_body AS text, 
+                  CAST (c.fld_timestamp AS TIMESTAMPTZ) AS date, 
+                  u.fld_username AS username, 
+                  u.fld_profile_pic AS profileURI
+          FROM forums.tbl_forum_comment c
+          JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
+          INNER JOIN postComments p ON p.id = c.fld_parent_comment
+      ) SELECT * FROM postComments
+      ORDER BY date DESC;
+      `;
+      returnedComments = await pool.query(query, [filterPostID]);
+    } else {
+      console.log("Inside the limiting query for the comments")
+      query = `
+      WITH RECURSIVE postComments AS (
+        (SELECT c.fld_comment_pk AS id, 
+                c.fld_post AS postID, 
+                c.fld_commenter AS commenterID, 
+                c.fld_parent_comment AS parentID, 
+                c.fld_comment_depth AS depth, 
+                c.fld_body AS text, 
+                CAST (c.fld_timestamp AS TIMESTAMPTZ) AS date, 
+                u.fld_username AS username, 
+                u.fld_profile_pic AS profileURI
+        FROM forums.tbl_forum_comment c
+        JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
+        WHERE fld_post = $1 AND fld_parent_comment IS NULL AND (fld_timestamp, fld_comment_pk) < ($2, $3)
+        ORDER BY c.fld_timestamp DESC
+        LIMIT 11)
+        UNION ALL
+          SELECT  c.fld_comment_pk AS id, 
+                  c.fld_post AS postID, 
+                  c.fld_commenter AS commenterID, 
+                  c.fld_parent_comment AS parentID, 
+                  c.fld_comment_depth AS depth, 
+                  c.fld_body AS text, 
+                  CAST(c.fld_timestamp AS TIMESTAMPTZ) AS date, 
+                  u.fld_username AS username, 
+                  u.fld_profile_pic AS profileURI
+          FROM forums.tbl_forum_comment c
+          JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
+          INNER JOIN postComments p ON p.id = c.fld_parent_comment
+      ) SELECT * FROM postComments
+      ORDER BY date DESC;
+      `;
+      returnedComments = await pool.query(query, [filterPostID, req.query.before, req.query.commentID]);
+    }
 
     let avatarUrl = null;
     for (let i = 0; i < returnedComments.rowCount; i++) {
@@ -528,12 +564,41 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
 
     let commentsTree = buildCommentsTree(returnedComments.rows);
     console.log("The comments tree looks like this: ", JSON.stringify(commentsTree, null, 2))
+    if (commentsTree.length <= 10) {
+      hasMore = false;
+    }
     res.status(200).json({
-      commentTree: commentsTree,
+      commentTree: commentsTree.slice(0, 10),
+      hasMore: hasMore,
     });
   } catch (e) {
     console.log("Error when retrieving comments for single forum posts", e);
   }
 });
+
+router.post("/forum-comment-post", authenticateToken, async (req, res) => {
+  console.log("Going to post a new comment! Yay!!")
+  const currentUser = req.userID;
+  const sentData = req.body;
+  const { postID, parentID, depth, body, timestamp} = sentData;
+  console.log("This is what I am going to use for the query: ", req.body)
+  try {
+    let query;
+    let postComment;
+    query = `
+    INSERT INTO forums.tbl_forum_comment (fld_post, fld_commenter, fld_parent_comment, fld_comment_depth, fld_body, fld_timestamp)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    `;
+    postComment = await pool.query(query, [postID, currentUser, parentID, depth, body, timestamp]);
+
+    console.log("Successfully entered the new comment!");
+    res.status(200).send("Ok");
+  } catch (e) {
+    console.log("Error when inserting new comment to a forum post", e)
+    res.status(500).send("Error");
+  }
+
+
+})
 
 module.exports = router;

@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useLayoutEffect,
   useEffect,
+  useRef,
 } from "react";
 import {
   View,
@@ -13,6 +14,10 @@ import {
   FlatList,
   Image,
   useWindowDimensions,
+  KeyboardAvoidingView,
+  Modal,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -21,6 +26,8 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
+import { TextInput } from "react-native-gesture-handler";
+import ForumReplyModal from "@/components/forumReply";
 
 type Comment = {
   id: string;
@@ -28,6 +35,7 @@ type Comment = {
   date: string;
   text: string;
   profileuri: string | null;
+  depth: number | null;
   children?: Comment[];
 };
 
@@ -71,10 +79,23 @@ export default function ForumPostDetail() {
   const navigation = useNavigation();
   const { width: SCREEN_W } = useWindowDimensions();
   const {id} = useLocalSearchParams();
+  console.log("RAW PARAMS: ", id)
   const postID = id as string;
   const [passedComments, setPassedComments] = useState<Comment[]>([]);
   const comments: Comment[] = useMemo(() => passedComments, [passedComments]);
   const [post, setPostInfo] = useState<Post | null>(null);
+
+  //infinite scroll variables
+  const loadingMore = useRef<true | false>(false);
+  const hasMore = useRef(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const lastTimeStamp = useRef<string | null>(null);
+  const lastCommentID = useRef<number | null>(null);
+
+  //reply variables
+  const [isReplyVisible, setIsReplyVisible] = useState(false);
+  const [replyInformation, setReplyInformation] = useState<Post | Comment | null>(null);
+
 
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
@@ -83,9 +104,42 @@ export default function ForumPostDetail() {
   
 
   useEffect(() => {
+    console.log("The postID is: ", postID)
     fetchPostInfo();
-    fetchComments();
   }, [postID])
+
+  useEffect(() => {
+    if (post) {
+      console.log("The postID in the if statement is:", postID)
+      fetchComments()
+    }
+  }, [post])
+
+  const handleRefresh = async() => {
+    if (refreshing) {
+      return 
+    } else {
+      lastCommentID.current = null;
+      lastTimeStamp.current = null;
+      hasMore.current = true;
+      setPassedComments([]);
+      setPostInfo(null);
+      setRefreshing(true);
+    }
+  }
+
+  useEffect(() => {
+    if (refreshing) {
+      try {
+        fetchPostInfo();
+        fetchComments();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
+    }
+    }
+  }, [refreshing])
 
   const fetchPostInfo = async () => {
     const token = await Storage.getItem("token");
@@ -108,7 +162,6 @@ export default function ForumPostDetail() {
       }
 
       const responseData = await res.json();
-      console.log("The response data is: ", responseData);
       setPostInfo(responseData.postInfo);
 
     } catch (e) {
@@ -118,10 +171,25 @@ export default function ForumPostDetail() {
 
 
   const fetchComments = async () => {
+    console.log("Inside the fetch comments thing");
+    console.log("The post id being passed back to the fetch comments is", postID)
     const token = await Storage.getItem("token");
+    if (loadingMore.current || !hasMore.current){
+      return;
+    }
+    loadingMore.current = true;
     try {
+
+      const includeBefore = lastTimeStamp.current
+        ? `&before=${lastTimeStamp.current}`
+        : "";
+
+      const includeCommentID = lastCommentID.current
+        ? `&commentID=${lastCommentID.current}`
+        : "";
+
       const res = await fetch(
-        `${API_URL}/api/forum/get-post-comments?id=${postID}`,
+        `${API_URL}/api/forum/get-post-comments?id=${postID}${includeBefore}${includeCommentID}`,
         {
           method: "GET",
           headers: {
@@ -133,11 +201,89 @@ export default function ForumPostDetail() {
       );
 
       const responseData = await res.json();
+      console.log("The returned response data is: ", responseData.commentTree)
       setPassedComments(prevItems => [ ...prevItems, ...responseData.commentTree]);
+      hasMore.current = (responseData.hasMore);
+      console.log("HasMore is: ", hasMore.current);
+      lastTimeStamp.current = responseData.commentTree[responseData.commentTree.length - 1].date
+      console.log("The last time stamp is: ", lastTimeStamp.current)
+      lastCommentID.current = responseData.commentTree[responseData.commentTree.length - 1].id
+      console.log("The last comment ID is: ", lastCommentID.current);
       
     } catch (e) {
       console.log("Error when getting the comments", e);
+    } finally {
+      loadingMore.current = false;
     }
+  }
+
+  // will display the modal where the user can enter a reply
+  const handleReplyPress = (replyCommentID: string, replyInfo: Post | Comment) => {
+    console.log("The reply button was pressed on comment #", replyCommentID);
+    setIsReplyVisible(true);
+    setReplyInformation(replyInfo);
+  }
+
+  //will actually post the reply in the databases
+  const handlePostReply = async (replyText: string) => {
+    console.log("Now I will need to figure out how to post the reply to the backend! Also don't forget to then refresh the page so the user can see their comment")
+    console.log("This is what the user entered: ", replyText);
+
+    const isPost = (item: Comment | Post): item is Post => {
+      return "content" in item;
+    }
+
+    if (!replyInformation){
+      console.log("Could not find that post");
+      return;
+    }
+
+    let parentID;
+    let depth;
+    if (isPost(replyInformation)){
+      parentID = null;
+      depth = 0;
+    } else {
+      parentID = replyInformation.id;
+      depth = replyInformation.depth;
+    }
+
+    const newComment = {
+      postID: post?.id,
+      parentID,
+      depth,
+      body: replyText,
+      timestamp: new Date(),
+    }
+
+    console.log("This is what is being passed to the backend btw: ", newComment)
+
+    const token = await Storage.getItem("token");
+    try {
+      const response = await fetch(`${API_URL}/api/forum/forum-comment-post`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(newComment)
+    });
+
+      if (!response.ok) {
+        alert("Could not create that comment :( ");
+        return;
+      } else {
+        handleRefresh();
+      }
+
+      console.log("Created the comment yayayayayaya!!!")
+
+    } catch (e) {
+      console.log("Error when adding forum comment", e);
+      alert("Could not create comments for this forum post. Please try again later");
+    }
+
   }
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -304,15 +450,9 @@ export default function ForumPostDetail() {
       imageHeight = imageWidth * FALLBACK_ASPECT_RATIO;
     }
 
-    console.log("Going to use this post information to render: ", post)
-
     // adding this to get rid of typeErrors and in case the post information can not be fetched
     if (!post){
-      return (
-        <View>
-          <Text> Could not load the post information for some reason </Text>
-        </View>
-      )
+      return;
     }
 
     return (
@@ -368,7 +508,7 @@ export default function ForumPostDetail() {
             <Feather name="bookmark" size={18} color={colors.text} />
             <Text style={styles.actionText}>Save</Text>
           </Pressable>
-          <Pressable style={styles.actionBtn}>
+          <Pressable style={styles.actionBtn} onPress={() => handleReplyPress(post.id, post)}>
             <Feather name="message-circle" size={18} color={colors.text} />
             <Text style={styles.actionText}>Reply</Text>
           </Pressable>
@@ -430,7 +570,7 @@ export default function ForumPostDetail() {
 
           <View style={styles.commentActions}>
             {depth < MAX_REPLY_DEPTH && (
-              <Pressable style={styles.smallAction}>
+              <Pressable style={styles.smallAction} onPress={() => handleReplyPress(node.id, node)}>
                 <Feather name="message-circle" size={14} color={colors.text} />
                 <Text style={styles.smallIconText}>Reply</Text>
               </Pressable>
@@ -473,8 +613,6 @@ export default function ForumPostDetail() {
     );
   };
 
-  console.log("comments array", comments);
-
   return (
     <View style={styles.screen}>
       <Pressable style={styles.backFab} onPress={() => router.back()}>
@@ -495,7 +633,35 @@ export default function ForumPostDetail() {
         renderItem={({ item }) => <>{renderCommentBranch(item, 0)}</>}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         contentContainerStyle={{ paddingBottom: 24 }}
+        onEndReached={fetchComments}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={() => {
+          if (loadingMore.current) {
+            return <ActivityIndicator size="small" color={colors.text}/>
+          } else {
+            return (
+              <View style={{paddingVertical: 40, marginLeft: 50}}>
+                <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Recent Posts </Text>
+              </View>
+            )
+          }
+        }}
+        ListFooterComponent={() => {
+          if (comments.length > 0) {
+            if (!hasMore.current) {
+              return;
+            } else {
+              return (
+                <ActivityIndicator size="small" color={colors.text} />
+              );
+            }
+          }
+        }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+        }
       />
+      <ForumReplyModal isVisible={isReplyVisible} onClose={() => setIsReplyVisible(false)} onPostReply={handlePostReply} replyPost={replyInformation}/>
     </View>
   );
 }

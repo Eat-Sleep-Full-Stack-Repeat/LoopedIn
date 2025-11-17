@@ -94,7 +94,6 @@ export default function ForumFeed() {
   };
 
   useEffect(() => {
-    console.log("Filter is now: ", selectedFilter);
     if (selectedFilter === "All") { // pass all craft filters to backend
       setCraftFilter(["Crochet", "Knit"]);
     } else { //pass specific craft to backend
@@ -109,11 +108,9 @@ export default function ForumFeed() {
   }, [craftFilter])
 
   const handleRefresh = async() => {
-    console.log("in handlerefresh functionality");
     if (refreshing) {
       return 
     } else {
-      console.log("Going to refresh")
       lastPostID.current = null;
       lastTimeStamp.current = null;
       hasMore.current = true;
@@ -162,10 +159,6 @@ export default function ForumFeed() {
         craftURL = craftURL + `&craft[]=${tempElement}`
       });
 
-
-      console.log("The include before variable is: ", includeBefore);
-      console.log('Passing back this craft variables: ', craftURL);
-
       const res = await fetch(
         `${API_URL}/api/forum/get-forums?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
         {
@@ -178,7 +171,6 @@ export default function ForumFeed() {
         }
       );
 
-      console.log("fetched forum data");
 
       if (!res.ok) {
         alert("Error when fetching new forum posts");
@@ -200,26 +192,16 @@ export default function ForumFeed() {
         })
       );
 
-      console.log("The post ids returned before filtering: \n")
-      tempArray.forEach((item) => {
-        console.log(item.id)
-        console.log("The URL in each item is: ", item.profilePic)
-      })
-
       //double check the returned posts to make sure no duplicates are put into forumData
       let filteredArray: ForumPost[] = tempArray.filter(
         (post) => !forumData.some((checkPost) => checkPost.id === post.id)
       );
 
-      console.log("Going to add this many items to the forums array: ", filteredArray.length);
 
       setForumData((prev) => [...prev, ...filteredArray]);
       hasMore.current = (responseData.hasMore);
-      console.log("The last item in the array is: ", tempArray[tempArray.length - 1])
       lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
-      console.log("Current timestamp is: ", lastTimeStamp.current);
       lastPostID.current = Number(tempArray[tempArray.length - 1].id);
-      console.log("Current post ID is: ", lastPostID);
     } catch (e) {
       console.log("Error when trying to fetch forum data:", e);
     } finally {
@@ -238,7 +220,6 @@ export default function ForumFeed() {
         craftURL = craftURL + `&craft[]=${tempElement}`
       });
 
-      console.log('Passing back this craft variables: ', craftURL);
 
       const res = await fetch(
         `${API_URL}/api/forum/get-saved-forums?limit=${limit}${craftURL}`,
