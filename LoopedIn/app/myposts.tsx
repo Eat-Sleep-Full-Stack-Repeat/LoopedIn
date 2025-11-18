@@ -56,7 +56,7 @@ export default function MyPosts() {
   const handleEdit = () => {
     if (selectedPostId !== null) {
       setMenuVisible(false);
-      console.log(`Editing post ID: ${selectedPostId}`);
+      router.push({ pathname: "/editpost", params: { postId: String(selectedPostId) } });
     }
   };
 

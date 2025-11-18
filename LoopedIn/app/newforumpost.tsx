@@ -39,6 +39,9 @@ const craftOptions: CraftOption[] = [
   },
 ];
 
+const MAX_TITLE_LENGTH = 150;
+const MAX_CONTENT_LENGTH = 10000;
+
 export default function Newformpost() {
   const { currentTheme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -83,12 +86,12 @@ export default function Newformpost() {
       alert("Cannot have empty fields.")
       return;
     }
-    if (postTitle.length > 150) {
+    if (postTitle.length > MAX_TITLE_LENGTH) {
       alert("Your forum's title cannot have more than 150 charceters.")
       return;
     }
-    if (postContent.length > 10000) {
-      alert("Your forum's body cannot have more than 10,000 charceters.")
+    if (postContent.length > MAX_CONTENT_LENGTH) {
+      alert("Your forum's body cannot have more than 10,000 characters.")
       return;
     }
 
@@ -139,6 +142,17 @@ export default function Newformpost() {
     keyboardAvoider: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    counterText: {
+      color: colors.text,
+      fontSize: 12,
+      opacity: 0.7,
+    },
+    inputHeaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8,
     },
     container: {
       flex: 1,
@@ -399,24 +413,36 @@ export default function Newformpost() {
       </View>
 
       <View style={styles.formSection}>
-        <Text style={styles.sectionLabel}>Title</Text>
+        <View style={styles.inputHeaderRow}>
+          <Text style={styles.sectionLabel}>Title</Text>
+          <Text style={styles.counterText}>
+            {postTitle.length}/{MAX_TITLE_LENGTH}
+          </Text>
+        </View>
         <TextInput
           value={postTitle}
           onChangeText={setPostTitle}
           placeholder="Enter a title"
           placeholderTextColor={`${colors.text}99`}
+          maxLength={MAX_TITLE_LENGTH}
           style={styles.input}
         />
       </View>
 
       <View style={styles.formSection}>
-        <Text style={styles.sectionLabel}>Content</Text>
+        <View style={styles.inputHeaderRow}>
+          <Text style={styles.sectionLabel}>Content</Text>
+          <Text style={styles.counterText}>
+            {postContent.length}/{MAX_CONTENT_LENGTH}
+          </Text>
+        </View>
         <TextInput
           value={postContent}
           onChangeText={setPostContent}
           placeholder="Share the details..."
           placeholderTextColor={`${colors.text}99`}
           multiline
+          maxLength={MAX_CONTENT_LENGTH}
           style={[styles.input, styles.contentInput]}
         />
       </View>
@@ -461,7 +487,7 @@ export default function Newformpost() {
         <View style={styles.tagInputRow}>
           <TextInput
             value={newTag}
-            onChangeText={setNewTag}
+            onChangeText={(text) => setNewTag(text.replace(/\s+/g, ""))}
             placeholder="Add a tag"
             placeholderTextColor={`${colors.text}99`}
             style={styles.tagInput}
