@@ -41,6 +41,7 @@ type ForumPost = {
   datePosted: string;
 };
 
+
 type BackendPost = {
   fld_post_pk: string;
   fld_header: string;
@@ -84,10 +85,10 @@ export default function ForumFeed() {
     setSearchOpen(true);
   };
 
-  const handleSeeMorePress = (origin: string) => {
-    //FIXME: handle when user wants to see all saved posts
-    console.log("See more was pressed", origin);
-  };
+const handleSeeMorePress = () => {
+  router.push("/savedposts");
+};
+
 
   const handleCreatePost = () => {
     router.push("/newforumpost");
@@ -274,6 +275,9 @@ export default function ForumFeed() {
 
       setSavedForumData(tempArray);
 
+
+      
+
     } catch (e) {
       console.log("error when fetching saved posts");
     }
@@ -417,7 +421,7 @@ export default function ForumFeed() {
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
           <Text style={styles.refineHeaderText}> Saved Posts </Text>
-          <Pressable onPress={() => handleSeeMorePress("saved")}>
+          <Pressable onPress={handleSeeMorePress}>
             <Text style={{ color: colors.text }}>See More {">"}</Text>
           </Pressable>
         </View>
