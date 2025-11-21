@@ -233,9 +233,12 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
 
 
     //insert new tags (if they don't already exist)
-    for (const tag of tags) {
+    for (let tag of tags) {
+      //lowercase -> should not affect non-alpha chars
+      tag = tag.toLowerCase()
+
       //no dup tags regardless of what the filter is
-      if (tag.toLowerCase() == "crochet" || tag.toLowerCase() == "knit") {
+      if (tag == "crochet" || tag == "knit" || tag == "misc" || tag == "miscellaneous") {
             continue;
       }
 
@@ -442,13 +445,24 @@ router.delete("/forum_post/:forumID", authenticateToken, async (req, res) => {
 
       let image_key = await pool.query(query, [forumID]);
 
-      //delete forum post contents and any relations they have
+      //delete forum post contents but keep primary key, timestamp, and user_id
       //will wait to delete forum image later if we have issues deleting post but not image
       query = `
-      
+      UPDATE forums.tbl_forum_post
+      SET fld_header = $1, fld_body = $2, fld_pic = NULL, fld_edited = FALSE
+      WHERE fld_post_pk = $3
+      RETURNING *;
       `
 
+      const delete_post = await pool.query(query, ["[deleted]", "[deleted]", forumID])
 
+      if (delete_post.rowCount == 0) {
+        console.log("did not find post")
+        res.status(404).json({message: "Forum post does not exist"})
+        return;
+      }
+
+      //now image deletion time
       if (image_key.rowCount != 0) {
         image_key = image_key.rows[0].fld_pic
         console.log("[forums]: image we need to delete: ", image_key)
@@ -475,5 +489,7 @@ router.delete("/forum_post/:forumID", authenticateToken, async (req, res) => {
     res.status(500).json(error)
   }
 })
+
+
 
 module.exports = router;
