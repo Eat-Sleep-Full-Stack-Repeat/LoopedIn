@@ -66,13 +66,13 @@ export default function ForumFeed() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const userData = mockUser;
-  const filters = ["All", "Crochet", "Knit"];
+  const filters = ["All", "Crochet", "Knit", "Misc"];
 
   const limit = 10;
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
 
-  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit"]);
+  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
 
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function ForumFeed() {
   useEffect(() => {
     console.log("Filter is now: ", selectedFilter);
     if (selectedFilter === "All") { // pass all craft filters to backend
-      setCraftFilter(["Crochet", "Knit"]);
+      setCraftFilter(["Crochet", "Knit", "Misc"]);
     } else { //pass specific craft to backend
       setCraftFilter([selectedFilter]);
     }

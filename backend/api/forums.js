@@ -4,7 +4,7 @@ const { pool } = require("../backend_connection");
 
 //jwt-checker before revealing any sensitive info
 const authenticateToken = require("../middleware/authenticate");
-const { getSignedFile, uploadFile } = require("../s3_connection");
+const { getSignedFile, uploadFile, deleteFile } = require("../s3_connection");
 
 const { generateColor } = require("../functions/color_generator");
 
@@ -233,9 +233,12 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
 
 
     //insert new tags (if they don't already exist)
-    for (const tag of tags) {
+    for (let tag of tags) {
+      //lowercase -> should not affect non-alpha chars
+      tag = tag.toLowerCase()
+
       //no dup tags regardless of what the filter is
-      if (tag.toLowerCase() == "crochet" || tag.toLowerCase() == "knit") {
+      if (tag == "crochet" || tag == "knit" || tag == "misc" || tag == "miscellaneous") {
             continue;
       }
 
@@ -348,6 +351,145 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
     res.status(500).json(error)
   }
 })
+
+
+
+
+//edit forum post
+router.patch("/forum_post/:forumID", authenticateToken, async (req, res) => {
+  try {
+    const { forumID } = req.params;
+    const { header, body } = req.body;
+
+    //check if person actually has permission to delete
+    //can alter this when we add mod perms
+    query = `
+    SELECT *
+    FROM forums.tbl_forum_post
+    WHERE fld_post_pk = $1 AND fld_creator = $2;
+    `
+
+    const post = await pool.query(query, [forumID, req.userID.trim()]);
+
+    if (post.rowCount == 0) {
+      //do not have permission to edit post
+      console.log("[forums]: No permissions to edit post")
+      res.status(403).json({message: "Forbidden: Do not have permission to edit post"})
+    }
+    else if (header.length == 0 || body.length == 0 || header.length > 150 || body.length > 10000) {
+      //if header or body too big or small (if we just skip the frontend altogether and just send API requests)
+      console.log("[forums]: header or body length is too big or small")
+      res.status(403).json({message: "Forbidden: header or body length does not fit size requirements"})
+    }
+    else {
+      //make new timestamp in UTC
+      const now = new Date();
+      const date = now.toISOString();
+
+      //else, edit contents of post
+      query = `
+      UPDATE forums.tbl_forum_post
+      SET fld_header = $1, fld_body = $2, fld_timestamp = $3, fld_edited = TRUE
+      WHERE fld_post_pk = $4 AND fld_creator = $5
+      RETURNING *;
+      `
+
+      const updated_post = await pool.query(query, [header, body, date, forumID, req.userID.trim()])
+
+      if (updated_post.rowCount == 0) {
+        console.log("[forums]: Error editing forum in query")
+        res.status(500).json({message: "Failed to edit forum"})
+      }
+      else {
+        console.log("[forums]: Successfully updated forum!")
+        res.status(200).json(updated_post.rows[0])
+      }
+    }
+
+  }
+  catch(error) {
+    console.log("Error editing forum: ", error)
+    res.status(500).json(error)
+  }
+})
+
+
+
+//delete forum post
+router.delete("/forum_post/:forumID", authenticateToken, async (req, res) => {
+  try {
+    const { forumID } = req.params;
+
+    //check if person actually has permission to delete
+    //can alter this when we add mod perms
+    
+    query = `
+    SELECT *
+    FROM forums.tbl_forum_post
+    WHERE fld_post_pk = $1 AND fld_creator = $2;
+    `
+
+    const post = await pool.query(query, [forumID, req.userID.trim()]);
+
+    if (post.rowCount == 0) {
+      console.log("No permissions to edit post")
+      res.status(403).json({message: "Do not have permission to edit post"})
+    }
+    else {
+      //delete images (if exist) first from S3
+      query = `
+      SELECT fld_pic
+      FROM forums.tbl_forum_post
+      WHERE fld_post_pk = $1 AND fld_pic IS NOT NULL;
+      `
+
+      let image_key = await pool.query(query, [forumID]);
+
+      //delete forum post contents but keep primary key, timestamp, and user_id
+      //will wait to delete forum image later if we have issues deleting post but not image
+      query = `
+      UPDATE forums.tbl_forum_post
+      SET fld_header = $1, fld_body = $2, fld_pic = NULL, fld_edited = FALSE
+      WHERE fld_post_pk = $3
+      RETURNING *;
+      `
+
+      const delete_post = await pool.query(query, ["[deleted]", "[deleted]", forumID])
+
+      if (delete_post.rowCount == 0) {
+        console.log("did not find post")
+        res.status(404).json({message: "Forum post does not exist"})
+        return;
+      }
+
+      //now image deletion time
+      if (image_key.rowCount != 0) {
+        image_key = image_key.rows[0].fld_pic
+        console.log("[forums]: image we need to delete: ", image_key)
+
+        //get variables
+        const fullKey = image_key.includes("/") ? image_key : `forum_posts/${image_key}`;
+        const folderName = fullKey.split("/")[0];
+        const fileName = fullKey.split("/").slice(1).join("/");
+
+        console.log("[forums]: delete forum image in process. foldername, filename ", folderName, fileName)
+
+        //delete images (hopefully)
+        await deleteFile(fileName, folderName);
+
+        console.log("[forums] successful deletion of post image")
+      }
+
+      res.status(200).json({message: "successful deletion of post!"})
+    }
+
+  }
+  catch(error) {
+    console.log("Error deleting forum post: ", error)
+    res.status(500).json(error)
+  }
+})
+
 
 
 module.exports = router;
