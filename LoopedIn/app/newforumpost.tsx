@@ -37,6 +37,11 @@ const craftOptions: CraftOption[] = [
     label: "Knit",
     icon: require("../assets/images/kniticon.png"),
   },
+  {
+    id: "Misc",
+    label: "Misc",
+    icon: require("../assets/images/paw-icon.png")
+  },
 ];
 
 export default function Newformpost() {
@@ -49,10 +54,17 @@ export default function Newformpost() {
   const [postContent, setPostContent] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState<string>("");
+  const [pressed, setPressed] = useState<boolean>(false);
 
   const handleAddTag = () => {
     const trimmed = newTag.trim();
     if (!trimmed || tags.includes(trimmed) || tags.length >= 5) {
+      return;
+    }
+    if (trimmed == "knit" || trimmed == "crochet" || trimmed == "misc" || trimmed == "miscellaneous") {
+      console.log("crochet or knit tag found.");
+      alert("You cannot have Knit, Crochet, or Misc tags in your post!");
+      setNewTag("")
       return;
     }
     setTags((prev) => [...prev, trimmed]);
@@ -64,6 +76,14 @@ export default function Newformpost() {
   };
 
   const handleCreatePost = async () => {
+    // if already pressed
+    if (pressed) {
+      return;
+    }
+
+    //otherwise, disable button
+    setPressed(true)
+
     console.log("Create Post pressed", {
       selectedFilter,
       postTitle,
@@ -117,15 +137,8 @@ export default function Newformpost() {
 
       
       console.log("Post created successfully!");
-
-      //so you can see success message. we will need to delete this once we have a page to show the post
-      Alert.alert(
-        "Yippee!",
-        "Post Successfully Created!",
-        [{
-          text: "OK",
-          onPress: () => router.replace("/forumFeed"),
-        },]);
+      Alert.alert("Yippee!", "Your forum post has been created.");
+      router.back();
 
     }
     catch(error) {
@@ -461,7 +474,7 @@ export default function Newformpost() {
         <View style={styles.tagInputRow}>
           <TextInput
             value={newTag}
-            onChangeText={setNewTag}
+            onChangeText={(text) => setNewTag(text.replace(/\s/g, "").toLowerCase())}
             placeholder="Add a tag"
             placeholderTextColor={`${colors.text}99`}
             style={styles.tagInput}
@@ -486,7 +499,9 @@ export default function Newformpost() {
         </View>
       </View>
 
-      <Pressable style={styles.createButton} onPress={handleCreatePost}>
+      <Pressable style={styles.createButton} 
+        onPress={handleCreatePost} 
+        disabled={pressed}>
         <Text style={styles.createButtonText}>Create Post</Text>
       </Pressable>
     </ScrollView>

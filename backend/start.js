@@ -106,6 +106,7 @@ const blockWork = require('./api/block');
 const secondFile = require('./api/newFeature'); //delete this example upon creation of new file
 const avatarRoutes = require("./api/avatar");
 const forumWork = require('./api/forums.js');
+const postRouter = require("./api/post.js"); 
 
 
 
@@ -117,7 +118,7 @@ app.use('/api/block', blockWork)
 app.use('/api/newFeature', secondFile);
 app.use('/api', avatarRoutes);
 app.use('/api/forum', forumWork);
-
+app.use("/api", postRouter);
 
 // -------------------- RUNNING SERVER --------------------------- 
 app.listen(port, (error) => {

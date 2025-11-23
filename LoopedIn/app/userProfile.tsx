@@ -45,6 +45,47 @@ type UploadAvatarResponse = {
 const PROFILE_URL = `${API_URL}/api/profile`;
 const UPLOAD_AVATAR_URL = `${API_URL}/api/profile/avatar`;
 
+/* -------- helper: get first picture / thumbnail from item -------- */
+function getThumbnailSource(item: any): any | null {
+  if (!item) return null;
+
+  // handle post objects from /api/profile
+  if (item.previewUrl) {
+    return { uri: item.previewUrl };
+  }
+  if (item.preview_url) {
+    return { uri: item.preview_url };
+  }
+
+  if (typeof item === "string") return { uri: item };
+  if (item.uri || item.url || item.imageUrl) {
+    return { uri: item.uri || item.url || item.imageUrl };
+  }
+
+  if (Array.isArray(item) && item.length > 0) {
+    const first = item[0];
+    if (typeof first === "string") return { uri: first };
+    if (first?.uri || first?.url || first?.imageUrl) {
+      return { uri: first.uri || first.url || first.imageUrl };
+    }
+    return first;
+  }
+
+  const photosArray =
+    item.photos || item.images || item.pics || item.postPics || null;
+
+  if (Array.isArray(photosArray) && photosArray.length > 0) {
+    const first = photosArray[0];
+    if (typeof first === "string") return { uri: first };
+    if (first?.uri || first?.url || first?.imageUrl) {
+      return { uri: first.uri || first.url || first.imageUrl };
+    }
+    return first;
+  }
+
+  return item;
+}
+
 /* --------------------- Header --------------------- */
 const ProfileHeader = React.memo(function ProfileHeader(props: {
   insetsTop: number;
@@ -266,7 +307,7 @@ export default function UserProfile() {
   const [tokenChecked, setTokenChecked] = useState(false);
   const [hasToken, setHasToken] = useState<boolean | null>(null);
 
-  // Posts tab
+  // Posts tab – data from API
   const [activeTab, setTab] = useState<"posts" | "saved">("posts");
   const [currentPosts, setPosts] = useState<any[]>([]);
 
@@ -278,6 +319,9 @@ export default function UserProfile() {
   const [draftBio, setDraftBio] = useState("");
   const [draftAvatarUri, setDraftAvatarUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // token to trigger reload when screen regains focus
+  const [reloadToken, setReloadToken] = useState(0);
 
   const effectiveAvatarSource = useMemo(() => {
     if (editing && draftAvatarUri) return { uri: draftAvatarUri };
@@ -346,8 +390,19 @@ export default function UserProfile() {
       }
     })();
 
-    return () => abort.abort();
-  }, [tokenChecked, hasToken]);
+    return () => {
+      abort.abort();
+    };
+  }, [tokenChecked, hasToken, reloadToken]); // <-- include reloadToken
+
+  /* ---------- Refetch when screen regains focus (after newpost) ---------- */
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setReloadToken((t) => t + 1);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   /* ------------- Guard leaving when there are changes ------------- */
   useEffect(() => {
@@ -394,7 +449,7 @@ export default function UserProfile() {
       sub();
       backHandler.remove();
     };
-  }, [isDirty, draftBio, draftAvatarUri, originalUser]);
+  }, [isDirty, draftBio, draftAvatarUri, originalUser, navigation]);
 
   /* -------------------- Handlers -------------------- */
   const startEditing = () => {
@@ -557,9 +612,6 @@ export default function UserProfile() {
   };
 
   const handleLogout = async () => {
-    //later, delete necessary items from local or async storage
-
-    //remove JWT
     await Storage.removeItem("token");
 
     setTimeout(() => {
@@ -568,7 +620,6 @@ export default function UserProfile() {
     }, 0);
 
     console.log("Logged out!");
-
   };
 
   /* ----------------------- Login Gate Screens ----------------------- */
@@ -665,22 +716,31 @@ export default function UserProfile() {
             onLogout={handleLogout}
           />
         }
-        renderItem={({ item }) => (
-          <Image
-            source={item}
-            resizeMode="cover"
-            style={{
-              width: cardW,
-              height: cardW * (16 / 9),
-              borderRadius: 20,
-              marginBottom: 8,
-            }}
-          />
-        )}
-        columnWrapperStyle={{
-          justifyContent: "space-between",
-          paddingHorizontal: 10,
+        renderItem={({ item }) => {
+          const thumbSource = getThumbnailSource(item);
+          if (!thumbSource) return null;
+
+          return (
+            <Pressable onPress={() => router.push("/")}>
+              <Image
+                source={thumbSource}
+                resizeMode="cover"
+                style={{
+                  width: cardW,
+                  height: cardW * (16 / 9),
+                  borderRadius: 20,
+                  marginBottom: 8,
+                }}
+              />
+            </Pressable>
+          );
         }}
+        columnWrapperStyle={{
+          justifyContent: "flex-start",
+          paddingHorizontal: 10,
+          columnGap: 10,   
+        }}
+
         contentContainerStyle={{
           alignSelf: "center",
           width: "100%",

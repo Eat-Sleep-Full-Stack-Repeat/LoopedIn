@@ -19,6 +19,10 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API_URL from "@/utils/config";
+
 
 type CraftOption = {
   id: string;
@@ -31,6 +35,7 @@ type PhotoCard = {
   altText: string;
   hasImage: boolean;
   source?: "camera" | "cameraRoll";
+  localUri?: string;
 };
 
 const craftOptions: CraftOption[] = [
@@ -59,18 +64,23 @@ export default function NewPost() {
   const [caption, setCaption] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState<string>("");
-  const [postVisibility, setPostVisibility] = useState<"public" | "private">("public");
+  const [postVisibility, setPostVisibility] = useState<"public" | "private">(
+    "public"
+  );
   const createEmptyPhotoCard = (): PhotoCard => ({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     altText: "",
     hasImage: false,
   });
-  const [photoCards, setPhotoCards] = useState<PhotoCard[]>([createEmptyPhotoCard()]);
+  const [photoCards, setPhotoCards] = useState<PhotoCard[]>([
+    createEmptyPhotoCard(),
+  ]);
   const photoScrollRef = useRef<ScrollView | null>(null);
   const formScrollRef = useRef<ScrollView | null>(null);
   const previousPhotoCountRef = useRef<number>(photoCards.length);
   const [captionSectionY, setCaptionSectionY] = useState(0);
   const [tagSectionY, setTagSectionY] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleAddTag = () => {
     const trimmed = newTag.trim();
@@ -86,18 +96,69 @@ export default function NewPost() {
   };
 
   const handleUploadPress = (cardId: string) => {
-    const onSuccess = (source: "camera" | "cameraRoll") => {
-      setPhotoCards((prev) =>
-        prev.map((card) =>
-          card.id === cardId
-            ? {
-                ...card,
-                hasImage: true,
-                source,
-              }
-            : card
-        )
-      );
+    const pickImage = async (source: "camera" | "cameraRoll") => {
+      try {
+        if (source === "camera") {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission needed", "Camera access is required.");
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            quality: 0.9,
+          });
+          if (result.canceled) return;
+          const uri = result.assets?.[0]?.uri;
+          if (!uri) return;
+
+          setPhotoCards((prev) =>
+            prev.map((card) =>
+              card.id === cardId
+                ? {
+                    ...card,
+                    hasImage: true,
+                    source,
+                    localUri: uri,
+                  }
+                : card
+            )
+          );
+        } else {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert(
+              "Permission needed",
+              "Photo library access is required."
+            );
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            quality: 0.9,
+          });
+          if (result.canceled) return;
+          const uri = result.assets?.[0]?.uri;
+          if (!uri) return;
+
+          setPhotoCards((prev) =>
+            prev.map((card) =>
+              card.id === cardId
+                ? {
+                    ...card,
+                    hasImage: true,
+                    source,
+                    localUri: uri,
+                  }
+                : card
+            )
+          );
+        }
+      } catch (err) {
+        console.log("Image pick error:", err);
+        Alert.alert("Error", "Failed to pick image.");
+      }
     };
 
     if (Platform.OS === "ios") {
@@ -109,10 +170,10 @@ export default function NewPost() {
         (buttonIndex) => {
           if (buttonIndex === 1) {
             console.log("Upload from camera roll selected");
-            onSuccess("cameraRoll");
+            pickImage("cameraRoll");
           } else if (buttonIndex === 2) {
             console.log("Camera selected");
-            onSuccess("camera");
+            pickImage("camera");
           }
         }
       );
@@ -122,14 +183,14 @@ export default function NewPost() {
           text: "Upload From Camera Roll",
           onPress: () => {
             console.log("Upload from camera roll selected");
-            onSuccess("cameraRoll");
+            pickImage("cameraRoll");
           },
         },
         {
           text: "Camera",
           onPress: () => {
             console.log("Camera selected");
-            onSuccess("camera");
+            pickImage("camera");
           },
         },
         {
@@ -181,6 +242,88 @@ export default function NewPost() {
       y: Math.max(offset - 40, 0),
       animated: true,
     });
+  };
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+
+    try {
+      const hasAnyPhoto = photoCards.some(
+        (c) => c.hasImage && c.localUri
+      );
+      if (!hasAnyPhoto) {
+        Alert.alert("Missing photo", "Please add at least one photo.");
+        return;
+      }
+
+      setSubmitting(true);
+
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Not signed in", "Please sign in again.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("caption", caption.trim());
+      formData.append(
+        "isPublic",
+        postVisibility === "public" ? "true" : "false"
+      );
+      formData.append("tags", JSON.stringify(tags));
+      formData.append(
+        "altTexts",
+        JSON.stringify(
+          photoCards.map((card) =>
+            (card.altText || "").slice(0, CARD_ALT_TEXT_LIMIT)
+          )
+        )
+      );
+      formData.append("craft", selectedCraft);
+
+      photoCards.forEach((card, index) => {
+        if (!card.hasImage || !card.localUri) return;
+
+        const uri = card.localUri;
+        const name = uri.split("/").pop() || `photo-${index}.jpg`;
+        const match = /\.(\w+)$/.exec(name);
+        const ext = match ? match[1].toLowerCase() : "jpg";
+        const type =
+          ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
+
+        formData.append(
+          "photos",
+          {
+            uri,
+            name,
+            type,
+          } as any
+        );
+      });
+
+      const response = await fetch(`${API_URL}/api/post`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        } as any,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.log("Post create error:", text);
+        Alert.alert("Error creating post", text || "Unknown error");
+        return;
+      }
+
+      Alert.alert("Posted!", "Your post has been created.");
+      router.back();
+    } catch (err: any) {
+      console.log("Submit error:", err);
+      Alert.alert("Error", err?.message || "Failed to create post.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const styles = StyleSheet.create({
@@ -273,6 +416,12 @@ export default function NewPost() {
       paddingHorizontal: 24,
       gap: 10,
       marginBottom: 16,
+      overflow: "hidden",
+    },
+    uploadImagePreview: {
+      width: "100%",
+      height: "100%",
+      borderRadius: 20,
     },
     uploadTitle: {
       color: colors.text,
@@ -556,29 +705,60 @@ export default function NewPost() {
                   key={card.id}
                   style={[
                     styles.photoCard,
-                    index !== photoCards.length - 1 && styles.photoCardSpacing,
+                    index !== photoCards.length - 1 &&
+                      styles.photoCardSpacing,
                   ]}
                 >
                   <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>Photo {index + 1}</Text>
+                    <Text style={styles.cardTitle}>
+                      Photo {index + 1}
+                    </Text>
                     <Pressable
                       style={styles.removePhotoButton}
                       onPress={() => handleRemovePhotoCard(card.id)}
                     >
-                      <Feather name="trash-2" size={16} color={colors.decorativeText} />
+                      <Feather
+                        name="trash-2"
+                        size={16}
+                        color={colors.decorativeText}
+                      />
                     </Pressable>
                   </View>
-                  <Pressable style={styles.uploadArea} onPress={() => handleUploadPress(card.id)}>
-                    <Feather name="image" size={40} color={colors.decorativeText} />
-                    <Text style={styles.uploadTitle}>Upload a photo</Text>
-                    <Text style={styles.uploadSubtitle}>
-                      Tap to choose from your library or camera.
-                    </Text>
+                  <Pressable
+                    style={styles.uploadArea}
+                    onPress={
+                      card.hasImage
+                        ? undefined
+                        : () => handleUploadPress(card.id)
+                    }
+                    disabled={card.hasImage}
+                  >
+                    {card.hasImage && card.localUri ? (
+                      <Image
+                        source={{ uri: card.localUri }}
+                        style={styles.uploadImagePreview}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <>
+                        <Feather
+                          name="image"
+                          size={40}
+                          color={colors.decorativeText}
+                        />
+                        <Text style={styles.uploadTitle}>Upload a photo</Text>
+                        <Text style={styles.uploadSubtitle}>
+                          Tap to choose from your library or camera.
+                        </Text>
+                      </>
+                    )}
                   </Pressable>
                   <View style={styles.cardAltWrapper}>
                     <TextInput
                       value={card.altText}
-                      onChangeText={(text) => handleAltTextChange(card.id, text)}
+                      onChangeText={(text) =>
+                        handleAltTextChange(card.id, text)
+                      }
                       placeholder="Describe this photo for accessibility (max 100 characters)"
                       placeholderTextColor={`${colors.decorativeText}cc`}
                       style={styles.cardAltInput}
@@ -603,7 +783,8 @@ export default function NewPost() {
             <Pressable
               style={[
                 styles.addPhotoFab,
-                photoCards.length >= PHOTO_LIMIT && styles.addPhotoFabDisabled,
+                photoCards.length >= PHOTO_LIMIT &&
+                  styles.addPhotoFabDisabled,
               ]}
               onPress={handleAddPhotoCard}
               disabled={photoCards.length >= PHOTO_LIMIT}
@@ -612,7 +793,9 @@ export default function NewPost() {
                 name="plus"
                 size={20}
                 color={
-                  photoCards.length >= PHOTO_LIMIT ? colors.text : colors.decorativeText
+                  photoCards.length >= PHOTO_LIMIT
+                    ? colors.text
+                    : colors.decorativeText
                 }
               />
             </Pressable>
@@ -661,7 +844,9 @@ export default function NewPost() {
 
         <View
           style={styles.formSection}
-          onLayout={(event) => setCaptionSectionY(event.nativeEvent.layout.y)}
+          onLayout={(event) =>
+            setCaptionSectionY(event.nativeEvent.layout.y)
+          }
         >
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>Caption</Text>
@@ -671,7 +856,9 @@ export default function NewPost() {
           </View>
           <TextInput
             value={caption}
-            onChangeText={(text) => setCaption(text.slice(0, CAPTION_LIMIT))}
+            onChangeText={(text) =>
+              setCaption(text.slice(0, CAPTION_LIMIT))
+            }
             placeholder="Add a caption"
             placeholderTextColor={`${colors.text}99`}
             style={[styles.input, styles.captionInput]}
@@ -684,10 +871,16 @@ export default function NewPost() {
           style={styles.tagSection}
           onLayout={(event) => setTagSectionY(event.nativeEvent.layout.y)}
         >
-          <Text style={[styles.inputLabel, { marginBottom: 10 }]}>Tags (Up to 5)</Text>
+          <Text style={[styles.inputLabel, { marginBottom: 10 }]}>
+            Tags (Up to 5)
+          </Text>
           <View style={styles.tagList}>
             {tags.map((tag) => (
-              <Pressable key={tag} style={styles.tagChip} onPress={() => handleRemoveTag(tag)}>
+              <Pressable
+                key={tag}
+                style={styles.tagChip}
+                onPress={() => handleRemoveTag(tag)}
+              >
                 <Text style={styles.tagChipText}>#{tag}</Text>
               </Pressable>
             ))}
@@ -695,7 +888,9 @@ export default function NewPost() {
           <View style={styles.tagInputRow}>
             <TextInput
               value={newTag}
-              onChangeText={(text) => setNewTag(text.replace(/\s/g, ""))}
+              onChangeText={(text) =>
+                setNewTag(text.replace(/\s/g, ""))
+              }
               placeholder="Add a tag"
               placeholderTextColor={`${colors.text}99`}
               style={styles.tagInput}
@@ -706,7 +901,8 @@ export default function NewPost() {
               disabled={tags.length >= 5 || !newTag.trim()}
               style={[
                 styles.addTagButton,
-                (tags.length >= 5 || !newTag.trim()) && styles.addTagButtonDisabled,
+                (tags.length >= 5 || !newTag.trim()) &&
+                  styles.addTagButtonDisabled,
               ]}
             >
               <Feather
@@ -714,7 +910,9 @@ export default function NewPost() {
                 size={28}
                 style={[
                   styles.addTagIcon,
-                  (tags.length >= 5 || !newTag.trim()) && { color: colors.text },
+                  (tags.length >= 5 || !newTag.trim()) && {
+                    color: colors.text,
+                  },
                 ]}
               />
             </Pressable>
@@ -725,7 +923,8 @@ export default function NewPost() {
           <Pressable
             style={[
               styles.postOptionButton,
-              postVisibility === "public" && styles.postOptionButtonSelected,
+              postVisibility === "public" &&
+                styles.postOptionButtonSelected,
             ]}
             onPress={() => setPostVisibility("public")}
           >
@@ -734,13 +933,15 @@ export default function NewPost() {
               size={20}
               style={[
                 styles.postOptionIcon,
-                postVisibility === "public" && styles.postOptionIconSelected,
+                postVisibility === "public" &&
+                  styles.postOptionIconSelected,
               ]}
             />
             <Text
               style={[
                 styles.postOptionText,
-                postVisibility === "public" && styles.postOptionTextSelected,
+                postVisibility === "public" &&
+                  styles.postOptionTextSelected,
               ]}
             >
               Public Post
@@ -750,7 +951,8 @@ export default function NewPost() {
           <Pressable
             style={[
               styles.postOptionButton,
-              postVisibility === "private" && styles.postOptionButtonSelected,
+              postVisibility === "private" &&
+                styles.postOptionButtonSelected,
             ]}
             onPress={() => setPostVisibility("private")}
           >
@@ -759,13 +961,15 @@ export default function NewPost() {
               size={20}
               style={[
                 styles.postOptionIcon,
-                postVisibility === "private" && styles.postOptionIconSelected,
+                postVisibility === "private" &&
+                  styles.postOptionIconSelected,
               ]}
             />
             <Text
               style={[
                 styles.postOptionText,
-                postVisibility === "private" && styles.postOptionTextSelected,
+                postVisibility === "private" &&
+                  styles.postOptionTextSelected,
               ]}
             >
               Private Post
@@ -773,7 +977,11 @@ export default function NewPost() {
           </Pressable>
         </View>
 
-        <Pressable style={styles.submitButton} onPress={() => console.log("Submit pressed")}>
+        <Pressable
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
           <Text style={styles.submitButtonText}>Submit</Text>
         </Pressable>
 
