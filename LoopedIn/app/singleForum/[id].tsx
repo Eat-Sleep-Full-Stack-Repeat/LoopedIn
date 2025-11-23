@@ -811,15 +811,15 @@ export default function ForumPostDetail() {
                   <View style={{backgroundColor: "white", flexDirection: "column", width: "35%", gap: 10, alignItems: "center", padding: 15, borderRadius: 20}}>
                     <Pressable onPress={() => handleEditReply(nodeToDelete)}>
                       <View style={{flexDirection: "row"}}>
-                        <EvilIcons name="pencil" size={35} color={colors.text} />
-                        <Text style={{color: colors.text, fontSize: 20}}> Edit    </Text>
+                        <EvilIcons name="pencil" size={35} color={"black"} />
+                        <Text style={{color: "black", fontSize: 20}}> Edit    </Text>
                       </View>
                     </Pressable>
                     <View style={{flex: 1, height: 1, backgroundColor: colors.text, width: "90%"}} />
                     <Pressable onPress={() => handleDeleteReply(nodeToDelete)}>
                       <View style={{flexDirection: "row"}}>
-                        <Ionicons name="trash-outline" size={24} color={colors.text} />
-                        <Text style={{color: colors.text, fontSize: 20}}> Delete </Text>
+                        <Ionicons name="trash-outline" size={24} color={"black"} />
+                        <Text style={{color: "black", fontSize: 20}}> Delete </Text>
                       </View>
                     </Pressable>
                   </View>

@@ -179,7 +179,7 @@ const EditForumReplyModal = ({
                 <Text style={{color: colors.warning}}> Cancel </Text>
             </Pressable>
             <Pressable onPress={handlePost} style={styles.button}>
-                <Text style={{color: colors.text}}>Post →</Text>
+                <Text style={{color: "black"}}>Post →</Text>
             </Pressable>
           </View>
         </View>
