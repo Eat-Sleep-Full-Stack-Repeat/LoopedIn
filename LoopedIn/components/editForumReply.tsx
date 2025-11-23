@@ -1,6 +1,6 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -21,36 +21,32 @@ type Comment = {
     profileuri: string | null;
     children?: Comment[];
   };
-  
-  type Post = {
-    id: string;
-    title: string;
-    username: string;
-    dateposted: string;
-    content: string;
-    profileuri: string | null;
-    //hasImagePlaceholder?: boolean;
-    imageuri?: string | null;
-  };
 
-type ForumReplyProps = {
+type EditReplyProps = {
   isVisible: boolean;
   onClose: () => void;
-  onPostReply: (text: string) => void;
-  replyPost: Comment | Post | null;
+  onPostEditedReply: (text: string) => void;
+  postToEdit: Comment | null;
   postID?: string;
 };
 
-const ForumReplyModal = ({
+const EditForumReplyModal = ({
   isVisible,
   onClose,
-  onPostReply,
-  replyPost,
-  postID,
-}: ForumReplyProps) => {
+  onPostEditedReply,
+  postToEdit,
+}: EditReplyProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
-  const [replyText, setReplyText] = useState("");
+  const [newReplyText, setNewReplyText] = useState("");
+
+  useEffect (() => {
+    console.log("Running the useEffect");
+    if (!postToEdit){
+        return;
+    }
+    setNewReplyText(postToEdit?.text);
+  }, [postToEdit])
 
   const styles = StyleSheet.create({
     container: {
@@ -128,33 +124,34 @@ const ForumReplyModal = ({
 
   const handlePost = () => {
     console.log("Going to handle posting the text");
-    if (replyText.trim().length === 0){
-        console.log("User entered an empty reply (nothing to post)");
-        setReplyText("");
+
+    {if (!postToEdit){
+        return;
+    }}
+
+    if (newReplyText.trim().length === 0){
+        console.log("User entered an empty reply (nothing new to post)");
+        alert("Please enter text. If you no longer want this comment to be visible, please select delete")
+        if (!postToEdit){
+            return;
+        }
+        setNewReplyText(postToEdit?.text);
         onClose();
         return;
     }
-    onPostReply(replyText);
-    setReplyText("");
+    onPostEditedReply(newReplyText);
+    setNewReplyText("");
     onClose();
   };
 
   const handleCancel = () => {
-    setReplyText("");
+    if (!postToEdit){
+        return;
+    }
+    setNewReplyText(postToEdit?.text);
     onClose();
   }
-
-  {if (!replyPost){
-    return;
-  }}
-
-  const isPost = (item: Comment | Post): item is Post => {
-    return "content" in item;
-  }
-
-  const isComment = (item: Comment | Post): item is Comment => {
-    return "text" in item;
-  }
+  
 
   return (
     <Modal
@@ -167,69 +164,13 @@ const ForumReplyModal = ({
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* show the comment the user is replying to (or the main forum title) */}
-        {isPost(replyPost) && (
-            <View style={styles.postCard}>
-                <View style={styles.postHeaderRow}>
-                {replyPost.profileuri ? (
-                        <Image source={{ uri: replyPost.profileuri}} style={styles.avatarCircle}/>
-                    ):(
-                    <View>
-                        <Image
-                        source={require("@/assets/images/icons8-cat-profile-50.png")}
-                        style={styles.avatarCircle}
-                    />
-                    </View>
-                    )}
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.postTitle}>{replyPost.title}</Text>
-                    <View style={styles.postUserRow}>
-                    <Text style={styles.postUser}>{replyPost.username}</Text>
-                    {replyPost.dateposted ? (
-                        <Text style={styles.postDate}>{new Date(replyPost.dateposted).toDateString()}</Text>
-                    ) : (
-                        <Text style={styles.postDate}> Unknown Date</Text>
-                    )}
-                    </View>
-                </View>
-                </View>
-                <Text style={styles.postBody}>{replyPost.content}</Text>
-            </View>
-        )}
-
-        {isComment(replyPost) && (
-            <View style={styles.commentBubble}>
-              <View style={styles.commentHeaderRow}>
-                {replyPost.profileuri ? (
-                    <Image source={{ uri: replyPost.profileuri}} style={styles.commentAvatarInline}/>
-                  ):(
-                  <View>
-                    <Image
-                    source={require("@/assets/images/icons8-cat-profile-50.png")}
-                    style={styles.commentAvatarInline}
-                  />
-                  </View>
-                  )}
-                <View style={styles.commentHeaderText}>
-                  <Text style={styles.commentUser} numberOfLines={1}>
-                    {replyPost.username}
-                  </Text>
-                  <Text style={styles.commentDate}>{new Date(replyPost.date).toDateString()}</Text>
-                </View>
-              </View>
-    
-              <Text style={styles.commentText}>{replyPost.text}</Text>
-    
-            </View>
-        )}
-
         <View style={styles.replyContainer}>
           <TextInput
             style={{ color: colors.text, justifyContent: "flex-start", alignItems: "flex-start", marginBottom: 15 }}
             placeholder="Enter your reply here!"
             placeholderTextColor={colors.text}
-            value={replyText}
-            onChangeText={setReplyText}
+            value={newReplyText}
+            onChangeText={setNewReplyText}
             multiline={true}
             autoFocus={true}
           />
@@ -247,4 +188,4 @@ const ForumReplyModal = ({
   );
 };
 
-export default ForumReplyModal;
+export default EditForumReplyModal;

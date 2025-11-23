@@ -641,6 +641,7 @@ export default function UserProfile() {
         data={currentPosts}
         numColumns={NUM_COLUMNS}
         key={NUM_COLUMNS}
+        bounces={false}
         ListHeaderComponent={
           <ProfileHeader
             insetsTop={insets.top}

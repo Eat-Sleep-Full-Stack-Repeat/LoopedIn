@@ -18,9 +18,12 @@ import {
   Modal,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  GestureResponderEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Entypo, EvilIcons, Feather, Ionicons } from "@expo/vector-icons";
 import { useRouter, useNavigation, useLocalSearchParams } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
@@ -28,6 +31,7 @@ import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import { TextInput } from "react-native-gesture-handler";
 import ForumReplyModal from "@/components/forumReply";
+import EditForumReplyModal from "@/components/editForumReply";
 
 type Comment = {
   id: string;
@@ -37,6 +41,8 @@ type Comment = {
   profileuri: string | null;
   depth: number | null;
   children?: Comment[];
+  commenterid: number;
+  parentid: number | null;
 };
 
 type Post = {
@@ -48,6 +54,7 @@ type Post = {
   profileuri: string | null;
   //hasImagePlaceholder?: boolean;
   imageuri?: string | null;
+  creator: number;
 };
 
 type ForumPost = {
@@ -79,11 +86,11 @@ export default function ForumPostDetail() {
   const navigation = useNavigation();
   const { width: SCREEN_W } = useWindowDimensions();
   const {id} = useLocalSearchParams();
-  console.log("RAW PARAMS: ", id)
   const postID = id as string;
   const [passedComments, setPassedComments] = useState<Comment[]>([]);
   const comments: Comment[] = useMemo(() => passedComments, [passedComments]);
   const [post, setPostInfo] = useState<Post | null>(null);
+  const [currentUser, setCurrentUser] = useState<number | null>(null);
 
   //infinite scroll variables
   const loadingMore = useRef<true | false>(false);
@@ -96,6 +103,12 @@ export default function ForumPostDetail() {
   const [isReplyVisible, setIsReplyVisible] = useState(false);
   const [replyInformation, setReplyInformation] = useState<Post | Comment | null>(null);
 
+  //edit and delete variables
+  const [showEditDeleteModal, setShowEditDeleteModal] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<Comment | null>(null);
+  const [isEditVisible, setIsEditVisible] = useState(false);
+  const [editPost, setEditPost] = useState<Comment | null>(null);
+
 
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
@@ -104,13 +117,11 @@ export default function ForumPostDetail() {
   
 
   useEffect(() => {
-    console.log("The postID is: ", postID)
     fetchPostInfo();
   }, [postID])
 
   useEffect(() => {
     if (post) {
-      console.log("The postID in the if statement is:", postID)
       fetchComments()
     }
   }, [post])
@@ -162,6 +173,7 @@ export default function ForumPostDetail() {
       }
 
       const responseData = await res.json();
+      setCurrentUser(responseData.currentUser);
       setPostInfo(responseData.postInfo);
 
     } catch (e) {
@@ -171,12 +183,11 @@ export default function ForumPostDetail() {
 
 
   const fetchComments = async () => {
-    console.log("Inside the fetch comments thing");
-    console.log("The post id being passed back to the fetch comments is", postID)
     const token = await Storage.getItem("token");
     if (loadingMore.current || !hasMore.current){
       return;
     }
+    console.log("Going to fetch more comments!!");
     loadingMore.current = true;
     try {
 
@@ -201,14 +212,10 @@ export default function ForumPostDetail() {
       );
 
       const responseData = await res.json();
-      console.log("The returned response data is: ", responseData.commentTree)
       setPassedComments(prevItems => [ ...prevItems, ...responseData.commentTree]);
       hasMore.current = (responseData.hasMore);
-      console.log("HasMore is: ", hasMore.current);
       lastTimeStamp.current = responseData.commentTree[responseData.commentTree.length - 1].date
-      console.log("The last time stamp is: ", lastTimeStamp.current)
       lastCommentID.current = responseData.commentTree[responseData.commentTree.length - 1].id
-      console.log("The last comment ID is: ", lastCommentID.current);
       
     } catch (e) {
       console.log("Error when getting the comments", e);
@@ -284,6 +291,89 @@ export default function ForumPostDetail() {
       alert("Could not create comments for this forum post. Please try again later");
     }
 
+  }
+
+  const handleDeleteReply = async (commentToDelete: Comment | null) => {
+    console.log("Delete reply was pressed");
+    const token = await Storage.getItem("token");
+    if (!commentToDelete){
+      return;
+    }
+
+    function getParents(arr: any, id: any){
+      for (let child of arr) {
+        if (child.id === id){
+          return id;
+        } else if (child.children.length > 0){
+          var x = getParents(child.children, id);
+
+          if (x) return Array.isArray(x) ? [ ...x, child.id] : [x, child.id];
+        }
+      }
+    }
+
+    const result: string[] = getParents(passedComments, commentToDelete.id);
+    console.log(result);
+
+    //double check that the user can delete that comment
+    if (commentToDelete.commenterid === currentUser){
+      try {
+        let hasChildren = false;
+        if (commentToDelete.children){
+          if (commentToDelete.children.length > 0){
+            hasChildren = true;
+          }
+        }
+
+        let hasParent = true;
+        if (commentToDelete.parentid === null){
+          hasParent = false;
+        }
+        console.log("Just before the delete!");
+        const response = await fetch(`${API_URL}/api/forum/forum-comment-delete`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ commenterID: commentToDelete.commenterid, commentID: parseInt(commentToDelete.id), hasChildren, hasParent, pathArray: result, postID}),
+        });
+
+        console.log("Just before checking the response");
+
+        if (!response.ok) {
+          alert("Error while deleting the forum comment. Try again later.");
+          return;
+        }
+
+      }
+      catch(error) {
+        console.log("Error while deleting forum comment:", (error as Error).message);
+        alert("Server error, please try again later.");
+      } finally {
+        handleRefresh();
+        setShowEditDeleteModal(false);
+      }
+      
+    } else {
+      alert("You do not have access to delete this comment");
+      return;
+    }
+  }
+
+  const handleEditReply = (commentToEdit: Comment | null) => {
+    console.log("Edit reply was pressed", commentToEdit);
+    setShowEditDeleteModal(false);
+    if (!commentToEdit){
+      return;
+    }
+    setEditPost(commentToEdit);
+    setIsEditVisible(true);
+  }
+
+  const handleEditedReply = async (newReplyText: string) => {
+    console.log("Will send the new text to the backend", newReplyText);
   }
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -372,6 +462,7 @@ export default function ForumPostDetail() {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
+      justifyContent: "space-between"
     },
     commentAvatarInline: {
       width: 34,
@@ -546,37 +637,69 @@ export default function ForumPostDetail() {
 
     return (
       <View key={node.id} style={styles.commentWrap}>
-        <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth) }]}>
-          <View style={styles.commentHeaderRow}>
-            {node.profileuri ? (
-                <Image source={{ uri: node.profileuri}} style={styles.commentAvatarInline}/>
-              ):(
-              <View>
-                <Image
-                source={require("@/assets/images/icons8-cat-profile-50.png")}
-                style={styles.commentAvatarInline}
-              />
+        {(node.text === "This comment has been deleted") && (
+          <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth), flexDirection: "row", gap: 10, alignContent: "center" }]}>
+              <View style={{flexDirection: "row"}}>
+                  <View>
+                    <Image
+                    source={require("@/assets/images/icons8-cat-profile-50.png")}
+                    style={styles.commentAvatarInline}
+                  />
+                  </View>
               </View>
+            <Text style={styles.commentText}>{node.text}</Text>
+          </View>
+        )}
+        {(node.text !== "This comment has been deleted") && (
+          <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth) }]}>
+            <View style={styles.commentHeaderRow}>
+              <View style={{flexDirection: "row"}}>
+              
+                {node.profileuri ? (
+                    <Image source={{ uri: node.profileuri}} style={styles.commentAvatarInline}/>
+                  ):(
+                  <View>
+                    <Image
+                    source={require("@/assets/images/icons8-cat-profile-50.png")}
+                    style={styles.commentAvatarInline}
+                  />
+                  </View>
+                  )}
+                  <View style={{flexDirection: "column"}}>
+                    <View style={styles.commentHeaderText}>
+                      <Text style={styles.commentUser} numberOfLines={1}>
+                        {node.username}
+                      </Text>
+                      {(post?.creator === node.commenterid) && (
+                      <Text style={{color: colors.text}}>(Creator)</Text>
+                      )}
+                      {(currentUser === node.commenterid) && (
+                      <Text style={{color: colors.text}}>(You)</Text>
+                      )}
+                    </View>
+                      <Text style={styles.commentDate}>{new Date(node.date).toDateString()}</Text>
+                  </View>
+              </View>
+              {(currentUser === node.commenterid) && (
+                <Pressable onPress={() => {setShowEditDeleteModal(true); setNodeToDelete(node)}}>
+                  <Entypo name="dots-three-vertical" size={20} color={colors.text} />
+                </Pressable>
               )}
-            <View style={styles.commentHeaderText}>
-              <Text style={styles.commentUser} numberOfLines={1}>
-                {node.username}
-              </Text>
-              <Text style={styles.commentDate}>{new Date(node.date).toDateString()}</Text>
+            </View>
+
+            <Text style={styles.commentText}>{node.text}</Text>
+
+            <View style={styles.commentActions}>
+              {depth < MAX_REPLY_DEPTH && (
+                <Pressable style={styles.smallAction} onPress={() => handleReplyPress(node.id, node)}>
+                  <Feather name="message-circle" size={14} color={colors.text} />
+                  <Text style={styles.smallIconText}>Reply</Text>
+                </Pressable>
+              )}
             </View>
           </View>
-
-          <Text style={styles.commentText}>{node.text}</Text>
-
-          <View style={styles.commentActions}>
-            {depth < MAX_REPLY_DEPTH && (
-              <Pressable style={styles.smallAction} onPress={() => handleReplyPress(node.id, node)}>
-                <Feather name="message-circle" size={14} color={colors.text} />
-                <Text style={styles.smallIconText}>Reply</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
+        )}
+        
 
         {showChildren &&
           children.map((child) =>
@@ -612,7 +735,6 @@ export default function ForumPostDetail() {
       </View>
     );
   };
-
   return (
     <View style={styles.screen}>
       <Pressable style={styles.backFab} onPress={() => router.back()}>
@@ -641,7 +763,7 @@ export default function ForumPostDetail() {
           } else {
             return (
               <View style={{paddingVertical: 40, marginLeft: 50}}>
-                <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Recent Posts </Text>
+                <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Recent Comments </Text>
               </View>
             )
           }
@@ -661,7 +783,38 @@ export default function ForumPostDetail() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
         }
       />
-      <ForumReplyModal isVisible={isReplyVisible} onClose={() => setIsReplyVisible(false)} onPostReply={handlePostReply} replyPost={replyInformation}/>
+      <ForumReplyModal isVisible={isReplyVisible} onClose={() => setIsReplyVisible(false)} onPostReply={handlePostReply} replyPost={replyInformation} postID={post?.id}/>
+      <EditForumReplyModal isVisible={isEditVisible} onClose={() => setIsEditVisible(false)} onPostEditedReply={handleEditedReply} postToEdit={editPost}/>
+      {showEditDeleteModal && (
+          <Modal 
+          animationType="none"
+          transparent={true}
+          visible={showEditDeleteModal}
+          onRequestClose={() => setShowEditDeleteModal(false)}
+          >
+            <TouchableOpacity onPressIn={() => setShowEditDeleteModal(false)} style={{flex: 1}}>
+              <View style={{backgroundColor: "rgba(0,0,0,0.5)", flex: 1, alignItems: "center", justifyContent: "center"}}>
+                <TouchableWithoutFeedback>
+                  <View style={{backgroundColor: "white", flexDirection: "column", width: "35%", gap: 10, alignItems: "center", padding: 15, borderRadius: 20}}>
+                    <Pressable onPress={() => handleEditReply(nodeToDelete)}>
+                      <View style={{flexDirection: "row"}}>
+                        <EvilIcons name="pencil" size={35} color={colors.text} />
+                        <Text style={{color: colors.text, fontSize: 20}}> Edit    </Text>
+                      </View>
+                    </Pressable>
+                    <View style={{flex: 1, height: 1, backgroundColor: colors.text, width: "90%"}} />
+                    <Pressable onPress={() => handleDeleteReply(nodeToDelete)}>
+                      <View style={{flexDirection: "row"}}>
+                        <Ionicons name="trash-outline" size={24} color={colors.text} />
+                        <Text style={{color: colors.text, fontSize: 20}}> Delete </Text>
+                      </View>
+                    </Pressable>
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        )}
     </View>
   );
 }

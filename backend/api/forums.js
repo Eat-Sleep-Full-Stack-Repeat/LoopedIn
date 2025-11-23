@@ -405,7 +405,8 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
             p.fld_pic AS imageuri, 
             CAST(p.fld_timestamp AS TIMESTAMPTZ) AS dateposted, 
             u.fld_username AS username, 
-            u.fld_profile_pic AS profileuri 
+            u.fld_profile_pic AS profileuri, 
+            p.fld_creator AS creator
     FROM forums.tbl_forum_post AS p
     INNER JOIN login.tbl_user AS u 
       ON p.fld_creator = u.fld_user_pk
@@ -439,7 +440,8 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
     }
 
     res.status(200).json({
-      postInfo: returnedPostInfo.rows[0]
+      postInfo: returnedPostInfo.rows[0],
+      currentUser: req.userID
     })
     //send post data back
   } catch (e) {
@@ -563,7 +565,7 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
     }
 
     let commentsTree = buildCommentsTree(returnedComments.rows);
-    console.log("The comments tree looks like this: ", JSON.stringify(commentsTree, null, 2))
+    //console.log("This is the comments tree: ", JSON.stringify(commentsTree, null, 2));
     if (commentsTree.length <= 10) {
       hasMore = false;
     }
@@ -598,6 +600,231 @@ router.post("/forum-comment-post", authenticateToken, async (req, res) => {
     res.status(500).send("Error");
   }
 
+
+})
+
+// Deleting a comment
+router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
+  console.log("Going to delete a comment");
+  const currentUser = req.userID;
+  const sentData = req.body;
+  const { commenterID, commentID, hasChildren, hasParent, pathArray, postID } = sentData;
+
+  let checkParent;
+  let rootID;
+  const numCommentID = parseInt(commentID);
+  if (Array.isArray(pathArray)){
+    rootID = parseInt(pathArray[pathArray.length - 1]);
+  } else {
+    rootID = pathArray;
+  }
+  console.log("Going to delete the commentID: ", numCommentID);
+  console.log("Going to delete the comment by commenterID: ", commenterID);
+  console.log("The paths that were passed from front-end: ", pathArray);
+  console.log("The rootID is: ", rootID);
+
+  //double check the user has access to delete the comment
+  if (currentUser !== commenterID) {
+    console.log("User does not have access to delete this comment")
+    return res.status(403).json({message: "This user does not have access to delete this comment"});
+  }
+
+  try {
+    let query;
+    let confirmComment;
+    let count = 0;
+    let continueSearch = true;
+
+    //double check that the comment exists
+    query = `
+    SELECT *
+    FROM forums.tbl_forum_comment
+    WHERE fld_comment_pk = $1 AND fld_commenter = $2;
+    `
+
+    confirmComment = await pool.query(query, [numCommentID, commenterID]);
+
+    if (confirmComment.rowCount < 1){
+      console.log("Could not find the comment to delete")
+      return res.status(404).json({message: "Could not find the comment to delete"})
+    }
+
+    // //determine if node and all its children are deleted
+    // //function -> Are all children deleted areAllChildrenDeleted()
+    //   // pass comment id to function
+    //   // Grab comment data
+    //   // check if comment has been deleted -> if not return false
+    //     //check if text = "this comment has been deleted"
+    //     // for each child call this function again
+    //     const array = [];
+    //     if (!array.length) return true;
+    //     array.every(x => (true));
+
+    console.log("right before the query")
+    query = `
+    WITH RECURSIVE postComments AS (
+      (SELECT fld_comment_pk AS id, 
+              fld_post AS postID, 
+              fld_commenter AS commenterID, 
+              fld_parent_comment AS parentID, 
+              fld_comment_depth AS depth, 
+              fld_body AS text, 
+              CAST (fld_timestamp AS TIMESTAMPTZ) AS date
+      FROM forums.tbl_forum_comment 
+      WHERE fld_post = $1 AND fld_comment_pk = $2
+      ORDER BY fld_timestamp DESC
+      LIMIT 11)
+      UNION ALL
+        SELECT  fld_comment_pk AS id, 
+                fld_post AS postID, 
+                fld_commenter AS commenterID, 
+                fld_parent_comment AS parentID, 
+                fld_comment_depth AS depth, 
+                fld_body AS text, 
+                CAST (fld_timestamp AS TIMESTAMPTZ) AS date
+        FROM forums.tbl_forum_comment
+    INNER JOIN postComments p ON p.id = fld_parent_comment
+    ) SELECT * FROM postComments
+    ORDER BY date DESC;
+    `;
+
+
+    console.log("Right after the query");
+    const commentSubset = await pool.query(query, [postID, rootID])
+    console.log("Here is the comment subset rows to check: ", commentSubset.rows);
+
+    const commentSubsetRows = commentSubset.rows;
+
+    function areAllChildrenDeleted(commentsToCheck, commentToDeleteID) {
+        console.log("The commentsToCheck are: ", commentsToCheck);
+        console.log("The commentToDeleteID is: ", commentToDeleteID)
+        const arrChildren = commentsToCheck.filter(item => parseInt(item.parentid) === parseInt(commentToDeleteID));
+        console.log("The children I need to check are: ", arrChildren);
+        if (!arrChildren.length) return true;
+        return arrChildren.every((x) => {
+          if (parseInt(x.id) === parseInt(pathArray[0])){
+            return true;
+          }
+          return (x.text === 'This comment has been deleted' && areAllChildrenDeleted(commentsToCheck, x.id))
+        });
+    }
+
+    async function deleteSubtree (rootToDelete) {
+      console.log("Going to delete the subtree at root: ", rootToDelete);
+      query = `
+      WITH RECURSIVE postComments AS (
+        (SELECT fld_comment_pk, fld_parent_comment
+        FROM forums.tbl_forum_comment 
+        WHERE fld_post = $1 AND fld_comment_pk = $2)
+        UNION ALL
+          SELECT  c.fld_comment_pk, c.fld_parent_comment
+          FROM forums.tbl_forum_comment c
+		  INNER JOIN postComments p ON p.fld_comment_pk = c.fld_parent_comment
+      ) DELETE FROM forums.tbl_forum_comment WHERE fld_comment_pk IN (SELECT fld_comment_pk FROM postComments);
+      `
+
+      await pool.query(query, [postID, rootToDelete]);
+    }
+
+    async function updateText (idToUpdate) {
+      console.log("Going to update the text of id: ", idToUpdate);
+      query = `
+      UPDATE forums.tbl_forum_comment
+      SET fld_body = 'This comment has been deleted'
+      WHERE fld_comment_pk = $1 AND fld_commenter = $2
+      `
+      await pool.query(query, [idToUpdate, commenterID])
+    }
+
+    //case 1 -> node has no parent but has children (root comment with replies)
+      //call function to check if all children are deleted
+        // if true -> delete whole tree
+        // if false -> update text
+    if (!hasParent && hasChildren){
+      console.log("Node has no parents, but has children");
+      if (areAllChildrenDeleted(commentSubsetRows, rootID)){
+        console.log("Going to delete the whole tree");
+        deleteSubtree(rootID);
+      } else {
+        console.log("Can't delete the whole tree, going to update text");
+        updateText(rootID);
+      }
+    }
+
+    //case 2 -> node has parent but no children (last reply comment)
+      // go to parent node
+      // check if all children are deleted 
+        //if yes, go to next parent
+        //if no, go back down to previous node and delete
+    if (hasParent && !hasChildren){
+      console.log("node has parents, but has no children");
+      count++;
+      while (count < pathArray.length){
+        checkParent = commentSubsetRows.find(node => node.id === pathArray[count]);
+        if (checkParent.text !== 'This comment has been deleted'){
+          break;
+        }
+        continueSearch = areAllChildrenDeleted(commentSubsetRows, parseInt(pathArray[count]));
+        if (continueSearch){
+          count++;
+        } else {
+          break;
+        }
+      }
+      console.log("Going to delete comment at count - 1", count - 1);
+      deleteSubtree(parseInt(pathArray[count - 1]))
+    }
+
+    //case 3 -> Node with parent and children (a reply with replies)
+      // check if all children are deleted
+        //if yes, go to parent
+        //if no on first node, update text
+        //if no on a parent node, delete tree from previous node
+    if (hasParent && hasChildren){
+      console.log("The node has parents and children");
+      while (count < pathArray.length) {
+        checkParent = commentSubsetRows.find(node => node.id === pathArray[count])
+        if (checkParent.text !== 'This comment has been deleted'){
+          break;
+        }
+        continueSearch = areAllChildrenDeleted(commentSubsetRows, parseInt(pathArray[count]))
+        if (continueSearch) {
+          count++
+        } else {
+          break;
+        }
+      }
+      console.log("Going to delete the tree with this id: ", pathArray[count]);
+      if (count === 0){
+        console.log("I need to update this comment with text");
+        updateText(parseInt(pathArray[0]));
+      } else {
+        console.log("I need to delete this comment and all its children from count - 1");
+        deleteSubtree(parseInt(pathArray[count - 1]));
+      }
+    }
+
+    //case 4 -> node has no parent or children (a single comment no replies)
+      // delete the comment 
+    if (!hasChildren && !hasParent){
+      console.log("Going to delete the leaf node")
+      //only delete if the comment has no children
+      console.log("Just before deleting the comment")
+      //delete the comment
+      query = `
+      DELETE FROM forums.tbl_forum_comment
+      WHERE fld_comment_pk = $1 AND fld_commenter = $2;
+      `
+      await pool.query(query, [numCommentID, commenterID]);
+    }
+    
+    console.log("successfully deleted the comment!");
+    return res.status(200).json({message: "Comment was successfully deleted"})
+
+  } catch (e) {
+    console.log("Error when trying to delete forum comment", e);
+    res.status(500).json(e)
+  }
 
 })
 
