@@ -139,7 +139,7 @@ const EditForumReplyModal = ({
         onClose();
         return;
     }
-    onPostEditedReply(newReplyText, postToEdit.id);
+    onPostEditedReply(newReplyText.trim(), postToEdit.id);
     setNewReplyText("");
     onClose();
   };
