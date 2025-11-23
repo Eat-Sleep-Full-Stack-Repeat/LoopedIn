@@ -39,7 +39,7 @@ type Comment = {
   date: string;
   text: string;
   profileuri: string | null;
-  depth: number | null;
+  depth: number;
   children?: Comment[];
   commenterid: number;
   parentid: number | null;
@@ -187,7 +187,6 @@ export default function ForumPostDetail() {
     if (loadingMore.current || !hasMore.current){
       return;
     }
-    console.log("Going to fetch more comments!!");
     loadingMore.current = true;
     try {
 
@@ -226,15 +225,12 @@ export default function ForumPostDetail() {
 
   // will display the modal where the user can enter a reply
   const handleReplyPress = (replyCommentID: string, replyInfo: Post | Comment) => {
-    console.log("The reply button was pressed on comment #", replyCommentID);
     setIsReplyVisible(true);
     setReplyInformation(replyInfo);
   }
 
   //will actually post the reply in the databases
   const handlePostReply = async (replyText: string) => {
-    console.log("Now I will need to figure out how to post the reply to the backend! Also don't forget to then refresh the page so the user can see their comment")
-    console.log("This is what the user entered: ", replyText);
 
     const isPost = (item: Comment | Post): item is Post => {
       return "content" in item;
@@ -252,7 +248,7 @@ export default function ForumPostDetail() {
       depth = 0;
     } else {
       parentID = replyInformation.id;
-      depth = replyInformation.depth;
+      depth = replyInformation.depth + 1;
     }
 
     const newComment = {
@@ -262,8 +258,6 @@ export default function ForumPostDetail() {
       body: replyText,
       timestamp: new Date(),
     }
-
-    console.log("This is what is being passed to the backend btw: ", newComment)
 
     const token = await Storage.getItem("token");
     try {
@@ -294,13 +288,12 @@ export default function ForumPostDetail() {
   }
 
   const handleDeleteReply = async (commentToDelete: Comment | null) => {
-    console.log("Delete reply was pressed");
     const token = await Storage.getItem("token");
     if (!commentToDelete){
       return;
     }
 
-    function getParents(arr: any, id: any){
+    function getParents(arr: any, id: any): any {
       for (let child of arr) {
         if (child.id === id){
           return id;
@@ -313,7 +306,6 @@ export default function ForumPostDetail() {
     }
 
     const result: string[] = getParents(passedComments, commentToDelete.id);
-    console.log(result);
 
     //double check that the user can delete that comment
     if (commentToDelete.commenterid === currentUser){
@@ -329,7 +321,6 @@ export default function ForumPostDetail() {
         if (commentToDelete.parentid === null){
           hasParent = false;
         }
-        console.log("Just before the delete!");
         const response = await fetch(`${API_URL}/api/forum/forum-comment-delete`, {
           method: "DELETE",
           headers: {
@@ -339,8 +330,6 @@ export default function ForumPostDetail() {
           credentials: "include",
           body: JSON.stringify({ commenterID: commentToDelete.commenterid, commentID: parseInt(commentToDelete.id), hasChildren, hasParent, pathArray: result, postID}),
         });
-
-        console.log("Just before checking the response");
 
         if (!response.ok) {
           alert("Error while deleting the forum comment. Try again later.");
@@ -363,7 +352,6 @@ export default function ForumPostDetail() {
   }
 
   const handleEditReply = (commentToEdit: Comment | null) => {
-    console.log("Edit reply was pressed", commentToEdit);
     setShowEditDeleteModal(false);
     if (!commentToEdit){
       return;
@@ -372,8 +360,33 @@ export default function ForumPostDetail() {
     setIsEditVisible(true);
   }
 
-  const handleEditedReply = async (newReplyText: string) => {
-    console.log("Will send the new text to the backend", newReplyText);
+  const handleEditedReply = async (newReplyText: string, commentID: string) => {
+    const token = await Storage.getItem("token");
+    
+    try {
+      const sendBody = {
+        newText: newReplyText,
+        commentID
+      }
+      const response = await fetch(`${API_URL}/api/forum/forum-update-comment`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(sendBody)
+    });
+
+      if (!response.ok) {
+        alert("Could not update that comment :( ");
+        return;
+      } else {
+        handleRefresh();
+      }
+    } catch (e) {
+      console.log("Error when trying to update comment information", e)
+    }
   }
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});

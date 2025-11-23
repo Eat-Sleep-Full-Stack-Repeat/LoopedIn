@@ -35,11 +35,8 @@ const upload = multer({
 //get request -> return a list of forums
 // everything in req.query is from the fetch URL query
 router.get("/get-forums", authenticateToken, async (req, res) => {
-  console.log("reached the get request for forums");
-  console.log("This is the query: ", req.query);
 
   const currentUser = req.userID;
-  console.log("Current user is: ", currentUser);
 
   try {
     const limit = parseInt(req.query.limit); // number of posts to return -> determined by front-end
@@ -47,11 +44,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
     let morePosts = true; // used to check if there are any more posts (false -> front-end should stop fetching data)
     let query;
     let returnedFeed;
-
-    console.log(`Checking timestamp ${req.query.before}`);
-
     let craftFilter = req.query.craft;
-    console.log("Craft filter is: ", craftFilter);
 
     // need to check if there was a timestamp passed from the frontend (used to sort feed and keep consistent)
     if (
@@ -60,7 +53,6 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
       !req.query.before
     ) {
       // loads the initial batch of data (no timestamp to check, just the most recent posts)
-      console.log(`Inside initial loading of forum feed using ${limit}`);
       query = `
       SELECT u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
       FROM login.tbl_user AS u 
@@ -82,7 +74,6 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
       ]);
     } else {
       // loads more data after the initial batch (uses timestamp of last returned post to get more -> ensures working with same set of data)
-      console.log("Inside the else branch");
       query = `
       SELECT u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
       FROM login.tbl_user AS u 
@@ -135,11 +126,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
 
 // ----------- SAVED FORUMS -------------
 router.get("/get-saved-forums", authenticateToken, async (req, res) => {
-  console.log("reached the get request for saved forums");
-  console.log("This is the query: ", req.query);
-
   const currentUser = req.userID;
-  console.log("Current user is: ", currentUser);
 
   try {
     const limit = parseInt(req.query.limit); // number of posts to return -> determined by front-end
@@ -451,7 +438,6 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
 
 // ------------------------- FORUM COMMENTS -----------------------
 router.get("/get-post-comments", authenticateToken, async (req, res) => {
-  console.log("Inside the backend for the get comments")
   function buildCommentsTree(flatList) {
     const nodeMap = {};
     const rootNodes = [];
@@ -472,13 +458,10 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
   }
 
   try {
-    // FIXME: Update with the correct postID
     const filterPostID = req.query.id;
-    console.log("The filter used to find the post is: ", filterPostID)
     let query;
     let returnedComments;
     let hasMore = true;
-    //FIXME: Add in the timestamp and comment ID info to make sure the newest posts are fetched first and then oldest
     if ((req.query.before === "undefined") | (req.query.before === "null") | (!req.query.before)){
       query = `
       WITH RECURSIVE postComments AS (
@@ -514,7 +497,6 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
       `;
       returnedComments = await pool.query(query, [filterPostID]);
     } else {
-      console.log("Inside the limiting query for the comments")
       query = `
       WITH RECURSIVE postComments AS (
         (SELECT c.fld_comment_pk AS id, 
@@ -565,7 +547,6 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
     }
 
     let commentsTree = buildCommentsTree(returnedComments.rows);
-    //console.log("This is the comments tree: ", JSON.stringify(commentsTree, null, 2));
     if (commentsTree.length <= 10) {
       hasMore = false;
     }
@@ -579,11 +560,9 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
 });
 
 router.post("/forum-comment-post", authenticateToken, async (req, res) => {
-  console.log("Going to post a new comment! Yay!!")
   const currentUser = req.userID;
   const sentData = req.body;
   const { postID, parentID, depth, body, timestamp} = sentData;
-  console.log("This is what I am going to use for the query: ", req.body)
   try {
     let query;
     let postComment;
@@ -605,7 +584,6 @@ router.post("/forum-comment-post", authenticateToken, async (req, res) => {
 
 // Deleting a comment
 router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
-  console.log("Going to delete a comment");
   const currentUser = req.userID;
   const sentData = req.body;
   const { commenterID, commentID, hasChildren, hasParent, pathArray, postID } = sentData;
@@ -618,10 +596,6 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
   } else {
     rootID = pathArray;
   }
-  console.log("Going to delete the commentID: ", numCommentID);
-  console.log("Going to delete the comment by commenterID: ", commenterID);
-  console.log("The paths that were passed from front-end: ", pathArray);
-  console.log("The rootID is: ", rootID);
 
   //double check the user has access to delete the comment
   if (currentUser !== commenterID) {
@@ -649,18 +623,7 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
       return res.status(404).json({message: "Could not find the comment to delete"})
     }
 
-    // //determine if node and all its children are deleted
-    // //function -> Are all children deleted areAllChildrenDeleted()
-    //   // pass comment id to function
-    //   // Grab comment data
-    //   // check if comment has been deleted -> if not return false
-    //     //check if text = "this comment has been deleted"
-    //     // for each child call this function again
-    //     const array = [];
-    //     if (!array.length) return true;
-    //     array.every(x => (true));
-
-    console.log("right before the query")
+    //Get all comments that have a relationship to comment to delete (any children, parents, grandparents, etc.)
     query = `
     WITH RECURSIVE postComments AS (
       (SELECT fld_comment_pk AS id, 
@@ -689,17 +652,12 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
     `;
 
 
-    console.log("Right after the query");
     const commentSubset = await pool.query(query, [postID, rootID])
-    console.log("Here is the comment subset rows to check: ", commentSubset.rows);
-
     const commentSubsetRows = commentSubset.rows;
 
+    // function to determine if all children of a passed node are deleted (returns true or false)
     function areAllChildrenDeleted(commentsToCheck, commentToDeleteID) {
-        console.log("The commentsToCheck are: ", commentsToCheck);
-        console.log("The commentToDeleteID is: ", commentToDeleteID)
         const arrChildren = commentsToCheck.filter(item => parseInt(item.parentid) === parseInt(commentToDeleteID));
-        console.log("The children I need to check are: ", arrChildren);
         if (!arrChildren.length) return true;
         return arrChildren.every((x) => {
           if (parseInt(x.id) === parseInt(pathArray[0])){
@@ -709,8 +667,8 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
         });
     }
 
+    //function to delete the subtree from a given node and down
     async function deleteSubtree (rootToDelete) {
-      console.log("Going to delete the subtree at root: ", rootToDelete);
       query = `
       WITH RECURSIVE postComments AS (
         (SELECT fld_comment_pk, fld_parent_comment
@@ -726,8 +684,8 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
       await pool.query(query, [postID, rootToDelete]);
     }
 
+    //function to update text to node (could not delete node, so update text)
     async function updateText (idToUpdate) {
-      console.log("Going to update the text of id: ", idToUpdate);
       query = `
       UPDATE forums.tbl_forum_comment
       SET fld_body = 'This comment has been deleted'
@@ -741,12 +699,9 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
         // if true -> delete whole tree
         // if false -> update text
     if (!hasParent && hasChildren){
-      console.log("Node has no parents, but has children");
       if (areAllChildrenDeleted(commentSubsetRows, rootID)){
-        console.log("Going to delete the whole tree");
         deleteSubtree(rootID);
       } else {
-        console.log("Can't delete the whole tree, going to update text");
         updateText(rootID);
       }
     }
@@ -757,7 +712,6 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
         //if yes, go to next parent
         //if no, go back down to previous node and delete
     if (hasParent && !hasChildren){
-      console.log("node has parents, but has no children");
       count++;
       while (count < pathArray.length){
         checkParent = commentSubsetRows.find(node => node.id === pathArray[count]);
@@ -771,7 +725,6 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
           break;
         }
       }
-      console.log("Going to delete comment at count - 1", count - 1);
       deleteSubtree(parseInt(pathArray[count - 1]))
     }
 
@@ -781,7 +734,6 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
         //if no on first node, update text
         //if no on a parent node, delete tree from previous node
     if (hasParent && hasChildren){
-      console.log("The node has parents and children");
       while (count < pathArray.length) {
         checkParent = commentSubsetRows.find(node => node.id === pathArray[count])
         if (checkParent.text !== 'This comment has been deleted'){
@@ -794,12 +746,9 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
           break;
         }
       }
-      console.log("Going to delete the tree with this id: ", pathArray[count]);
       if (count === 0){
-        console.log("I need to update this comment with text");
         updateText(parseInt(pathArray[0]));
       } else {
-        console.log("I need to delete this comment and all its children from count - 1");
         deleteSubtree(parseInt(pathArray[count - 1]));
       }
     }
@@ -807,9 +756,7 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
     //case 4 -> node has no parent or children (a single comment no replies)
       // delete the comment 
     if (!hasChildren && !hasParent){
-      console.log("Going to delete the leaf node")
       //only delete if the comment has no children
-      console.log("Just before deleting the comment")
       //delete the comment
       query = `
       DELETE FROM forums.tbl_forum_comment
@@ -826,6 +773,38 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
     res.status(500).json(e)
   }
 
+})
+
+router.patch("/forum-update-comment", authenticateToken, async (req,res) => {
+  const {newText, commentID} = req.body;
+  //check if comment exists
+  try {
+    let query;
+    query = `
+      SELECT *
+      FROM forums.tbl_forum_comment
+      WHERE fld_comment_pk = $1;
+    `
+    commentExists = await pool.query(query, [commentID]);
+    if (commentExists.rowCount !== 1){
+      console.log("Could not find the comment to update")
+      res.status(404).json(e);
+    }
+
+    query = `
+      UPDATE forums.tbl_forum_comment
+      SET fld_body = $1
+      WHERE fld_comment_pk = $2;
+      `
+
+    await pool.query(query, [newText, commentID]);
+
+    console.log("Successfully updated comment text");
+    res.status(200).json({message: "Comment was successfully updated"})
+  } catch (e) {
+    console.log("Error when updating comment text", e);
+    res.status(500).json(e);
+  }
 })
 
 module.exports = router;

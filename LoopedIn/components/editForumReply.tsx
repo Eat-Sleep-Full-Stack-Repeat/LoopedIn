@@ -25,7 +25,7 @@ type Comment = {
 type EditReplyProps = {
   isVisible: boolean;
   onClose: () => void;
-  onPostEditedReply: (text: string) => void;
+  onPostEditedReply: (text: string, commentID: string) => void;
   postToEdit: Comment | null;
   postID?: string;
 };
@@ -139,7 +139,7 @@ const EditForumReplyModal = ({
         onClose();
         return;
     }
-    onPostEditedReply(newReplyText);
+    onPostEditedReply(newReplyText, postToEdit.id);
     setNewReplyText("");
     onClose();
   };
