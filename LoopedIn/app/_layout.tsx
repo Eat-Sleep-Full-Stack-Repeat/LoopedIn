@@ -11,7 +11,7 @@ export default function RootLayout() {
         <Stack.Screen name="welcomePage" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="forumFeed" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="newforumpost" options={{headerShown: false, animation: "none"}}/>
-        <Stack.Screen name="singleForums" options={{headerShown: false, animation: "none"}}/>
+        {/* <Stack.Screen name="singleForums" options={{headerShown: false, animation: "none"}}/> */}
         <Stack.Screen name="newpost" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="login" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="signup" options={{headerShown: false, animation: "none"}}/>
