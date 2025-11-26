@@ -48,6 +48,22 @@ router.get("/profile", authenticateToken, async (req, res) => {
 
     const avatarUrl = await signKeyIfPresent(row.avatarKey);
 
+    //get following
+    query = `
+    SELECT COUNT(*) AS following
+    FROM following_blocked.tbl_follow
+    WHERE fld_follower_id = $1;
+    `
+    const following = await pool.query(query, [userPk])
+
+    //get followers
+    query = `
+    SELECT COUNT(*) AS followers
+    FROM following_blocked.tbl_follow
+    WHERE fld_user_id = $1;
+    `
+    const followers = await pool.query(query, [userPk])
+
     // ---- user posts: first photo as preview ----
     let posts = [];
     try {
@@ -88,6 +104,8 @@ router.get("/profile", authenticateToken, async (req, res) => {
     return res.status(200).json({
       userName: row.userName,
       userBio: row.userBio,
+      following: following.rows[0].following,
+      followers: followers.rows[0].followers,
       avatarUrl,
       posts,
       savedPosts,
@@ -163,5 +181,106 @@ router.patch("/profile", authenticateToken, express.json(), async (req, res) => 
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
+
+
+//fetch other users
+router.get("/profile/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    //get userdata
+    query = `
+      SELECT fld_username, fld_user_bio, fld_profile_pic
+      FROM login.tbl_user
+      WHERE fld_user_pk = $1
+    `
+    const basicUserData = await pool.query(query, [id])
+
+    if (basicUserData.rowCount == 0) {
+      console.log("[profile-other]: user does not exist")
+      res.status(404).json({message: "User does not exist"})
+      return
+    }
+
+    //obtain pfp
+    const avatarUrl = await signKeyIfPresent(basicUserData.rows[0].fld_profile_pic)
+
+    //get following
+    query = `
+    SELECT COUNT(*) AS following
+    FROM following_blocked.tbl_follow
+    WHERE fld_follower_id = $1;
+    `
+    const following = await pool.query(query, [id])
+
+    //get followers
+    query = `
+    SELECT COUNT(*) AS followers
+    FROM following_blocked.tbl_follow
+    WHERE fld_user_id = $1;
+    `
+    const followers = await pool.query(query, [id])
+
+    //get tags??
+
+
+    //get posts
+    let posts = [];
+    try {
+      query = `
+        SELECT
+          p.fld_post_pk AS "postId",
+          p.fld_caption AS "caption",
+          (
+            SELECT pic.fld_post_pic
+            FROM posts.tbl_post_pic pic
+            WHERE pic.fld_post_fk = p.fld_post_pk
+            ORDER BY pic.fld_pic_id ASC
+            LIMIT 1
+          ) AS "previewKey"
+        FROM posts.tbl_post p
+        WHERE p.fld_creator = $1
+        ORDER BY p.fld_post_pk DESC
+      `;
+      const user_posts = await pool.query(query, [id]);
+
+      posts = await Promise.all(
+        user_posts.rows.map(async (postRow) => {
+          const previewUrl = await signPostKeyIfPresent(postRow.previewKey);
+          return {
+            postId: postRow.postId,
+            caption: postRow.caption,
+            previewUrl, // full signed URL or null
+          };
+        })
+      );
+    } 
+    catch (error) {
+      console.log("GET /profile: error loading posts:", error);
+      posts = [];
+    }
+
+
+    console.log("fetched user")
+
+    //return everything
+    res.status(200).json({
+      userName: basicUserData.rows[0].fld_username,
+      userBio: basicUserData.rows[0].fld_user_bio,
+      avatarUrl: avatarUrl,
+      following: following.rows[0].following,
+      followers: followers.rows[0].followers,
+      posts: posts,
+      tags: [],
+    })
+
+  }
+  catch(error) {
+    console.error("[profile-other]: error fetching other profile:", error);
+    res.status(500).json(error)
+  }
+})
 
 module.exports = router;

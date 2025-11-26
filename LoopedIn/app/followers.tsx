@@ -264,7 +264,12 @@ export default function FollowersScreen() {
         renderItem={({ item }) => (
           <View style={styles.userCard}>
             <View style={styles.userInfo}>
-              <Image source={item.image} style={styles.avatar} />
+              <TouchableOpacity onPress={() => router.push({
+                  pathname: "/userProfile/[id]",
+                  params: { id: item.id },
+                })}>
+                <Image source={item.image} style={styles.avatar} />
+              </TouchableOpacity>
               <View style={{flexShrink: 1, minWidth: 0}}>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
               </View>

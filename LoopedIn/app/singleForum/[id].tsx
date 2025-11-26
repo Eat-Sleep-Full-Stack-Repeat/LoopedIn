@@ -562,7 +562,10 @@ export default function ForumPostDetail() {
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeaderRow}>
-          {post.profileuri ? (
+          <TouchableOpacity onPress={() => router.push({
+            pathname: "/userProfile/[id]",
+            params: { id: post.creator }})}>
+            {post.profileuri ? (
                 <Image source={{ uri: post.profileuri}} style={styles.avatarCircle}/>
               ):(
               <View>
@@ -572,6 +575,7 @@ export default function ForumPostDetail() {
               />
               </View>
               )}
+            </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.postTitle}>{post.title}</Text>
             <View style={styles.postUserRow}>
@@ -666,33 +670,36 @@ export default function ForumPostDetail() {
         {(node.text !== "This comment has been deleted") && (
           <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth) }]}>
             <View style={styles.commentHeaderRow}>
-              <View style={{flexDirection: "row"}}>
-              
-                {node.profileuri ? (
-                    <Image source={{ uri: node.profileuri}} style={styles.commentAvatarInline}/>
-                  ):(
-                  <View>
-                    <Image
-                    source={require("@/assets/images/icons8-cat-profile-50.png")}
-                    style={styles.commentAvatarInline}
-                  />
-                  </View>
-                  )}
-                  <View style={{flexDirection: "column"}}>
-                    <View style={styles.commentHeaderText}>
-                      <Text style={styles.commentUser} numberOfLines={1}>
-                        {node.username}
-                      </Text>
-                      {(post?.creator === node.commenterid) && (
-                      <Text style={{color: colors.text}}>(Creator)</Text>
-                      )}
-                      {(currentUser === node.commenterid) && (
-                      <Text style={{color: colors.text}}>(You)</Text>
-                      )}
+              <TouchableOpacity onPress={() => router.push({
+                pathname: "/userProfile/[id]",
+                params: { id: node.commenterid }})}>
+                <View style={{flexDirection: "row"}}>
+                  {node.profileuri ? (
+                      <Image source={{ uri: node.profileuri}} style={styles.commentAvatarInline}/>
+                    ):(
+                    <View>
+                      <Image
+                      source={require("@/assets/images/icons8-cat-profile-50.png")}
+                      style={styles.commentAvatarInline}
+                    />
                     </View>
-                      <Text style={styles.commentDate}>{new Date(node.date).toDateString()}</Text>
-                  </View>
-              </View>
+                    )}
+                    <View style={{flexDirection: "column"}}>
+                      <View style={styles.commentHeaderText}>
+                        <Text style={styles.commentUser} numberOfLines={1}>
+                          {node.username}
+                        </Text>
+                        {(post?.creator === node.commenterid) && (
+                        <Text style={{color: colors.text}}>(Creator)</Text>
+                        )}
+                        {(currentUser === node.commenterid) && (
+                        <Text style={{color: colors.text}}>(You)</Text>
+                        )}
+                      </View>
+                        <Text style={styles.commentDate}>{new Date(node.date).toDateString()}</Text>
+                    </View>
+                </View>
+              </TouchableOpacity>
               {(currentUser === node.commenterid) && (
                 <Pressable onPress={() => {setShowEditDeleteModal(true); setNodeToDelete(node)}}>
                   <Entypo name="dots-three-vertical" size={20} color={colors.text} />
