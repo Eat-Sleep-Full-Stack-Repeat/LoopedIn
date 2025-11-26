@@ -39,6 +39,7 @@ type ForumPost = {
   content: string;
   postImages: Image;
   datePosted: string;
+  userID: string;
 };
 
 type BackendPost = {
@@ -49,6 +50,7 @@ type BackendPost = {
   fld_body: string;
   fld_pic: Image;
   fld_timestamp: string;
+  fld_user_pk: string
 };
 
 export default function ForumFeed() {
@@ -189,6 +191,7 @@ export default function ForumFeed() {
           username: post.fld_username,
           content: post.fld_body,
           datePosted: post.fld_timestamp,
+          userID: post.fld_user_pk,
         })
       );
 
@@ -250,6 +253,7 @@ export default function ForumFeed() {
           username: post.fld_username,
           content: post.fld_body,
           datePosted: post.fld_timestamp,
+          userID: post.fld_user_pk,
         })
       );
 

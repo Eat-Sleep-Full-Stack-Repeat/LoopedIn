@@ -12,6 +12,7 @@ type ForumPost = {
   content: string;
   datePosted: string;
   profilePic: string | null;
+  userID: string;
 };
 
 type ForumPostViewProps = {
@@ -39,8 +40,14 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   }
 
   const profilePress = () => {
-    //FIXME: figure out how to route to the correct user
-    router.push("/otherUserProfile");
+    //fixed -> added clickable post user image
+    if (postInfo) {
+      console.log("userID:", postInfo.userID)
+      router.push({pathname: "/userProfile/[id]", params: { id:  postInfo.userID}});
+    }
+    else {
+      console.log("tried to pass an empty post :(");
+    }
   }
 
   const styles = StyleSheet.create({

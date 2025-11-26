@@ -21,6 +21,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
+import { Feather } from "@expo/vector-icons";
 
 
 type User = {
@@ -160,6 +161,22 @@ export default function OtherUserProfile() {
     container: {
       flex: 1,
     },
+    backFab: {
+      position: "absolute",
+      top: insets.top + 8,
+      zIndex: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.boxBackground,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 4,
+      elevation: 3,
+    },
     postTabs: {
       flexDirection: "row",
       justifyContent: "center",
@@ -189,6 +206,17 @@ export default function OtherUserProfile() {
       left: 0,
       right: 0,
       zIndex: -1,
+    },
+    headerContainer: {
+      flexDirection: "column",
+      flex: 1,
+      backgroundColor: colors.topBackground,
+    },
+    headerArrowDiv: {
+      backgroundColor: colors.topBackground,
+      width: "100%",
+      height: 50,
+      marginHorizontal: 30,
     },
     renderHeaderStyle: {
       backgroundColor: colors.topBackground,
@@ -258,7 +286,12 @@ export default function OtherUserProfile() {
   
 
   const renderHeader = () => (
-    <View>
+    <View style={styles.headerContainer}>
+      <View style={styles.headerArrowDiv}>
+        <Pressable style={styles.backFab} onPress={() => router.back()}>
+          <Feather name="chevron-left" size={22} color={colors.text} />
+        </Pressable>
+      </View>
       <View style={[styles.renderHeaderStyle, { paddingTop: insets.top + 20 }]}>
         <View style={{ flexDirection: "column" }}>
           {/* user info: pic, username, follower + friend count */}
