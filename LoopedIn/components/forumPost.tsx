@@ -42,7 +42,6 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const profilePress = () => {
     //fixed -> added clickable post user image
     if (postInfo) {
-      console.log("userID:", postInfo.userID)
       router.push({pathname: "/userProfile/[id]", params: { id:  postInfo.userID}});
     }
     else {

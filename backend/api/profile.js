@@ -48,6 +48,22 @@ router.get("/profile", authenticateToken, async (req, res) => {
 
     const avatarUrl = await signKeyIfPresent(row.avatarKey);
 
+    //get following
+    query = `
+    SELECT COUNT(*) AS following
+    FROM following_blocked.tbl_follow
+    WHERE fld_follower_id = $1;
+    `
+    const following = await pool.query(query, [userPk])
+
+    //get followers
+    query = `
+    SELECT COUNT(*) AS followers
+    FROM following_blocked.tbl_follow
+    WHERE fld_user_id = $1;
+    `
+    const followers = await pool.query(query, [userPk])
+
     // ---- user posts: first photo as preview ----
     let posts = [];
     try {
@@ -88,6 +104,8 @@ router.get("/profile", authenticateToken, async (req, res) => {
     return res.status(200).json({
       userName: row.userName,
       userBio: row.userBio,
+      following: following.rows[0].following,
+      followers: followers.rows[0].followers,
       avatarUrl,
       posts,
       savedPosts,
@@ -205,7 +223,7 @@ router.get("/profile/:id", authenticateToken, async (req, res) => {
     `
     const followers = await pool.query(query, [id])
 
-    //get tags
+    //get tags??
 
 
     //get posts

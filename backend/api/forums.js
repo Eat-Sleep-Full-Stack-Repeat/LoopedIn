@@ -367,7 +367,7 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
             p.fld_body AS content, 
             p.fld_pic AS imageuri, 
             CAST(p.fld_timestamp AS TIMESTAMPTZ) AS dateposted, 
-            u.fld_username AS username, 
+            u.fld_username AS username,
             u.fld_profile_pic AS profileuri, 
             p.fld_creator AS creator
     FROM forums.tbl_forum_post AS p

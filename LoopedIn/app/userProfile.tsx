@@ -35,6 +35,8 @@ type User = {
   avatarUrl?: string | null;
   posts?: any[];
   savedPosts?: any[];
+  following: number | 0;
+  followers: number | 0;
 };
 
 type UploadAvatarResponse = {
@@ -184,14 +186,14 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             <View style={{ flexDirection: "row", gap: 20 }}>
               <Pressable style={s.countCol} onPress={() => router.push("/followers")}>
                 <View style={s.countCircles}>
-                  <Text style={[s.countNum, { color: colors.decorativeText }]}>0</Text>
+                  <Text style={[s.countNum, { color: colors.decorativeText }]}>{originalUser?.followers}</Text>
                 </View>
                 <Text style={[s.countLabel, { color: colors.text }]}>Followers</Text>
               </Pressable>
 
               <Pressable style={s.countCol} onPress={() => router.push("/following")}>
                 <View style={s.countCircles}>
-                  <Text style={[s.countNum, { color: colors.decorativeText }]}>0</Text>
+                  <Text style={[s.countNum, { color: colors.decorativeText }]}>{originalUser?.following}</Text>
                 </View>
                 <Text style={[s.countLabel, { color: colors.text }]}>Following</Text>
               </Pressable>
@@ -377,6 +379,8 @@ export default function UserProfile() {
           avatarUrl: u.avatarUrl ?? null,
           posts: u.posts ?? [],
           savedPosts: u.savedPosts ?? [],
+          following: u.following ?? 0,
+          followers: u.followers ?? 0,
         };
 
         setOriginalUser(merged);
