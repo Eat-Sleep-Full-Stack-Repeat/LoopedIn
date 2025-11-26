@@ -41,7 +41,10 @@ export default function Index() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.push("/otherUserProfile")}
+        onPress={() => router.push({
+          pathname: "/userProfile/[id]",
+          params: { id: '29' },
+        })}
         style={{ marginTop: 20 }}
       >
         <Text style={{ color: colors.text }}>Other User Profile</Text>

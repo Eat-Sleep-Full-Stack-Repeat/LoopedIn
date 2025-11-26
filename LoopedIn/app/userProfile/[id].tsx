@@ -4,25 +4,157 @@ import {
   StyleSheet,
   Image,
   FlatList,
-  Dimensions,
+  useWindowDimensions,
   Pressable,
 } from "react-native";
+import React, {
+  useLayoutEffect,
+  useEffect,
+  useState,
+} from "react";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 // FIXME: delete the following line when backend set up
-import mockUser from "./mockData";
 import craftIcons from "@/components/craftIcons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
+import { Storage } from "../../utils/storage";
+import API_URL from "@/utils/config";
+
+
+type User = {
+  userName: string;
+  userBio: string | "";
+  avatarUrl?: string | null;
+  followers?: number | 0;
+  following?: number | 0;
+  posts?: any[];
+  tags?: any[];
+};
+
+
+function getThumbnailSource(item: any): any | null {
+  if (!item) return null;
+
+  // handle post objects from /api/profile
+  if (item.previewUrl) {
+    return { uri: item.previewUrl };
+  }
+  if (item.preview_url) {
+    return { uri: item.preview_url };
+  }
+
+  if (typeof item === "string") return { uri: item };
+  if (item.uri || item.url || item.imageUrl) {
+    return { uri: item.uri || item.url || item.imageUrl };
+  }
+
+  if (Array.isArray(item) && item.length > 0) {
+    const first = item[0];
+    if (typeof first === "string") return { uri: first };
+    if (first?.uri || first?.url || first?.imageUrl) {
+      return { uri: first.uri || first.url || first.imageUrl };
+    }
+    return first;
+  }
+
+  const photosArray =
+    item.photos || item.images || item.pics || item.postPics || null;
+
+  if (Array.isArray(photosArray) && photosArray.length > 0) {
+    const first = photosArray[0];
+    if (typeof first === "string") return { uri: first };
+    if (first?.uri || first?.url || first?.imageUrl) {
+      return { uri: first.uri || first.url || first.imageUrl };
+    }
+    return first;
+  }
+
+  return item;
+}
+
 
 export default function OtherUserProfile() {
+  const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+
+  const isTablet = width >= 768;
+  const CONTENT_MAX = isTablet ? 720 : width;
+  const NUM_COLUMNS = width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
+  const AVATAR = isTablet ? 120 : 100;
+
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
+  const { id } = useLocalSearchParams();
+
+  const [otherUser, setOtherUser] = useState<User | null>(null);
+  const [currentPosts, setPosts] = useState<any[]>([]);
+
+  //get rid of header
+  useLayoutEffect(() => {
+    navigation.setOptions?.({ headerShown: false });
+  }, [navigation]);
+
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    fetchUser();
+  }, [id])
+
+
+  //call helper function to load user profile
+  const fetchUser = async () => {
+    const token = await Storage.getItem("token");
+    try {
+      const response = await fetch(`${API_URL}/api/profile/${id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        alert("Error fetching this profile. Try again later.");
+        router.back();
+        return;
+      }
+
+      const data = await response.json();
+
+      const new_user: User = {
+        userName: data.userName ?? "User",
+        userBio: data.userBio ?? "",
+        avatarUrl: data.avatarUrl ?? null,
+        followers: data.followers ?? 0,
+        following: data.following ?? 0,
+        posts: data.posts ?? [],
+        tags: data.tags ?? [],
+      };
+
+      setOtherUser(new_user);
+      setPosts(data.posts ?? [])
+
+    }
+    catch(error) {
+      console.log("Error while fetching other user", (error as Error).message);
+      alert("Server error, please try again later.");
+    }
+  }
+
+
   // FIXME: will need to call the userInfo from the backend when time
-  const userData = mockUser;
-  const insets = useSafeAreaInsets();
   const router = useRouter();
+  const userData = otherUser;
+
+  const insets = useSafeAreaInsets();
 
   const styles = StyleSheet.create({
     container: {
@@ -132,10 +264,13 @@ export default function OtherUserProfile() {
           {/* user info: pic, username, follower + friend count */}
           <View style={styles.userInfo}>
             <Image
-              source={require("@/assets/images/icons8-cat-profile-100.png")}
+              source={ userData?.avatarUrl ? {uri: userData.avatarUrl}
+              : require("@/assets/images/icons8-cat-profile-100.png")}
+              
+              style={[{ width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 }]}
             />
             <View>
-              <Text style={{ fontSize: 20, color: colors.text }}>{userData.userName}</Text>
+              <Text style={{ fontSize: 20, color: colors.text }}>{userData?.userName ?? "User"}</Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
 
               {/* Followers */}
@@ -145,7 +280,7 @@ export default function OtherUserProfile() {
               >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: colors.decorativeText }}>
-                      {userData.numFollowers}
+                      {userData?.followers ?? 0}
                     </Text>
                   </View>
                   <Text style={styles.countLabel}>Followers</Text>
@@ -158,7 +293,7 @@ export default function OtherUserProfile() {
               >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: colors.decorativeText }}>
-                      {userData.numFriends}
+                      {userData?.following ?? 0}
                     </Text>
                   </View>
                    <Text style={styles.countLabel}>Following</Text>
@@ -172,12 +307,12 @@ export default function OtherUserProfile() {
           <View style={styles.bioContainer}>
             <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
             <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14, color: colors.text }}>{userData.userBio}</Text>
+              <Text style={{ fontSize: 14, color: colors.text }}>{userData?.userBio?? ""}</Text>
             </View>
           </View>
 
           {/* craft tags */}
-          <View style={styles.tagsContainer}>
+          {/*<View style={styles.tagsContainer}>
             <Text style={{ color: colors.text }}> Crafts </Text>
             <View style={styles.tagsContentContainer}>
               {userData.tags.map((item, index) => (
@@ -191,7 +326,7 @@ export default function OtherUserProfile() {
                 </View>
               ))}
             </View>
-          </View>
+          </View>*/}
 
           {/* follow and message buttons */}
           <View style={styles.contactContainer}>
@@ -208,7 +343,7 @@ export default function OtherUserProfile() {
       {/* user's posts section */}
       <View style={styles.postTabs}>
         <View style={styles.postTabText}>
-          <Text style={{ color: colors.decorativeText }}>{userData.userName}'s Posts</Text>
+          <Text style={{ color: colors.decorativeText }}>{userData?.userName?? "User"}'s Posts</Text>
         </View>
       </View>
     </View>
@@ -216,26 +351,35 @@ export default function OtherUserProfile() {
 
 
 
+  const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS - 10;
+
   return (
     <View style={[styles.container]}>
       <View style={styles.topBackground} />
       <View style={styles.bottomBackground} />
       <FlatList
-        data={userData.posts}
-        numColumns={3}
+        data={currentPosts}
+        numColumns={NUM_COLUMNS}
         ListHeaderComponent={renderHeader}
-        renderItem={({ item }) => (
-          <Image
-            source={item}
-            resizeMode="cover"
-            style={{
-              width: Dimensions.get("window").width / 3 - 10,
-              height: (Dimensions.get("window").width / 3 - 10) * (16 / 9),
-              borderRadius: 20,
-              marginBottom: 5,
-            }}
-          />
-        )}
+        renderItem={({ item }) => {
+          const thumbSource = getThumbnailSource(item);
+          if (!thumbSource) return null;
+
+          return (
+            <Pressable onPress={() => router.back()}>
+              <Image
+                source={thumbSource}
+                resizeMode="cover"
+                style={{
+                  width: cardW,
+                  height: cardW * (16 / 9),
+                  borderRadius: 20,
+                  marginBottom: 8,
+                }}
+              />
+            </Pressable>
+          );
+        }}
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
           backgroundColor: colors.background,
