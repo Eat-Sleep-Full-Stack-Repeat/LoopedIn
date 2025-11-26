@@ -20,10 +20,11 @@ router.get("/get-followers", authenticateToken, async (req, res) => {
 
         //get all usernames and pfps of followers
         let query =
-        `SELECT u.fld_profile_pic, u.fld_username, u.fld_user_pk
-         FROM following_blocked.tbl_follow AS f INNER JOIN login.tbl_user AS u
-            ON u.fld_user_pk = f.fld_user_id
-         WHERE f.fld_follower_id = $1;
+        `
+        SELECT u.fld_profile_pic, u.fld_username, u.fld_user_pk
+	    FROM following_blocked.tbl_follow AS f INNER JOIN login.tbl_user AS u
+		    ON u.fld_user_pk = f.fld_follower_id
+	    WHERE f.fld_user_id = $1;
         `
         const followers  = await pool.query(query, [req.userID.trim()])
 
@@ -60,9 +61,9 @@ router.get("/get-following", authenticateToken, async (req, res) => {
         //get all usernames and pfps of people user is following
         let query = `
         SELECT u.fld_profile_pic, u.fld_username, u.fld_user_pk
-	    FROM following_blocked.tbl_follow AS f INNER JOIN login.tbl_user AS u
-		    ON u.fld_user_pk = f.fld_follower_id
-	    WHERE f.fld_user_id = $1;
+         FROM following_blocked.tbl_follow AS f INNER JOIN login.tbl_user AS u
+            ON u.fld_user_pk = f.fld_user_id
+         WHERE f.fld_follower_id = $1;
         `
 
         const following = await pool.query(query, [req.userID.trim()])
@@ -107,7 +108,7 @@ router.delete("/unfollow-user", authenticateToken, async (req, res) => {
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
         `
-        const connectionID = await pool.query(query, [followingID, req.userID.trim()])
+        const connectionID = await pool.query(query, [req.userID.trim(), followingID])
 
         //invalid connection
         if (connectionID.rowCount < 1) {
@@ -179,7 +180,7 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
         `
-        const connectionID = await pool.query(query, [followingID, req.userID.trim()])
+        const connectionID = await pool.query(query, [req.userID.trim(), followingID])
 
         //when person is already followed
         if (connectionID.rowCount > 0) {
@@ -193,7 +194,7 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
         INSERT INTO following_blocked.tbl_follow(fld_user_id, fld_follower_id)
         VALUES ($1, $2);
         `
-        await pool.query(query, [req.userID.trim(), otherUserID])
+        await pool.query(query, [otherUserID, req.userID.trim()])
 
         console.log("Successful follow.")
         res.status(200).json({ message: "successfully followed user!" })
@@ -217,7 +218,7 @@ router.delete("/remove-follower", authenticateToken, async (req, res) => {
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
         `
-        const connectionID = await pool.query(query, [req.userID.trim(), followerID])
+        const connectionID = await pool.query(query, [followerID, req.userID.trim()])
 
         //invalid connection
         if (connectionID.rowCount < 1) {
