@@ -13,6 +13,7 @@ import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ExploreCommentsModal from "@/components/exploreComments";
 
 export default function ExplorePage() {
   const { currentTheme } = useTheme();
@@ -20,6 +21,7 @@ export default function ExplorePage() {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const filters = ["All", "Crochet", "Knit"];
   const insets = useSafeAreaInsets();
+  const [areCommentsVisible, setAreCommentsVisible] = useState(false);
 
   const ThemedIcon = ({ source }: { source: any }) => (
     <Image
@@ -30,6 +32,11 @@ export default function ExplorePage() {
       ]}
     />
   );
+
+  const showComments = () => {
+    console.log("Going to display the comments modal");
+    setAreCommentsVisible(true);
+  }
 
   const styles = StyleSheet.create({
     container: {
@@ -199,8 +206,10 @@ export default function ExplorePage() {
                 </View>
 
                 <View style={styles.postAction}>
-                  <ThemedIcon source={require("../assets/images/comment.png")} />
-                  <Text style={styles.postActionText}>Comment</Text>
+                  <Pressable onPress={showComments}>
+                    <ThemedIcon source={require("../assets/images/comment.png")} />
+                    <Text style={styles.postActionText}>Comment</Text>
+                  </Pressable>
                 </View>
 
                 <View style={styles.postAction}>
@@ -218,7 +227,7 @@ export default function ExplorePage() {
 
           <View style={{ height: 100 }} />
         </ScrollView>
-
+        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => setAreCommentsVisible(false)} currentPost={3}></ExploreCommentsModal>
         <BottomNavButton />
       </View>
     </>
