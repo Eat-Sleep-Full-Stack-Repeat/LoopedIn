@@ -8,6 +8,8 @@ import {
   Image,
   FlatList,
   ActivityIndicator,
+  TouchableOpacity,
+  useWindowDimensions,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import BottomNavButton from "@/components/bottomNavBar";
@@ -46,9 +48,33 @@ export default function ExplorePage() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const [selectedFilter, setSelectedFilter] = useState("All");
-  const filters = ["All", "Crochet", "Knit"];
+  const filters = ["All", "Crochet", "Knit", "Misc"];
   const insets = useSafeAreaInsets();
   const router = useRouter()
+
+  //so we have responsive, and not statically-sized components for different screen sizes
+  //you can change these variables as needed
+  const { width } = useWindowDimensions();
+  let imageHeight
+  let avatarSize
+  let usernameSize
+  if (width >= 900) {
+    usernameSize = 18
+    avatarSize = 50
+    imageHeight = 600
+  }
+  else if (width >= 768) {
+    usernameSize = 17
+    avatarSize = 45
+    imageHeight = 400
+  }
+  else {
+    usernameSize = 15
+    avatarSize = 35
+    imageHeight = 200
+  }
+
+
 
   //limit -> change if we want
   const limit = 10;
@@ -60,17 +86,19 @@ export default function ExplorePage() {
   const [postData, setPostData] = useState<Post[]>([]);
   const loadingMore = useRef<true | false>(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit"]);
+  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
 
   const renderPost = ({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
-      <View style={styles.profileRow}>
-        <Image style={styles.profilePic} 
-          source={ item?.profilePic ? {uri: item.profilePic} : require("@/assets/images/icons8-cat-profile-100.png")}/>
-        <Text style={styles.username}>
-          {item.username}
-        </Text>
-      </View>
+        <TouchableOpacity style={styles.profileRow} onPress={() => router.push({
+            pathname: "/userProfile/[id]",
+            params: { id: item.userID }})}>
+          <Image style={styles.profilePic} 
+            source={ item?.profilePic ? {uri: item.profilePic} : require("@/assets/images/icons8-cat-profile-100.png")}/>
+          <Text style={styles.username}>
+            {item.username}
+          </Text>
+        </TouchableOpacity>
 
       <Image style={styles.postImage} source={{uri: item.postImage}}/>
 
@@ -102,7 +130,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     if (selectedFilter === "All") { // pass all craft filters to backend
-      setCraftFilter(["Crochet", "Knit"]);
+      setCraftFilter(["Crochet", "Knit", "Misc"]);
     } 
     else { //pass specific craft to backend
       setCraftFilter([selectedFilter]);
@@ -182,8 +210,13 @@ export default function ExplorePage() {
         }
       )
 
-      if (!response.ok) {
-        alert("Error during post fetch from backend")
+      if (response.status == 404) {
+        alert("Woah! You hit a new category with no posts. Start posting now!")
+        return;
+      }
+
+      else if (!response.ok) {
+        alert("Error during post fetch from backend. You're probably not logged in.")
         router.replace("/")
         return;
       }
@@ -284,19 +317,19 @@ export default function ExplorePage() {
       marginBottom: 10,
     },
     profilePic: {
-      width: 35,
-      height: 35,
-      borderRadius: 17,
+      width: avatarSize,
+      height: avatarSize,
+      borderRadius: "100%",
       marginRight: 10,
     },
     username: {
       fontWeight: "600",
-      fontSize: 15,
+      fontSize: usernameSize,
       color: colors.text,
     },
     postImage: {
       width: "100%",
-      height: 180,
+      height: imageHeight,
       borderRadius: 8,
       backgroundColor: "#EAEAEA",
     },

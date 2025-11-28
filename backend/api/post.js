@@ -283,8 +283,13 @@ router.get("/post", authenticateToken, async (req, res) => {
       LIMIT ($3 + 1);
       `
 
-      console.log(craftFilter, curr_user, limit)
       returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit])
+
+      if (returnFeed.rowCount === 0) {
+        console.log("There's no posts here")
+        res.status(404).json({message: "No posts whatsoever"})
+        return
+      }
 
     }
     else {
