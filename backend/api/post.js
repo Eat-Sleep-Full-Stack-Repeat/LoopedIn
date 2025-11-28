@@ -6,7 +6,7 @@ const crypto = require("crypto");
 
 const { pool } = require("../backend_connection");
 const authenticateToken = require("../middleware/authenticate");
-const { uploadFile } = require("../s3_connection");
+const { uploadFile, getSignedFile } = require("../s3_connection");
 
 const { generateColor } = require("../functions/color_generator");
 
@@ -267,7 +267,7 @@ router.get("/post", authenticateToken, async (req, res) => {
 
     //fetch data if feed wasn't populated before
     //selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
-    if (req.query.before = "undefined" || !req.query.before) {
+    if (req.query.before === "undefined" || !req.query.before) {
       query = `
       SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
       FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
@@ -279,10 +279,11 @@ router.get("/post", authenticateToken, async (req, res) => {
             INNER JOIN tags.tbl_tags AS t
               ON t.fld_tags_pk = tp.fld_tag
       WHERE p.fld_is_public = true AND t.fld_tag_name = ANY($1) AND u.fld_user_pk <> $2
-      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_post_fk DESC
+      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
       LIMIT ($3 + 1);
       `
 
+      console.log(craftFilter, curr_user, limit)
       returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit])
 
     }
@@ -300,8 +301,8 @@ router.get("/post", authenticateToken, async (req, res) => {
             ON tp.fld_post = p.fld_post_pk
             INNER JOIN tags.tbl_tags AS t
               ON t.fld_tags_pk = tp.fld_tag
-      WHERE p.fld_is_public = true AND (p.fld_timestamp, p.fld_post_pk) >= ($1, $2) AND t.fld_tag_name = ANY($3) AND u.fld_user_pk <> $4
-      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_post_fk DESC
+      WHERE p.fld_is_public = true AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2) AND t.fld_tag_name = ANY($3) AND u.fld_user_pk <> $4
+      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
       LIMIT ($5 + 1);
       `
 
@@ -309,7 +310,7 @@ router.get("/post", authenticateToken, async (req, res) => {
     }
 
     //if returned feed less than limit, no more posts
-    if (returnFeed < limit) {
+    if (returnFeed.rowCount <= limit) {
       morePosts = false
     }
 
@@ -338,10 +339,12 @@ router.get("/post", authenticateToken, async (req, res) => {
           : `posts/${row.fld_post_pic}`;
         const folder = key.split("/")[0];
         const fileName = key.split("/").slice(1).join("/");
-        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        postUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
         row.fld_post_pic = postUrl;
       }
     }
+
+    console.log("[Post]: fetched posts")
 
     //return data
     res.status(200).json({hasMore: morePosts, newFeed: returnFeed.rows.slice(0, limit)})
