@@ -30,6 +30,8 @@ type Post = {
   postImageID: string;
   caption: string;
   datePosted: string;
+  imageHeight: number | null;
+  imageWidth: number | null;
 }
 
 type BackendPost = {
@@ -55,26 +57,25 @@ export default function ExplorePage() {
   //so we have responsive, and not statically-sized components for different screen sizes
   //you can change these variables as needed
   const { width } = useWindowDimensions();
-  let imageHeight
+  const screenWidth = width
   let avatarSize
   let usernameSize
+  let imageHeight //for max height calculations
   if (width >= 900) {
     usernameSize = 18
     avatarSize = 50
-    imageHeight = 600
+    imageHeight = 800
   }
   else if (width >= 768) {
     usernameSize = 17
     avatarSize = 45
-    imageHeight = 400
+    imageHeight = 700
   }
   else {
     usernameSize = 15
     avatarSize = 35
-    imageHeight = 200
+    imageHeight = 500
   }
-
-
 
   //limit -> change if we want
   const limit = 10;
@@ -100,7 +101,14 @@ export default function ExplorePage() {
           </Text>
         </TouchableOpacity>
 
-      <Image style={styles.postImage} source={{uri: item.postImage}}/>
+      <Image style={[styles.postImage,  {height: item.imageHeight}]} source={{uri: item.postImage}}/>
+
+      <View style={{marginVertical: 20, flexShrink: 1}}>
+        <Text
+          numberOfLines={5}
+          ellipsizeMode="tail"
+        >{item.caption}</Text>
+      </View>
 
       {/* Post Actions */}
       <View style={styles.postActions}>
@@ -197,7 +205,6 @@ export default function ExplorePage() {
         craftURL = craftURL + `&craft[]=${tempElement}`
       });
 
-      console.log("before:", lastTimeStamp.current, lastPostID.current)
 
       const response = await fetch(`${API_URL}/api/post?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
         {
@@ -223,24 +230,54 @@ export default function ExplorePage() {
 
       const responseData = await response.json();
 
-      let tempPostData: Post[] = responseData.newFeed.map(
-        (post: BackendPost) => ({
-          id: post.fld_post_pk,
-          username: post.fld_username,
-          userID: post.fld_user_pk,
-          profilePic: post.fld_profile_pic,
-          postImage: post.fld_post_pic,
-          postImageID: post.fld_pic_id,
-          caption: post.fld_caption,
-          datePosted: post.fld_timestamp,
-        })
+
+
+
+      let tempPostData: Post[] = await Promise.all (
+        responseData.newFeed.map(
+        (post: BackendPost) => 
+        new Promise<Post>((resolve) => {
+          Image.getSize(post.fld_post_pic, (width, height) => {
+            const displayHeight = screenWidth * (height / width);
+            const maxHeight = Math.min(displayHeight, imageHeight)
+            resolve ({
+              id: post.fld_post_pk,
+              username: post.fld_username,
+              userID: post.fld_user_pk,
+              profilePic: post.fld_profile_pic,
+              postImage: post.fld_post_pic,
+              postImageID: post.fld_pic_id,
+              caption: post.fld_caption,
+              datePosted: post.fld_timestamp,
+              imageHeight: maxHeight,
+              imageWidth: width,
+            })
+          },
+          (error) => {
+            console.log("error setting image dimensions:", error)
+            resolve ({
+              id: post.fld_post_pk,
+              username: post.fld_username,
+              userID: post.fld_user_pk,
+              profilePic: post.fld_profile_pic,
+              postImage: post.fld_post_pic,
+              postImageID: post.fld_pic_id,
+              caption: post.fld_caption,
+              datePosted: post.fld_timestamp,
+              imageHeight: null,
+              imageWidth: null,
+            })
+          }
+          )
+          })
+        )
       )
+
       
       setPostData((prev) => [...prev, ...tempPostData]);
       hasMore.current = (responseData.hasMore);
       lastTimeStamp.current = tempPostData[tempPostData.length - 1].datePosted;
       lastPostID.current = Number(tempPostData[tempPostData.length - 1].id);
-      console.log("after:", lastTimeStamp.current, lastPostID.current)
     }
     catch(error) {
       console.log("Error fetching posts: ", error)
@@ -319,7 +356,7 @@ export default function ExplorePage() {
     profilePic: {
       width: avatarSize,
       height: avatarSize,
-      borderRadius: "100%",
+      borderRadius: 100,
       marginRight: 10,
     },
     username: {
@@ -329,9 +366,14 @@ export default function ExplorePage() {
     },
     postImage: {
       width: "100%",
-      height: imageHeight,
       borderRadius: 8,
       backgroundColor: "#EAEAEA",
+    },
+    postCaption: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: colors.text,
+      flexShrink: 1, 
     },
     postActions: {
       flexDirection: "row",
