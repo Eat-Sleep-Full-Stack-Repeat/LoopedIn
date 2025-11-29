@@ -58,6 +58,7 @@ export default function ExplorePage() {
   let avatarSize
   let usernameSize
   let imageHeight //for max height calculations
+  
   if (width >= 900) {
     usernameSize = 18
     avatarSize = 50
@@ -131,7 +132,6 @@ export default function ExplorePage() {
       </View>
     </View>
   )
-
 
   useEffect(() => {
     if (selectedFilter === "All") { // pass all craft filters to backend
@@ -227,7 +227,6 @@ export default function ExplorePage() {
 
       const responseData = await response.json();
 
-
       let tempPostData: Post[] = responseData.newFeed.map(
         (post: BackendPost) => ({
           id: post.fld_post_pk,
@@ -240,8 +239,6 @@ export default function ExplorePage() {
           datePosted: post.fld_timestamp,
         })
       )
-   
-
       
       setPostData((prev) => [...prev, ...tempPostData]);
       hasMore.current = (responseData.hasMore);

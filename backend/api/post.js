@@ -145,7 +145,7 @@ router.post(
         await client.query(insertPicSql, [postId, s3Key, altText]);
       }
 
-      //ADDED THIS BECAUSE THIS WAS NOT ADDED BEFORE -> INSERTING CRAFT FILTERS
+      //inserting craft  filters
       //get craft filter id
       query = `
       SELECT fld_tags_pk
@@ -155,7 +155,7 @@ router.post(
       const filterResult = await client.query(query, [craft.trim()]);
       const filterID = filterResult.rows[0].fld_tags_pk
 
-      //INSERT CRAFT FILTER
+      //Insert craft filter
       query = `
       INSERT INTO posts.tbl_post_tag(fld_post, fld_tag)
       VALUES ($1, $2)
@@ -196,7 +196,7 @@ router.post(
             let tagId = existingMap.get(key);
 
             if (!tagId) {
-              // CALLED OUR COLOR FUNCTION
+              // called color function
               const defaultColor = generateColor();
               const insertTagRes = await client.query(
                 `
@@ -262,7 +262,6 @@ router.get("/post", authenticateToken, async (req, res) => {
     const limit = req.query.limit
     let morePosts = true
     let returnFeed
-
     let craftFilter = req.query.craft
 
     //fetch data if feed wasn't populated before
@@ -282,7 +281,6 @@ router.get("/post", authenticateToken, async (req, res) => {
       ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
       LIMIT ($3 + 1);
       `
-
       returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit])
 
       if (returnFeed.rowCount === 0) {
