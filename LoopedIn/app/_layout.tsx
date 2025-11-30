@@ -15,6 +15,7 @@ export default function RootLayout() {
         <Stack.Screen name="newpost" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="login" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="signup" options={{headerShown: false, animation: "none"}}/>
+        <Stack.Screen name="editforum" options={{headerShown: false, animation: "none"}}/>
       </Stack>
     </ThemeProvider>
   );
