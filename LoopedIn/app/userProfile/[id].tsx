@@ -392,6 +392,7 @@ export default function OtherUserProfile() {
       <View style={styles.bottomBackground} />
       <FlatList
         data={currentPosts}
+        key={NUM_COLUMNS}
         numColumns={NUM_COLUMNS}
         ListHeaderComponent={renderHeader}
         renderItem={({ item }) => {
