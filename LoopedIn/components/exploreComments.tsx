@@ -1,63 +1,157 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import API_URL from "@/utils/config";
+import { Storage } from "@/utils/storage";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, StyleSheet, View, Text, FlatList, Pressable, TextInput, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ExploreCommentsProps = {
   isVisible: boolean;
   onClose: () => void;
-  currentPost: number;
+  currentPost: number; // FIXME: update the following 3 values once explore page implementation is merged
+  postCreator: number;
 };
+
+type Comment = {
+  id: string,
+  commenterid: string,
+  profilepic: string | null,
+  username: string,
+  dateposted: string,
+  body: string
+}
+
+type userInfo = {
+  username: string,
+  profilepic: string | null,
+}
 
 // FIXME: right now the current post is hard coded to = 3 (update once explore posts are implemented)
 const ExploreCommentsModal = ({
   isVisible,
   onClose,
   currentPost,
+  postCreator,
 }: ExploreCommentsProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
-  const insets = useSafeAreaInsets();
-  const [currentUser, setCurrentUser] = useState<number | null>(null); 
+  const insets = useSafeAreaInsets(); 
   const [displayCheckDelete, setDisplayCheckDelete] = useState(false);
   const [commentValue, setCommentValue] = useState('');
-
-  type Comment = {
-    id: string,
-    commenterid: number,
-    profilePic: string | null,
-    username: string,
-    datePosted: string,
-    content: string
-  }
-
-  const Comments: Comment[] = [
-    {
-      id: "1",
-      commenterid: 54,
-      profilePic: null,
-      username: "helloWorld",
-      datePosted: "a temp date",
-      content: "Testing out the comments",
-    },
-    {
-      id: "2",
-      commenterid: 13,
-      profilePic: null,
-      username: "SnoopyReallyIsTheBest",
-      datePosted: "a temp date",
-      content:
-        "I am going to type out a really long comment to see what it will render like on the front-end to make sure everything is ok!!! Yippeee!!!! Wow this post is absolutely fantastic!! I can't believe you did all of that!!",
-    },
-  ];
+  const lastTimeStamp = useRef<string | null>(null);
+  const lastPostID = useRef<number | null>(null);
+  const [Comments, setComments] = useState<Comment[]>([]);
+  const hasMore = useRef<true | false>(true);
+  const loadingMore = useRef<true | false>(false);
+  const currentUser = useRef<string | null>(null);
+  const currentUserInfo = useRef<userInfo | null>(null);
 
   useEffect (() => {
     //FIXME: need to fetch the current user from backend - IDK if there is a way to get it just on front-end?? - JK that looks complicated lol
-    console.log("I will need to fetch the current user here");
-    setCurrentUser(54);
+    if (isVisible){
+      console.log("I will need to fetch the current user here");
+      fetchComments();
+    } else {
+      setComments([]);
+      hasMore.current = true;
+      lastTimeStamp.current = null;
+      lastPostID.current = null;
+      setCommentValue('');
+    }
+  }, [isVisible])
+
+  useEffect(() => {
+    if (currentUser.current === null && currentUserInfo.current === null){
+      fetchUserInfo();
+    }
   }, [])
+
+  const fetchUserInfo = async () => {
+    console.log("Going to fetch the user information")
+    const token = await Storage.getItem("token");
+
+    try {
+      console.log("Right before fetching user info")
+      const res = await fetch(
+        `${API_URL}/api/get-user-info`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+  
+      if (!res.ok){
+        alert("Error when fetching user information");
+        return;
+      }
+
+      const responseData = await res.json();
+      console.log("This is the response data", responseData.currentUserID);
+
+      currentUserInfo.current = (responseData.currentUserInfo[0]);
+      currentUser.current = (responseData.currentUserID);
+
+      console.log("The current user id number is: ", currentUser.current);
+      console.log("The current user info is: ", currentUserInfo.current);
+    } catch (e) {
+      console.log("Error when getting the current user");
+    }
+  }
+
+  const fetchComments = async () => {
+    console.log("Going to fetch comments");
+    const token = await Storage.getItem("token");
+    if (loadingMore.current || !hasMore.current) {
+      return;
+    }
+
+    loadingMore.current = true;
+
+    try {
+
+      const includeLastTimeStamp = lastTimeStamp.current ? `&lastTimestamp=${lastTimeStamp.current}`: "";
+      const includeLastPostID = lastPostID.current ? `&lastPostID=${lastPostID.current}`: "";
+
+      console.log("Right before the fetch")
+      const res = await fetch(
+        `${API_URL}/api/get-post-comments?postID=${currentPost}${includeLastPostID}${includeLastTimeStamp}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok){
+        alert("Error when fetching post comments");
+        return;
+      }
+
+      const responseData = await res.json();
+      const tempArray: Comment[] = responseData.newComments;
+
+      console.log("The comments being added to the array are: ", tempArray);
+
+      setComments((prev) => [...prev, ...tempArray]);
+      hasMore.current = (responseData.hasMore);
+      lastTimeStamp.current = tempArray[tempArray.length - 1].dateposted;
+      lastPostID.current = Number(tempArray[tempArray.length - 1].id);
+    } catch (e) {
+      console.log("Error when fetching comments", e);
+      alert("Could not fetch comments");
+    } finally {
+      loadingMore.current = false;
+    }
+  }
 
   const handleCloseComments = () => {
     onClose();
@@ -81,15 +175,62 @@ const ExploreCommentsModal = ({
     }
   }
 
-  const postComment = (commentToPost: string) => {
+  const postComment = async (commentToPost: string) => {
     console.log("This is the comment to post: ", commentToPost);
+    const token = await Storage.getItem("token");
+
+    if (commentToPost.trim().length === 0){
+      alert("Cannot add that comment due to no text entered");
+      return;
+    }
+
+    const tempID = Number(Comments[0].id) - 1;
+    const tempDate = new Date();
+
+    if (!currentUser.current || !currentUserInfo.current){
+      console.log("Could not find current user id to add comment")
+      return;
+    }
+
+    const tempAddComment:Comment = {
+      id: String(tempID),
+      commenterid: currentUser.current,
+      profilepic: currentUserInfo.current.profilepic,
+      username: currentUserInfo.current.username,
+      dateposted: String(tempDate),
+      body: commentToPost,
+    }
+
+    setComments([tempAddComment, ...Comments])
+
+    setCommentValue('');
+    Keyboard.dismiss();
+
     try {
-        //FIXME: actually add the comment to the backend
+      const commentData = {
+        postID: currentPost,
+        content: commentToPost
+      }
+
+      const response = await fetch(`${API_URL}/api/add-post-comment`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        credentials: "include",
+        body: JSON.stringify(commentData),
+      });
+
+      if (!response.ok) {
+        alert("Could not create that post comment :( ");
+        return;
+      }
+
+      console.log("Created the comment yayayayayaya!!!")
+
     } catch (e) {
         console.log("Error when trying to post the comment", e)
-    } finally {
-        setCommentValue('');
-        Keyboard.dismiss();
     }
   }
   const styles = StyleSheet.create({
@@ -169,11 +310,11 @@ const ExploreCommentsModal = ({
           <View style={styles.userInfo}>
             <Text style={{ color: colors.text }}>{item.username}</Text>
             <Text style={{ color: colors.text, marginLeft: 5 }}>
-              {item.datePosted}
+              {new Date(item.dateposted).toDateString()}
             </Text>
           </View>
         </View>
-        {currentUser === item.commenterid? (
+        {currentUser.current === item.commenterid? (
             <Pressable onPress={checkDeleteComment}>
                 <Ionicons name="trash-outline" size={24} color={colors.text} />
             </Pressable>
@@ -183,7 +324,7 @@ const ExploreCommentsModal = ({
         
       </View>
       <View style={styles.commentContent}>
-        <Text>{item.content}</Text>
+        <Text>{item.body}</Text>
       </View>
     </View>
   );
@@ -212,7 +353,6 @@ const ExploreCommentsModal = ({
                         data={Comments}
                         renderItem={({item}) => renderCommentHeader(item)}
                         keyExtractor={item => item.id}
-                        bounces={false}
                         ListEmptyComponent={
                             (
                                 <View style={{alignItems: "center", justifyContent: "center"}}>

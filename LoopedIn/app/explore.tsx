@@ -227,7 +227,8 @@ export default function ExplorePage() {
 
           <View style={{ height: 100 }} />
         </ScrollView>
-        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => setAreCommentsVisible(false)} currentPost={3}></ExploreCommentsModal>
+        {/* FIXME: update the following modal values once explore implementation has been merged */}
+        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => setAreCommentsVisible(false)} currentPost={3} postCreator={12}></ExploreCommentsModal>
         <BottomNavButton />
       </View>
     </>
