@@ -103,6 +103,7 @@ export default function ExplorePage() {
 
       <View style={{marginVertical: 20, flexShrink: 1}}>
         <Text
+          style={styles.postCaption}
           numberOfLines={5}
           ellipsizeMode="tail"
         >{item.caption}</Text>
@@ -277,7 +278,7 @@ export default function ExplorePage() {
       marginHorizontal: 20,
       borderColor: colors.exploreFilterSelected,
       backgroundColor: "#FFFFFF",
-      color: colors.text,
+      color: "#000000",
     },
     filterContainer: {
       flexDirection: "row",
@@ -337,7 +338,7 @@ export default function ExplorePage() {
     },
     postCaption: {
       fontSize: 14,
-      fontWeight: "bold",
+      //fontWeight: "bold",
       color: colors.text,
       flexShrink: 1, 
     },
