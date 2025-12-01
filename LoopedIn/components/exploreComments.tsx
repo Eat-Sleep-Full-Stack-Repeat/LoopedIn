@@ -47,6 +47,7 @@ const ExploreCommentsModal = ({
   const loadingMore = useRef<true | false>(false);
   const currentUser = useRef<string | null>(null);
   const currentUserInfo = useRef<userInfo | null>(null);
+  const commentIDToDelete = useRef<number | null>(null);
 
   useEffect (() => {
     //FIXME: need to fetch the current user from backend - IDK if there is a way to get it just on front-end?? - JK that looks complicated lol
@@ -157,21 +158,43 @@ const ExploreCommentsModal = ({
     onClose();
   }
 
-  const checkDeleteComment = () => {
+  const checkDeleteComment = (commentToDelete: string) => {
+    commentIDToDelete.current = Number(commentToDelete);
     console.log("Need to make sure they want to delete");
     if (displayCheckDelete === false){
         setDisplayCheckDelete(true);
     }
   }
 
-  const handleDeleteComment = () => {
-    console.log("Delete the comment")
+  const handleDeleteComment = async () => {
+    console.log("Delete the comment with id, ", commentIDToDelete.current);
+    const token = await Storage.getItem("token");
     try {
         //FIXME: Delete comment from backend
+        const response = await fetch(`${API_URL}/api/delete-post-comment`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({CommentID: commentIDToDelete.current}),
+        });
+
+        if (!response.ok) {
+          alert("Error while deleting the forum comment. Try again later.");
+          return;
+        }
+
+        console.log("Done deleting the comment!!");
+        const removeComment: Comment[] = Comments.filter(comment => Number(comment.id) !== commentIDToDelete.current);
+        setComments(removeComment);
+
     } catch (e) {
         console.log("Error when deleting explore comment ", e);
     } finally {
         setDisplayCheckDelete(false);
+        commentIDToDelete.current = null;
     }
   }
 
@@ -315,7 +338,7 @@ const ExploreCommentsModal = ({
           </View>
         </View>
         {currentUser.current === item.commenterid? (
-            <Pressable onPress={checkDeleteComment}>
+            <Pressable onPress={() => checkDeleteComment(item.id)}>
                 <Ionicons name="trash-outline" size={24} color={colors.text} />
             </Pressable>
         ) : (
@@ -353,6 +376,8 @@ const ExploreCommentsModal = ({
                         data={Comments}
                         renderItem={({item}) => renderCommentHeader(item)}
                         keyExtractor={item => item.id}
+                        onEndReached={fetchComments}
+                        onEndReachedThreshold={0.5}
                         ListEmptyComponent={
                             (
                                 <View style={{alignItems: "center", justifyContent: "center"}}>
@@ -364,7 +389,7 @@ const ExploreCommentsModal = ({
                     </View>
                 <View style={{flexDirection: "row", justifyContent: "space-between", width: "100%", alignItems: "center"}}>
                     <View style={styles.replyContainer}>
-                        <TextInput placeholder="Reply here" placeholderTextColor={colors.text} style={{color: colors.text}} value={commentValue} onChangeText={setCommentValue}/>
+                        <TextInput placeholder="Reply here" placeholderTextColor={colors.text} style={{color: colors.text}} value={commentValue} onChangeText={setCommentValue} multiline={true}/>
                     </View>
                     <Pressable onPress={() => postComment(commentValue)} style={{marginBottom: 20, marginLeft: 5, marginRight: 5}}>
                         <MaterialCommunityIcons name="send-circle-outline" size={40} color={colors.decorativeBackground}/>
@@ -382,7 +407,7 @@ const ExploreCommentsModal = ({
                                     <Pressable onPress={handleDeleteComment} style={{backgroundColor: colors.exploreCardBackground, padding: 10, borderRadius: 20, alignItems: "center", borderWidth: 1, borderColor: colors.decorativeBackground}}>
                                         <Text style={{color: colors.text, fontSize: 16, padding: 5}}> Yes </Text>
                                     </Pressable>
-                                    <Pressable onPress={() => setDisplayCheckDelete(false)} style={{backgroundColor: colors.exploreCardBackground, padding: 10, borderRadius: 20, alignItems: "center", borderWidth: 1, borderColor: colors.decorativeBackground}}>
+                                    <Pressable onPress={() => {setDisplayCheckDelete(false); commentIDToDelete.current = null}} style={{backgroundColor: colors.exploreCardBackground, padding: 10, borderRadius: 20, alignItems: "center", borderWidth: 1, borderColor: colors.decorativeBackground}}>
                                         <Text style={{color: colors.text, fontSize: 16, padding: 5}}> Cancel </Text>
                                     </Pressable>
                                 </View>

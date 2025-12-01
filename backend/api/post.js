@@ -382,14 +382,22 @@ router.post("/add-post-comment", authenticateToken, async(req, res) => {
 //delete a comment
 router.delete("/delete-post-comment", authenticateToken, async(req, res) => {
   console.log("Going to delete the comment");
+  const user = req.userID;
+  const commentToDelete = req.body.CommentID
   try {
-    //check if the user has permission to delete that comment -> If not, then alert the user
-
-    //check if the comment exists
-
     //try to delete the comment
+    let query;
+    query = `
+    DELETE FROM posts.tbl_post_comment 
+    WHERE fld_comment_pk = $1 AND fld_commenter_fk = $2;
+    `;
+
+    await pool.query(query, [commentToDelete, user]);
+
+    res.status(200).json({message: "Successfully deleted the post comment!"})
   } catch (e) {
     console.log("Error - could not delete that comment ", e)
+    res.status(500).json({message: "Could not delete the post comment"});
   }
 })
 
