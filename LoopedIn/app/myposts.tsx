@@ -54,10 +54,9 @@ export default function MyPosts() {
   };
 
   const handleEdit = () => {
-    if (selectedPostId !== null) {
-      setMenuVisible(false);
-      console.log(`Editing post ID: ${selectedPostId}`);
-    }
+    if (selectedPostId === null) return;
+    setMenuVisible(false);
+    router.push("/editforum");
   };
 
   const handleDelete = () => {
@@ -140,7 +139,7 @@ export default function MyPosts() {
             styles.floatingButton,
             {
               backgroundColor: colors.decorativeBackground,
-              bottom: insets.bottom + 120,
+              bottom: insets.bottom + 90,
             },
           ]}
           onPress={handleCreatePost}
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     position: "absolute",
-    right: 25,
+    right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
