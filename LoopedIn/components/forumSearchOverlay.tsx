@@ -11,11 +11,14 @@ import {
   Animated,
   TouchableWithoutFeedback,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import ForumPostView from "@/components/forumPost";
+import { Storage } from "../utils/storage";
+import API_URL from "@/utils/config";
 
 type ForumPost = {
   id: number;
@@ -23,7 +26,8 @@ type ForumPost = {
   username: string;
   content: string;
   filterTags: string[];
-  datePosted: Date;
+  datePosted: string;
+  userID: string,
 };
 
 type ForumSearchOverlayProps = {
@@ -40,9 +44,44 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ForumPost[]>([]);
 
-  const fade = useRef(new Animated.Value(0)).current;   // backdrop opacity
-  const slide = useRef(new Animated.Value(0)).current;  // 0 hidden 1 shown
+  const fade = useRef(new Animated.Value(0)).current;   //backdrop opacity
+  const slide = useRef(new Animated.Value(0)).current;  //0 hidden 1 shown
   const screenH = Dimensions.get("window").height;
+  const isTablet = Dimensions.get("window").width >= 768;
+
+  //for infinite scroll
+  const limit = 10;
+  const lastTimeStamp = useRef<string | null>(null);
+  const lastPostID = useRef<number | null>(null);
+  const loadingMore = useRef<true | false>(false);
+  const hasMore = useRef(true);
+
+  //change search results if new searchType filter selected
+  useEffect(() => {
+    lastTimeStamp.current = null;
+    lastPostID.current = null;
+    hasMore.current = true;
+    setResults([]);
+
+    if (query.trim()) {
+      handleSearch(true);
+    }
+}, [searchType]);
+
+  //refresh if query changes (don't put new stuff on top of old stuff)
+  useEffect(() => {
+  if (query.trim() === "") {
+      //reset infinite scroll vars
+      //console.log("------------SETTING ALL INFINITE SCROLL VARS TO NULL-------------")
+      lastTimeStamp.current = null;
+      lastPostID.current = null;
+      hasMore.current = true;
+      loadingMore.current = false;
+
+      //clear everything
+      setResults([]);
+  }
+}, [query]);
 
   useEffect(() => {
     if (visible) {
@@ -63,57 +102,100 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
     outputRange: [screenH, 0],
   });
 
-  // 15 dummy posts, change later for backend integration
-  const demoPosts: ForumPost[] = useMemo(() => {
-    const tags = [["Crochet"], ["Knit"], ["Crochet", "Knit"], ["Embroidery"], ["Weaving"]];
-    const names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank"];
-    const titles = [
-      "Cozy Winter Scarf",
-      "Beginner Granny Squares",
-      "Double Knit Tips",
-      "Flower Motif Tutorial",
-      "Textured Beanie Pattern",
-      "Colorwork Tricks",
-      "Blocking 101",
-      "Lace Chart Basics",
-      "Chunky Blanket Guide",
-      "Top-Down Sweater Plan",
-      "Fringe Finishing",
-      "Cable Stitch Practice",
-      "Warm Mittens Build",
-      "Shawl Shape Ideas",
-      "Basket Weave How-To",
-    ];
+const handleSearch = async (fresh = false) => {
+  if (!visible) return; //end a query if search overlay is closed
 
-    return Array.from({ length: 15 }).map((_, i) => ({
-      id: i + 1,
-      title: titles[i % titles.length],
-      username: names[i % names.length],
-      content: "content for demo search results.",
-      filterTags: tags[i % tags.length],
-      datePosted: new Date(Date.now() - i * 86400000),
-    }));
-  }, []);
+  //console.log("handling search", fresh? "(fresh)":"");
 
-  const handleSearch = () => {
+    if (fresh) {
+      //reset infinite scroll vars
+      //console.log("------------SETTING ALL INFINITE SCROLL VARS TO NULL-------------")
+      lastTimeStamp.current = null;
+      lastPostID.current = null;
+      hasMore.current = true;
+      loadingMore.current = false;
+
+      //clear everything
+      setResults([]);
+    }
+
+    //prevent spam
+    if (loadingMore.current || !hasMore.current) {
+      console.log("already loading - ignoring duplicate search request");
+      return;
+    }
+    loadingMore.current = true;
+
+    const token = await Storage.getItem("token");
     const q = query.trim().toLowerCase();
     if (!q) {
       setResults([]);
       return;
     }
 
-    let filtered: ForumPost[] = [];
-    if (searchType === "user") {
-      filtered = demoPosts.filter((p) => p.username.toLowerCase().includes(q));
-    } else if (searchType === "tag") {
-      filtered = demoPosts.filter((p) =>
-        p.filterTags.some((t) => t.toLowerCase().includes(q))
-      );
-    } else {
-      filtered = demoPosts.filter((p) => p.title.toLowerCase().includes(q));
+    //timestamps for infinite scroll
+    const includeBefore = lastTimeStamp.current
+    ? `&before=${lastTimeStamp.current}`
+    : "";
+
+  const includePostID = lastPostID.current
+    ? `&postID=${lastPostID.current}`
+    : "";
+
+
+    //api call
+    try {
+    const response = await fetch(`${API_URL}/api/forum/search?limit=${limit}${includeBefore}${includePostID}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        query: q,
+        type: searchType,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
     }
 
-    setResults(filtered); // Can use setResults(filtered.slice(0, x)); to limit to x cards per search
+    const data = await response.json();
+
+    let tempArray: ForumPost[] = data.newFeed.map((row: any) => ({
+      id: row.fld_post_pk,
+      profilePic: row.fld_profile_pic,
+      title: row.fld_header,
+      username: row.fld_username,
+      content: row.fld_body,
+      datePosted: row.fld_timestamp,
+      userID: row.fld_user_pk,
+    }));
+
+    //console.log("temp array populated");
+
+
+     //filter to prevent duplicates
+      setResults(prev => {
+        const combined = [...prev, ...tempArray];
+        return Array.from(new Map(combined.map(item => [item.id, item])).values());
+      });
+
+      //obligatory updates
+      hasMore.current = (data.hasMore);
+      if (tempArray.length > 0) {
+        lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
+        lastPostID.current = Number(tempArray[tempArray.length - 1].id);
+      };
+
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      //even if fetching data fails, we will update loading more
+      loadingMore.current = false;
+    }
+  
   };
 
   return (
@@ -140,10 +222,14 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
         ]}
         pointerEvents="auto"
       >
-        <View style={[styles.card, { backgroundColor: colors.topBackground }]}>
+        <View style={[styles.card,     {
+      width: isTablet ? "100%" : "95%",
+      maxWidth: isTablet ? 900 : undefined,
+    }, { backgroundColor: colors.topBackground }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Pressable onPress={onClose} style={{ padding: 6 }}>
+            <Pressable   onPress={onClose}
+                style={{ padding: 6 }}>
               <Feather name="x" size={26} color={colors.text} />
             </Pressable>
             <Text style={[styles.headerText, { color: colors.text }]}>Search</Text>
@@ -164,10 +250,10 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
               ]}
               value={query}
               onChangeText={setQuery}
-              onSubmitEditing={handleSearch}
+              onSubmitEditing={() => handleSearch(true)}
               returnKeyType="search"
             />
-            <Pressable onPress={handleSearch} style={styles.iconButton}>
+            <Pressable onPress={() => handleSearch(true)} style={styles.iconButton}>
               <Feather name="search" size={22} color={colors.decorativeText} />
             </Pressable>
           </View>
@@ -181,25 +267,7 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
                   key={type}
                   onPress={() => {
                     setSearchType(type);
-                    // re-run search when switching filter
-                    if (query.trim()) {
-                      const q = query.trim().toLowerCase();
-                      let filtered: ForumPost[] = [];
-                      if (type === "user") {
-                        filtered = demoPosts.filter((p) =>
-                          p.username.toLowerCase().includes(q)
-                        );
-                      } else if (type === "tag") {
-                        filtered = demoPosts.filter((p) =>
-                          p.filterTags.some((t) => t.toLowerCase().includes(q))
-                        );
-                      } else {
-                        filtered = demoPosts.filter((p) =>
-                          p.title.toLowerCase().includes(q)
-                        );
-                      }
-                      setResults(filtered.slice(0, 5));
-                    }
+                    // if (query.trim()) handleSearch();
                   }}
                   style={[
                     styles.filterButton,
@@ -226,7 +294,7 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
           {/* Results */}
           <FlatList
             data={results}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item, index) => `${item.id}_${index}`}
             renderItem={({ item }) => (
               <View style={{ alignItems: "center", marginVertical: 8 }}>
                 <ForumPostView postInfo={item} />
@@ -239,6 +307,23 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
                   : "Enter a search term and select a filter to begin."}
               </Text>
             }
+            onEndReached={() => {
+              if (!loadingMore.current && hasMore.current) {
+                handleSearch(false);
+              }
+            }}
+            onEndReachedThreshold={0.8}
+            ListFooterComponent={() => {
+              if (results.length > 0) {
+                if (!hasMore.current) {
+                  return <Text style={{ color: colors.text }}> No More Data To Load </Text>;
+                } else {
+                  return (
+                    <ActivityIndicator size="small" color={colors.text} />
+                  );
+                }
+              }
+            }}
               contentContainerStyle={{
               paddingBottom: 120,
               backgroundColor: colors.topBackground,
