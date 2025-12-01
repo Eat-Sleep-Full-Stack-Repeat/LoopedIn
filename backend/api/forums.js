@@ -124,7 +124,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
   }
 });
 
-// ----------- SAVED FORUMS -------------
+// ----------- SAVED FORUMS ON FEED PAGE -------------
 router.get("/get-saved-forums", authenticateToken, async (req, res) => {
   const currentUser = req.userID;
 
@@ -175,6 +175,113 @@ router.get("/get-saved-forums", authenticateToken, async (req, res) => {
     }
     // return the posts and whether there is more data to fetch
     res.status(200).json({
+      newFeed: returnedFeed.rows.slice(0, limit),
+    });
+  } catch (e) {
+    console.log("Error when loading forum feed: ", e);
+    res.status(500).json(e);
+  }
+});
+
+
+// ----------- SAVED FORUMS ON SAVED POSTS PAGE -------------
+
+
+router.get("/get-all-saved-forums", authenticateToken, async (req, res) => {
+  console.log("LOADING ALL SAVED");
+  console.log("This is the query: ", req.query);
+
+  const currentUser = req.userID;
+  console.log("Current user is: ", currentUser);
+
+  try {
+    const limit = parseInt(req.query.limit); // number of posts to return -> determined by front-end
+    //const queryTime = new Date(res.query.before); // which posts to query (determined by date posted)
+    let morePosts = true; // used to check if there are any more posts (false -> front-end should stop fetching data)
+    let query;
+    let returnedFeed;
+
+    console.log(`Checking timestamp ${req.query.before}`);
+
+    //throw in craft filter; fix as array
+    let craftFilter = req.query.craft;
+    console.log("\treq.query.craft is", craftFilter);
+    if (!Array.isArray(craftFilter)) {
+      craftFilter = [craftFilter];
+    }
+    console.log("Craft filter is: ", craftFilter);
+
+
+    // need to check if there was a timestamp passed from the frontend (used to sort feed and keep consistent)
+    if (
+      (req.query.before === "undefined") |
+      (req.query.before === "null") |
+      !req.query.before
+    ) {
+      // loads the initial batch of data (no timestamp to check, just the most recent posts)
+      console.log(`Inside initial loading of forum feed using ${limit}`);
+      query = `
+      SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
+      FROM login.tbl_user AS u 
+      INNER JOIN forums.tbl_forum_post AS ff 
+          ON u.fld_user_pk = ff.fld_creator
+          INNER JOIN forums.tbl_forum_tag AS tr
+            ON ff.fld_post_pk = tr.fld_post
+            INNER JOIN tags.tbl_tags AS tt
+              ON tr.fld_tag = tt.fld_tags_pk
+              INNER JOIN forums.tbl_save_forum as sf
+                ON ff.fld_post_pk = sf.fld_post_fk
+      WHERE tt.fld_tag_name = ANY($2) AND u.fld_user_pk <> $3 AND sf.fld_user_fk = $3
+      ORDER BY sf.fld_time_saved DESC, ff.fld_timestamp DESC, ff.fld_post_pk DESC
+      LIMIT ($1 + 1);
+        `;
+
+      returnedFeed = await pool.query(query, [limit, "{" + craftFilter.join(",") + "}", currentUser]);
+    } else {
+      // loads more data after the initial batch (uses timestamp of last returned post to get more -> ensures working with same set of data)
+      console.log("Inside the else branch");
+      query = `
+      SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
+      FROM login.tbl_user AS u 
+      INNER JOIN forums.tbl_forum_post AS ff 
+          ON u.fld_user_pk = ff.fld_creator
+          INNER JOIN forums.tbl_forum_tag AS tr
+            ON ff.fld_post_pk = tr.fld_post
+            INNER JOIN tags.tbl_tags AS tt
+              ON tr.fld_tag = tt.fld_tags_pk
+              INNER JOIN forums.tbl_save_forum as sf
+                ON ff.fld_post_pk = sf.fld_post_fk
+      WHERE (ff.fld_timestamp, ff.fld_post_pk) < ($1, $2) AND tt.fld_tag_name = ANY($4) AND u.fld_user_pk <> $5 AND sf.fld_user_fk = $5
+      ORDER BY sf.fld_time_saved DESC, ff.fld_timestamp DESC, ff.fld_post_pk DESC
+      LIMIT ($3 + 1);
+        `;
+      returnedFeed = await pool.query(query, [
+        req.query.before,
+        req.query.postID,
+        limit,
+        "{" + craftFilter.join(",") + "}",
+        currentUser
+      ]);
+    }
+    // if the number of rows returned is less than the limit then there is no more forum feed to fetch
+    if (returnedFeed.rowCount <= limit) {
+      morePosts = false;
+    }
+    // this is new code -> test this later -> should output the 
+    let avatarUrl = null;
+    for (let i = 0; i < returnedFeed.rowCount; i++){
+      const row = returnedFeed.rows[i];
+      if (row.fld_profile_pic){
+        const key = row.fld_profile_pic.includes("/") ? row.fld_profile_pic : `avatars/${row.fld_profile_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/"); 
+        avatarUrl = await getSignedFile(folder, fileName);  // fresh 12h URL, every rerender refreshes timer
+        row.fld_profile_pic = avatarUrl; 
+      }
+    }
+    // return the posts and whether there is more data to fetch
+    res.status(200).json({
+      hasMore: morePosts,
       newFeed: returnedFeed.rows.slice(0, limit),
     });
   } catch (e) {
@@ -920,6 +1027,231 @@ router.delete("/forum_post/:forumID", authenticateToken, async (req, res) => {
   }
 })
 
+// SAVE, UNSAVE, & CHECK SAVE STATUS
+//save
+router.post("/save_forum", authenticateToken, async (req, res) => {
+  try{
+  console.log("hit save");
+  const currentUser = req.userID;
+  const postID = req.query.id;
+  const now = new Date();
+  const date = now.toISOString();
+  
+  query = `
+      INSERT INTO forums.tbl_save_forum(fld_post_fk, fld_user_fk, fld_time_saved)
+      VALUES($1, $2, $3);
+  `
+  console.log("saving...");
+  const result = await pool.query(query, [postID, currentUser, date]);
+    if(result.rowCount > 0){
+      console.log("Successfully entered the new save relationship!");
+      res.status(200).send("Ok");
+    }
+  } catch (e) {
+    console.log("Error when inserting new save relationship", e)
+    res.status(500).send("Error");
+  }
+})
 
+//unsave
+router.delete("/unsave_forum", authenticateToken, async (req, res) => {
+  try{
+      console.log("hit unsave");
+
+  const currentUser = req.userID;
+  const postID = req.query.id;
+
+  query = `
+      DELETE FROM forums.tbl_save_forum
+      WHERE fld_post_fk = $1 AND fld_user_fk = $2;
+  `
+    console.log("deleting...");
+  const result = await pool.query(query, [postID, currentUser]);
+    if(result.rowCount > 0){
+      console.log("Successfully removed the save relationship!");
+      res.status(200).send("Ok");
+    }
+  } catch (e) {
+    console.log("Error when removing the save relationship", e)
+    res.status(500).send("Error");
+  }
+})
+
+//check save
+router.get("/check_if_saved", authenticateToken, async (req, res) => {
+  const currentUser = req.userID;
+  const postID = req.query.id;
+
+  query = `
+    SELECT * 
+    FROM forums.tbl_save_forum
+    WHERE fld_user_fk = $1 AND fld_post_fk = $2;
+  `
+  const result = await pool.query(query, [currentUser, postID]);
+
+  //see if any save relationship was returned
+  if (result.rowCount === 0){
+    res.status(200).json({
+      saveStatus: false
+    })
+  }
+  else if (result.rowCount > 1) {
+    console.log("Query returned more than 1 row. Not possible for a single post")
+    res.status(500);
+  }
+  else{ //exactly 1
+    res.status(200).json({
+      saveStatus: true
+    })
+  }
+})
+
+
+// -------------- SEARCH ----------------
+router.post("/search", authenticateToken, async (req, res) => {
+    const currentUser = req.userID;
+    const limit = parseInt(req.query.limit);
+
+  try {
+    const { query, type } = req.body;
+    const search = query.trim();
+
+    if (!search || !type) {
+      return res.status(400).json({ results: [] });
+    }
+
+    let searchQuery = "";
+    let params = [];
+    let morePosts = true;
+
+    //initial search w/ no timestamps
+    if ((req.query.before === "undefined") | (req.query.before === "null") | !req.query.before) {
+      //3 queries; 1 for each search filter (initial; no timestamps)
+      if (type === "user") {
+        searchQuery = `
+        SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+          FROM login.tbl_user AS u
+          INNER JOIN forums.tbl_forum_post AS ff
+            ON u.fld_user_pk = ff.fld_creator
+          WHERE LOWER(u.fld_username) LIKE LOWER($1) AND ff.fld_creator <> $2
+          ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+          LIMIT ($3+1);
+        `;
+        params = [`%${search}%`, currentUser, limit];
+      }
+
+      else if (type === "tag") {
+        searchQuery = `
+          SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+          FROM forums.tbl_forum_post AS ff
+          INNER JOIN login.tbl_user AS u 
+            ON u.fld_user_pk = ff.fld_creator
+            INNER JOIN forums.tbl_forum_tag AS ft
+              ON ff.fld_post_pk = ft.fld_post
+              INNER JOIN tags.tbl_tags AS t
+                ON t.fld_tags_pk = ft.fld_tag
+          WHERE LOWER(t.fld_tag_name) LIKE LOWER($1) AND ff.fld_creator <> $2
+          ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+          LIMIT ($3+1);
+        `;
+        params = [`%${search}%`, currentUser, limit];
+      }
+
+      else if (type === "title") {
+        searchQuery = `
+          SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+          FROM forums.tbl_forum_post AS ff
+          INNER JOIN login.tbl_user AS u
+            ON u.fld_user_pk = ff.fld_creator
+          WHERE LOWER(ff.fld_header) LIKE LOWER($1) AND ff.fld_creator <> $2
+          ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+          LIMIT ($3+1);
+        `;
+        params = [`%${search}%`, currentUser, limit];
+      }
+
+    }
+    else {
+      // loads more data after the initial batch (uses timestamp of last returned post to get more -> ensures working with same set of data)
+      if (type === "user") {
+        searchQuery = `
+        SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+          FROM login.tbl_user AS u
+          INNER JOIN forums.tbl_forum_post AS ff
+            ON u.fld_user_pk = ff.fld_creator
+          WHERE (ff.fld_timestamp < $4 OR (ff.fld_timestamp = $4 AND ff.fld_post_pk < $5))
+            AND LOWER(u.fld_username) LIKE LOWER($1) AND ff.fld_creator <> $2
+          ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+          LIMIT ($3+1);
+        `;
+        params = [`%${search}%`, currentUser, limit, req.query.before, req.query.postID];
+      }
+
+      else if (type === "tag") {
+        searchQuery = `
+          SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+          FROM forums.tbl_forum_post AS ff
+          INNER JOIN login.tbl_user AS u 
+            ON u.fld_user_pk = ff.fld_creator
+            INNER JOIN forums.tbl_forum_tag AS ft
+              ON ff.fld_post_pk = ft.fld_post
+              INNER JOIN tags.tbl_tags AS t
+                ON t.fld_tags_pk = ft.fld_tag
+          WHERE (ff.fld_timestamp < $4 OR (ff.fld_timestamp = $4 AND ff.fld_post_pk < $5))
+            AND LOWER(t.fld_tag_name) LIKE LOWER($1) AND ff.fld_creator <> $2
+          ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+          LIMIT ($3+1);
+        `;
+        params = [`%${search}%`, currentUser, limit, req.query.before, req.query.postID];
+      }
+
+      else if (type === "title") {
+        searchQuery = `
+          SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+          FROM forums.tbl_forum_post AS ff
+          INNER JOIN login.tbl_user AS u
+            ON u.fld_user_pk = ff.fld_creator
+          WHERE (ff.fld_timestamp < $4 OR (ff.fld_timestamp = $4 AND ff.fld_post_pk < $5))
+            AND LOWER(ff.fld_header) LIKE LOWER($1) AND ff.fld_creator <> $2
+          ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
+          LIMIT ($3+1);
+        `;
+        params = [`%${search}%`, currentUser, limit, req.query.before, req.query.postID];
+      }
+    }
+
+    const result = await pool.query(searchQuery, params);
+
+    // if the number of rows returned is less than the limit then there is no more forum feed to fetch
+    if (result.rowCount <= limit) {
+      morePosts = false;
+    }
+
+    //pfp fix (sign)
+    for (let row of result.rows) {
+      if (row.fld_profile_pic) {
+        const key = row.fld_profile_pic.includes("/")
+          ? row.fld_profile_pic
+          : `avatars/${row.fld_profile_pic}`;
+
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+
+        row.fld_profile_pic = await getSignedFile(folder, fileName);
+      }
+    }
+
+    // return the posts and whether there is more data to fetch
+    res.status(200).json({
+      hasMore: morePosts,
+      newFeed: result.rows.slice(0, limit),
+    });
+
+  }
+  catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ results: [], error: "Search failed" });
+  }
+});
 
 module.exports = router;
