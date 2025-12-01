@@ -49,6 +49,11 @@ const craftOptions: CraftOption[] = [
     label: "Knit",
     icon: require("../assets/images/kniticon.png"),
   },
+  {
+    id: "Misc",
+    label: "Misc",
+    icon: require("../assets/images/paw-icon.png")
+  },
 ];
 
 export default function NewPost() {

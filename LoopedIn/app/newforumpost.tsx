@@ -190,11 +190,20 @@ export default function Newformpost() {
     refineSection: {
       marginBottom: 15,
     },
+    sectionLabelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
     sectionLabel: {
       color: colors.text,
       fontWeight: "600",
       fontSize: 16,
-      marginBottom: 8,
+    },
+    characterCounter: {
+      color: `${colors.text}99`,
+      fontSize: 13,
     },
     input: {
       backgroundColor: colors.boxBackground,
@@ -412,24 +421,32 @@ export default function Newformpost() {
       </View>
 
       <View style={styles.formSection}>
-        <Text style={styles.sectionLabel}>Title</Text>
+        <View style={styles.sectionLabelRow}>
+          <Text style={styles.sectionLabel}>Title</Text>
+          <Text style={styles.characterCounter}>{`${postTitle.length}/150`}</Text>
+        </View>
         <TextInput
           value={postTitle}
           onChangeText={setPostTitle}
           placeholder="Enter a title"
           placeholderTextColor={`${colors.text}99`}
+          maxLength={150}
           style={styles.input}
         />
       </View>
 
       <View style={styles.formSection}>
-        <Text style={styles.sectionLabel}>Content</Text>
+        <View style={styles.sectionLabelRow}>
+          <Text style={styles.sectionLabel}>Content</Text>
+          <Text style={styles.characterCounter}>{`${postContent.length}/10000`}</Text>
+        </View>
         <TextInput
           value={postContent}
           onChangeText={setPostContent}
           placeholder="Share the details..."
           placeholderTextColor={`${colors.text}99`}
           multiline
+          maxLength={10000}
           style={[styles.input, styles.contentInput]}
         />
       </View>

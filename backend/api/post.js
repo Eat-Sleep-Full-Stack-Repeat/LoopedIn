@@ -6,7 +6,9 @@ const crypto = require("crypto");
 
 const { pool } = require("../backend_connection");
 const authenticateToken = require("../middleware/authenticate");
-const { uploadFile } = require("../s3_connection");
+const { uploadFile, getSignedFile } = require("../s3_connection");
+
+const { generateColor } = require("../functions/color_generator");
 
 require("dotenv").config();
 
@@ -90,18 +92,24 @@ router.post(
 
       await client.query("BEGIN");
 
+      //added timestamps because that wasn't inserted before
+      const now = new Date();
+      const date = now.toISOString();
+      console.log(date)
+
       // 1) Insert the post into posts.tbl_post
       const insertPostSql = `
         INSERT INTO posts.tbl_post
-          (fld_creator, fld_caption, fld_is_public)
+          (fld_creator, fld_caption, fld_is_public, fld_timestamp)
         VALUES
-          ($1, $2, $3)
+          ($1, $2, $3, $4)
         RETURNING fld_post_pk AS "postId"
       `;
       const postResult = await client.query(insertPostSql, [
         userPk,
         caption || "",
         isPublic === "true",
+        date,
       ]);
       const postId = postResult.rows[0].postId;
 
@@ -137,6 +145,25 @@ router.post(
         await client.query(insertPicSql, [postId, s3Key, altText]);
       }
 
+      //inserting craft  filters
+      //get craft filter id
+      query = `
+      SELECT fld_tags_pk
+      FROM tags.tbl_tags
+      WHERE fld_tag_name = $1;
+      `
+      const filterResult = await client.query(query, [craft.trim()]);
+      const filterID = filterResult.rows[0].fld_tags_pk
+
+      //Insert craft filter
+      query = `
+      INSERT INTO posts.tbl_post_tag(fld_post, fld_tag)
+      VALUES ($1, $2)
+      ON CONFLICT (fld_post, fld_tag) DO NOTHING;
+      `
+      await client.query(query, [postId, filterID]);
+
+
       // 3) Map string tags -> tag IDs in tags.tbl_tags, then link in posts.tbl_post_tag
       if (Array.isArray(tagArray) && tagArray.length > 0) {
         // Clean and normalize tag names
@@ -169,8 +196,8 @@ router.post(
             let tagId = existingMap.get(key);
 
             if (!tagId) {
-              // Create new tag with a default color
-              const defaultColor = "#7700ff";
+              // called color function
+              const defaultColor = generateColor();
               const insertTagRes = await client.query(
                 `
                 INSERT INTO tags.tbl_tags
@@ -226,6 +253,110 @@ router.post(
   }
 );
 
+//fetch public posts -> infinite scroll
+router.get("/post", authenticateToken, async (req, res) => {
+  try {
+    //declare variables
+    const curr_user = req.userID.trim()
+    const limit = req.query.limit
+    let morePosts = true
+    let returnFeed
+    let craftFilter = req.query.craft
+
+    //fetch data if feed wasn't populated before
+    //selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
+    if (req.query.before === "undefined" || !req.query.before) {
+      query = `
+      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
+      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
+        ON u.fld_user_pk = p.fld_creator
+        INNER JOIN posts.tbl_post_pic AS i
+          ON i.fld_post_fk = p.fld_post_pk
+          INNER JOIN posts.tbl_post_tag AS tp
+            ON tp.fld_post = p.fld_post_pk
+            INNER JOIN tags.tbl_tags AS t
+              ON t.fld_tags_pk = tp.fld_tag
+      WHERE p.fld_is_public = true AND t.fld_tag_name = ANY($1) AND u.fld_user_pk <> $2
+      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
+      LIMIT ($3 + 1);
+      `
+      returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit])
+
+      if (returnFeed.rowCount === 0) {
+        console.log("There's no posts here")
+        res.status(404).json({message: "No posts whatsoever"})
+        return
+      }
+
+    }
+    else {
+      //fetch data if feed was previously populated
+      //mad lad query right here
+      //also selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
+      query = `
+      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
+      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
+        ON u.fld_user_pk = p.fld_creator
+        INNER JOIN posts.tbl_post_pic AS i
+          ON i.fld_post_fk = p.fld_post_pk
+          INNER JOIN posts.tbl_post_tag AS tp
+            ON tp.fld_post = p.fld_post_pk
+            INNER JOIN tags.tbl_tags AS t
+              ON t.fld_tags_pk = tp.fld_tag
+      WHERE p.fld_is_public = true AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2) AND t.fld_tag_name = ANY($3) AND u.fld_user_pk <> $4
+      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
+      LIMIT ($5 + 1);
+      `
+
+      returnFeed = await pool.query(query, [req.query.before, req.query.postID, "{" + craftFilter.join(",") + "}", curr_user, limit])
+    }
+
+    //if returned feed less than limit, no more posts
+    if (returnFeed.rowCount <= limit) {
+      morePosts = false
+    }
+
+    //fetch profile picture from S3 if it exists
+    let avatarUrl = null;
+    for (let i = 0; i < returnFeed.rowCount; i++) {
+      const row = returnFeed.rows[i];
+      if (row.fld_profile_pic) {
+        const key = row.fld_profile_pic.includes("/")
+          ? row.fld_profile_pic
+          : `avatars/${row.fld_profile_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.fld_profile_pic = avatarUrl;
+      }
+    }
+
+    //fetch post image (first one) from S3
+    let postUrl = null;
+    for (let i = 0; i < returnFeed.rowCount; i++) {
+      const row = returnFeed.rows[i];
+      if (row.fld_post_pic) {
+        const key = row.fld_post_pic.includes("/")
+          ? row.fld_post_pic
+          : `posts/${row.fld_post_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        postUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.fld_post_pic = postUrl;
+      }
+    }
+
+    console.log("[Post]: fetched posts")
+
+    //return data
+    res.status(200).json({hasMore: morePosts, newFeed: returnFeed.rows.slice(0, limit)})
+
+  }
+  catch(error) {
+    console.log("Error fetching posts: ", error)
+    res.status(500).json(error)
+  }
+})
 
 // ----------------------------- COMMENTS -----------------------------
 
