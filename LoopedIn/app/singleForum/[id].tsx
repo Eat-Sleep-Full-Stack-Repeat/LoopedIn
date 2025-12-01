@@ -244,9 +244,10 @@ export default function ForumPostDetail() {
       const responseData = await res.json();
       setPassedComments(prevItems => [ ...prevItems, ...responseData.commentTree]);
       hasMore.current = (responseData.hasMore);
+      if(hasMore.current){
       lastTimeStamp.current = responseData.commentTree[responseData.commentTree.length - 1].date
       lastCommentID.current = responseData.commentTree[responseData.commentTree.length - 1].id
-      
+      }
     } catch (e) {
       console.log("Error when getting the comments", e);
     } finally {
