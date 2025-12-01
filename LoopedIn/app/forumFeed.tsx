@@ -13,8 +13,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import BottomNavButton from "@/components/bottomNavBar";
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "expo-router";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
 // FIXME remove the following import once backend is set up
 import mockUser from "./mockData";
 import ForumPostView from "@/components/forumPost";
@@ -67,6 +67,7 @@ export default function ForumFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tokenOkay, setTokenOkay] = useState(false);
+  const alreadyAlerted = useRef(false); //preventing double-alert in dev
 
   const userData = mockUser;
   const filters = ["All", "Crochet", "Knit", "Misc"];
@@ -89,11 +90,14 @@ export default function ForumFeed() {
       }
   }
     catch(e){
-      alert("Access denied, please log in and try again.");
-      router.replace("/")
+      if (!alreadyAlerted.current) {
+        alreadyAlerted.current = true;
+        alert("Access denied, please log in and try again.");
+        router.replace("/");
+      }
     }
   }
-
+  
   useEffect(() => {
     checkTokenOkay();
   }, []);
@@ -204,7 +208,10 @@ export default function ForumFeed() {
 
 
       if (!res.ok) {
-        alert("Error when fetching new forum posts");
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
         router.replace("/");
         return;
       }
@@ -267,7 +274,10 @@ export default function ForumFeed() {
       );
 
       if (!res.ok) {
-        alert("Error when fetching new forum posts");
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
         router.replace("/");
         return;
       }

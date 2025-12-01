@@ -13,8 +13,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import BottomNavButton from "@/components/bottomNavBar";
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "expo-router";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
 // FIXME remove the following import once backend is set up
 import mockUser from "./mockData";
 import ForumPostView from "@/components/forumPost";
@@ -113,6 +113,7 @@ export default function ForumFeed() {
     }
     }
 }, [refreshing])
+
 
   const fetchData = async () => {
     const token = await Storage.getItem("token");
@@ -265,10 +266,32 @@ export default function ForumFeed() {
       shadowRadius: 6,
       elevation: 5,
     },
+    backFab: {
+      position: "absolute",
+      top: insets.top + 8,
+      zIndex: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginLeft: 20,
+      backgroundColor: colors.boxBackground,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 4,
+      elevation: 3,
+    },
   });
 
   const headerView = () => (
     <View>
+
+      {/* back button */}
+      <Pressable style={styles.backFab} onPress={() => router.back()}>
+        <Feather name="chevron-left" size={22} color={colors.text} />
+      </Pressable>
 
       {/* Forum title */}
       <View style={styles.title}>

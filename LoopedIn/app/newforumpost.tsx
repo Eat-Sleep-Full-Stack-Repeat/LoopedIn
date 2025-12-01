@@ -362,11 +362,10 @@ export default function Newformpost() {
   });
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardAvoider}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={insets.top}
-    >
+      <KeyboardAvoidingView
+        style={[styles.keyboardAvoider, { backgroundColor: colors.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
