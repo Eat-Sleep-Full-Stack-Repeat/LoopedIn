@@ -1,15 +1,17 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, Text, TextInput, TouchableOpacity, View, Pressable} from "react-native";
 import { useState } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from "@/utils/config";
+import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
 
 export default function Login() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
+  const [passwordVisible, setPasswordVisible] = useState(true);
 
   //---------------------------------------------------------------------------------
 
@@ -246,24 +248,36 @@ export default function Login() {
         >
           Password
         </Text>
-        <TextInput
+        <View style={{ flexDirection: "row",
+              alignItems: "center",
+              width: "100%",
+              height: 50,
+              borderColor: colors.decorativeBackground,
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderRadius: 25,
+              paddingHorizontal: 10,}}>
+          <TextInput
           placeholder="Password"
           placeholderTextColor={colors.text}
-          secureTextEntry={true}
+          secureTextEntry={passwordVisible}
           style={{
-            width: "100%",
-            height: 50,
-            borderColor: colors.decorativeBackground,
-            backgroundColor: colors.background,
-            borderWidth: 1,
-            borderRadius: 25,
-            paddingHorizontal: 10,
-            color: colors.text
+              flex: 1,
+              color: colors.text
           }}
           onChangeText={onChangePassword}
           autoCorrect={false}
           autoCapitalize="none"
-        />
+          />
+          <Pressable onPress={() => setPasswordVisible(!passwordVisible)}>
+            <Text><Ionicons 
+            name={passwordVisible ? "eye-off" : "eye"}
+            size={22}
+            color={colors.text}
+            style={{marginHorizontal: 10,}}
+            /> {/* The eye emoji in the password section */} </Text>
+          </Pressable>
+        </View>
       </View>
       {/* Login button*/}
       <TouchableOpacity
