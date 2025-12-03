@@ -478,7 +478,9 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
                 c.fld_body AS text, 
                 CAST (c.fld_timestamp AS TIMESTAMPTZ) AS date, 
                 u.fld_username AS username, 
-                u.fld_profile_pic AS profileURI
+                u.fld_profile_pic AS profileURI,
+                c.fld_edited AS isedited,
+                c.fld_deleted AS isdeleted
         FROM forums.tbl_forum_comment c
         JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
         WHERE fld_post = $1 AND fld_parent_comment IS NULL
@@ -493,7 +495,9 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
                   c.fld_body AS text, 
                   CAST (c.fld_timestamp AS TIMESTAMPTZ) AS date, 
                   u.fld_username AS username, 
-                  u.fld_profile_pic AS profileURI
+                  u.fld_profile_pic AS profileURI,
+                  c.fld_edited AS isedited,
+                  c.fld_deleted AS isdeleted
           FROM forums.tbl_forum_comment c
           JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
           INNER JOIN postComments p ON p.id = c.fld_parent_comment
@@ -512,7 +516,9 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
                 c.fld_body AS text, 
                 CAST (c.fld_timestamp AS TIMESTAMPTZ) AS date, 
                 u.fld_username AS username, 
-                u.fld_profile_pic AS profileURI
+                u.fld_profile_pic AS profileURI,
+                c.fld_edited AS isedited,
+                c.fld_deleted AS isdeleted
         FROM forums.tbl_forum_comment c
         JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
         WHERE fld_post = $1 AND fld_parent_comment IS NULL AND (fld_timestamp, fld_comment_pk) < ($2, $3)
@@ -527,7 +533,9 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
                   c.fld_body AS text, 
                   CAST(c.fld_timestamp AS TIMESTAMPTZ) AS date, 
                   u.fld_username AS username, 
-                  u.fld_profile_pic AS profileURI
+                  u.fld_profile_pic AS profileURI,
+                  c.fld_edited AS isedited,
+                  c.fld_deleted AS isdeleted
           FROM forums.tbl_forum_comment c
           JOIN login.tbl_user u ON c.fld_commenter = u.fld_user_pk
           INNER JOIN postComments p ON p.id = c.fld_parent_comment
@@ -572,8 +580,8 @@ router.post("/forum-comment-post", authenticateToken, async (req, res) => {
     let query;
     let postComment;
     query = `
-    INSERT INTO forums.tbl_forum_comment (fld_post, fld_commenter, fld_parent_comment, fld_comment_depth, fld_body, fld_timestamp)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO forums.tbl_forum_comment (fld_post, fld_commenter, fld_parent_comment, fld_comment_depth, fld_body, fld_timestamp, fld_edited, fld_deleted)
+    VALUES ($1, $2, $3, $4, $5, $6, false, false)
     RETURNING fld_comment_pk;
     `;
     postComment = await pool.query(query, [postID, currentUser, parentID, depth, body, timestamp]);
@@ -637,7 +645,8 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
               fld_parent_comment AS parentID, 
               fld_comment_depth AS depth, 
               fld_body AS text, 
-              CAST (fld_timestamp AS TIMESTAMPTZ) AS date
+              CAST (fld_timestamp AS TIMESTAMPTZ) AS date,
+              fld_deleted AS isdeleted
       FROM forums.tbl_forum_comment 
       WHERE fld_post = $1 AND fld_comment_pk = $2
       ORDER BY fld_timestamp DESC
@@ -649,7 +658,8 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
                 fld_parent_comment AS parentID, 
                 fld_comment_depth AS depth, 
                 fld_body AS text, 
-                CAST (fld_timestamp AS TIMESTAMPTZ) AS date
+                CAST (fld_timestamp AS TIMESTAMPTZ) AS date,
+                fld_deleted AS isdeleted
         FROM forums.tbl_forum_comment
     INNER JOIN postComments p ON p.id = fld_parent_comment
     ) SELECT * FROM postComments
@@ -668,7 +678,7 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
           if (parseInt(x.id) === parseInt(pathArray[0])){
             return true;
           }
-          return (x.text === 'This comment has been deleted' && areAllChildrenDeleted(commentsToCheck, x.id))
+          return ((x.text === 'This comment has been deleted') && (x.isdeleted === true) && areAllChildrenDeleted(commentsToCheck, x.id))
         });
     }
 
@@ -693,7 +703,7 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
     async function updateText (idToUpdate) {
       query = `
       UPDATE forums.tbl_forum_comment
-      SET fld_body = 'This comment has been deleted'
+      SET fld_body = 'This comment has been deleted', fld_deleted = true
       WHERE fld_comment_pk = $1 AND fld_commenter = $2
       `
       await pool.query(query, [idToUpdate, commenterID])
@@ -720,7 +730,8 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
       count++;
       while (count < pathArray.length){
         checkParent = commentSubsetRows.find(node => node.id === pathArray[count]);
-        if (checkParent.text !== 'This comment has been deleted'){
+        if ((checkParent.text !== 'This comment has been deleted')){
+          console.log("This parent has not been deleted", checkParent.isdeleted)
           break;
         }
         continueSearch = areAllChildrenDeleted(commentSubsetRows, parseInt(pathArray[count]));
@@ -741,7 +752,7 @@ router.delete("/forum-comment-delete", authenticateToken, async (req, res) => {
     if (hasParent && hasChildren){
       while (count < pathArray.length) {
         checkParent = commentSubsetRows.find(node => node.id === pathArray[count])
-        if (checkParent.text !== 'This comment has been deleted'){
+        if ((checkParent.text !== 'This comment has been deleted') && (checkParent.isdeleted === false)){
           break;
         }
         continueSearch = areAllChildrenDeleted(commentSubsetRows, parseInt(pathArray[count]))
@@ -798,7 +809,7 @@ router.patch("/forum-update-comment", authenticateToken, async (req,res) => {
 
     query = `
       UPDATE forums.tbl_forum_comment
-      SET fld_body = $1
+      SET fld_body = $1, fld_edited = true
       WHERE fld_comment_pk = $2;
       `
 
