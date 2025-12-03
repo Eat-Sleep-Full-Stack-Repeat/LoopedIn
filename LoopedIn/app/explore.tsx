@@ -52,7 +52,9 @@ export default function ExplorePage() {
   const filters = ["All", "Crochet", "Knit", "Misc"];
   const insets = useSafeAreaInsets();
   const [areCommentsVisible, setAreCommentsVisible] = useState(false);
-  const router = useRouter()
+  const router = useRouter();
+  const currentPost = useRef<number | null>(null);
+  const creatorID = useRef<number | null>(null);
 
   //so we have responsive, and not statically-sized components for different screen sizes
   //you can change these variables as needed
@@ -118,8 +120,10 @@ export default function ExplorePage() {
         </View>
 
         <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
-          <Text style={styles.postActionText}>Comment</Text>
+          <Pressable onPress={() => showComments(item)} style={{alignItems: "center"}}>
+            <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
+            <Text style={styles.postActionText}>Comment</Text>
+          </Pressable>
         </View>
 
         <View style={styles.postAction}>
@@ -257,8 +261,10 @@ export default function ExplorePage() {
   }
 
 
-  const showComments = () => {
+  const showComments = (item: Post) => {
     console.log("Going to display the comments modal");
+    currentPost.current = Number(item.id);
+    creatorID.current = Number(item.userID);
     setAreCommentsVisible(true);
   }
 
@@ -457,7 +463,7 @@ export default function ExplorePage() {
         </GestureHandlerRootView>
 
         {/* FIXME: update the following modal values once explore implementation has been merged */}
-        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => setAreCommentsVisible(false)} currentPost={3} postCreator={12}></ExploreCommentsModal>
+        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => setAreCommentsVisible(false)} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
 
         <BottomNavButton />
       </View>

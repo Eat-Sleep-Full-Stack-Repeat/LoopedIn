@@ -383,14 +383,14 @@ router.get("/get-user-info", authenticateToken, async (req, res) => {
     let avatarUrl = null;
     for (let i = 0; i < userInformation.rowCount; i++) {
       const row = userInformation.rows[i];
-      if (row.fld_profile_pic) {
-        const key = row.fld_profile_pic.includes("/")
-          ? row.fld_profile_pic
-          : `avatars/${row.fld_profile_pic}`;
+      if (row.profilepic) {
+        const key = row.profilepic.includes("/")
+          ? row.profilepic
+          : `avatars/${row.profilepic}`;
         const folder = key.split("/")[0];
         const fileName = key.split("/").slice(1).join("/");
         avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
-        row.fld_profile_pic = avatarUrl;
+        row.profilepic = avatarUrl;
       }
     }
 
@@ -427,7 +427,7 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
           fld_body AS body, 
           CAST (fld_timestamp AS TIMESTAMPTZ) AS dateposted,
           fld_username AS username, 
-          fld_profile_pic AS profilePic 
+          fld_profile_pic AS profilepic 
       FROM posts.tbl_post_comment AS p
       INNER JOIN login.tbl_user AS l ON p.fld_commenter_fk = l.fld_user_pk
       WHERE p.fld_post_fk = $1
@@ -444,7 +444,7 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
           fld_body AS body, 
           CAST (fld_timestamp AS TIMESTAMPTZ) AS dateposted,
           fld_username AS username, 
-          fld_profile_pic AS profilePic 
+          fld_profile_pic AS profilepic 
       FROM posts.tbl_post_comment AS p
       INNER JOIN login.tbl_user AS l ON p.fld_commenter_fk = l.fld_user_pk
       WHERE p.fld_post_fk = $1 AND (fld_timestamp, fld_comment_pk) < ($2, $3)
@@ -460,16 +460,18 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
     let avatarUrl = null;
     for (let i = 0; i < newComments.rowCount; i++) {
       const row = newComments.rows[i];
-      if (row.fld_profile_pic) {
-        const key = row.fld_profile_pic.includes("/")
-          ? row.fld_profile_pic
-          : `avatars/${row.fld_profile_pic}`;
+      if (row.profilepic) {
+        const key = row.profilepic.includes("/")
+          ? row.profilepic
+          : `avatars/${row.profilepic}`;
         const folder = key.split("/")[0];
         const fileName = key.split("/").slice(1).join("/");
         avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
-        row.fld_profile_pic = avatarUrl;
+        row.profilepic = avatarUrl;
       }
     }
+
+    console.log("The rows are: ", newComments.rows.slice(0, 10));
 
     // return the chunk of comments and whether there are more to fetch
     res.status(200).json({
@@ -501,10 +503,11 @@ router.post("/add-post-comment", authenticateToken, async(req, res) => {
     query = `
     INSERT INTO posts.tbl_post_comment (fld_post_fk, fld_commenter_fk, fld_body, fld_timestamp)
     VALUES ($1, $2, $3, $4)
+    RETURNING fld_comment_pk;
     `
-    await pool.query(query, [postID, userID, content, timestamp]);
+    const newID = await pool.query(query, [postID, userID, content, timestamp]);
 
-    res.status(200).json({message: "Successfully added post comment"})
+    res.status(200).json({message: newID.rows});
   } catch (e) {
     console.log("Error - could not add the post comment", e)
   }
