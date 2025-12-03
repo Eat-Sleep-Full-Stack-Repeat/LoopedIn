@@ -40,7 +40,7 @@ type Comment = {
   text: string;
   profileuri: string | null;
   depth: number;
-  children?: Comment[];
+  children: Comment[];
   commenterid: number;
   parentid: number | null;
 };
@@ -64,6 +64,11 @@ type ForumPost = {
   username: string;
   content: string;
   datePosted: string;
+};
+
+type userInfo = {
+  username: string;
+  profilepic: string | null;
 };
 
 // hide the reply action on comments at or beyond this depth
@@ -109,6 +114,8 @@ export default function ForumPostDetail() {
   const [isEditVisible, setIsEditVisible] = useState(false);
   const [editPost, setEditPost] = useState<Comment | null>(null);
 
+  //get user info (to update comments on front-end)
+  const currentUserInfo = useRef<userInfo | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
@@ -175,6 +182,7 @@ export default function ForumPostDetail() {
       const responseData = await res.json();
       setCurrentUser(responseData.currentUser);
       setPostInfo(responseData.postInfo);
+      currentUserInfo.current = responseData.currentUserInfo[0];
 
     } catch (e) {
       console.log("Error when fetching post data", e)
@@ -274,15 +282,101 @@ export default function ForumPostDetail() {
       if (!response.ok) {
         alert("Could not create that comment :( ");
         return;
-      } else {
-        handleRefresh();
-      }
+       } 
+      // else {
+      //   handleRefresh();
+      // }
 
       console.log("Created the comment yayayayayaya!!!")
+      const responseData = await response.json();
+
+      if (!currentUser || !currentUserInfo.current){
+        console.log("Could not find the curernt user logged in");
+        return;
+      }
+
+      let tempComment: Comment;
+
+      if (isPost(replyInformation)){
+        tempComment = {
+          id: responseData.message[0].fld_comment_pk,
+          username: currentUserInfo.current.username,
+          date: String( new Date() ),
+          text: replyText,
+          profileuri: currentUserInfo.current.profilepic,
+          depth: 0,
+          children: [],
+          commenterid: currentUser,
+          parentid: null,
+        }
+        setPassedComments(prev => [tempComment, ...prev])
+      } else {
+        tempComment = {
+          id: responseData.message[0].fld_comment_pk,
+          username: currentUserInfo.current.username,
+          date: String( new Date() ),
+          text: replyText,
+          profileuri: currentUserInfo.current.profilepic,
+          depth: replyInformation.depth + 1,
+          children: [],
+          commenterid: currentUser,
+          parentid: Number(replyInformation.id),
+        }
+
+        //get the path to the parent comment
+
+        function getParents(arr: any, id: any): any {
+          for (let child of arr) {
+            if (child.id === id){
+              return id;
+            } else if (child.children.length > 0){
+              var x = getParents(child.children, id);
+    
+              if (x) return Array.isArray(x) ? [ ...x, child.id] : [x, child.id];
+            }
+          }
+        }
+    
+        const result: string[] = getParents(passedComments, replyInformation.id);
+
+        let index;
+
+        //using a temporary array, add the new comment
+        const addCommentArr = structuredClone(passedComments);
+
+        //if there is only 1 comment in path
+        if (!Array.isArray(result)){
+          index = addCommentArr.findIndex(obj => obj.id === String(result));
+          addCommentArr[index].children?.unshift(tempComment);
+        } else {
+          //multiple comments in path
+          let count = result.length - 1;
+          let tempCommentHolder = addCommentArr;
+          //ex: result = ["50", "49"]
+          //passedComments[where id = "49"].children[where id = "50"].push(newComment)
+          while (count >= 0){
+            index = tempCommentHolder.findIndex(obj => obj.id === result[count]);
+            tempCommentHolder = tempCommentHolder[index].children;
+            count--;
+          }
+
+          tempCommentHolder.unshift(tempComment);
+        }
+
+        //update the comment state 
+        setPassedComments(addCommentArr);
+
+        console.log("Going to add this in in a little bit!");
+
+      }
+
+
 
     } catch (e) {
       console.log("Error when adding forum comment", e);
       alert("Could not create comments for this forum post. Please try again later");
+    } finally {
+      setReplyInformation(null);
     }
 
   }
@@ -336,12 +430,45 @@ export default function ForumPostDetail() {
           return;
         }
 
+        let updateArray = structuredClone(passedComments); //temporarily store the array 
+        let count = result.length - 1; //get the last id in the path (last id is the root id)
+        let index = updateArray.findIndex(obj => obj.id === result[count]); //get the index of the first id in the path
+
+        //function to update the array
+        const updateCommentsArr = (index: number, item: Comment[]) => {
+          let tempItem = item[index]; //get the comment in the path
+          if (count < 0) { //this means we never found the comment (technically should not happen but just in case)
+            console.log("Could not find the comment to update");
+            return;
+          } if (tempItem.id === commentToDelete.id){ // if we found the comment to delete, then update the text and exit the function
+            tempItem.text = "This comment has been deleted";
+            return;
+          } else { //we have not found the comment to delete yet
+            if (!tempItem.children){ //double check if it has children to check for the comment
+              return;
+            }
+            count--; //have to traverse backwards in the result array since the comment to delete is at 0
+            const newIndex = tempItem.children.findIndex((obj: Comment) => obj.id === result[count]); //find the index of the next comment in the path
+            updateCommentsArr(newIndex, tempItem.children); //recursion to find the next comment
+          }
+        }
+
+        if (!Array.isArray(result)){ //if the comment to delete is a root comment, it will not be an array (just the id number of the comment)
+          let index = updateArray.findIndex(obj => obj.id === String(result)); //find where that comment is in the array
+          if (updateArray[index].id === commentToDelete.id){ //double check it is the one to delete
+            updateArray[index].text = "This comment has been deleted"; //update the text
+          }
+        } else { //comment to delete is not a root commet (AKA the path to the comment is an array)
+          updateCommentsArr(index, updateArray);
+        }
+
+        setPassedComments(updateArray);
+
       }
       catch(error) {
         console.log("Error while deleting forum comment:", (error as Error).message);
         alert("Server error, please try again later.");
       } finally {
-        handleRefresh();
         setShowEditDeleteModal(false);
       }
       

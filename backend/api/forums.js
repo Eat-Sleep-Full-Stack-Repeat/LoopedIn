@@ -402,9 +402,38 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
       }
     }
 
+    query = `
+    SELECT 	fld_username AS username, 
+		        fld_profile_pic AS profilepic 
+    FROM login.tbl_user
+    WHERE fld_user_pk = $1;
+    `
+
+    const userInformation = await pool.query(query, [req.userID]);
+
+    if (userInformation.rowCount !== 1 ){
+      console.log("Could not find the current user");
+      res.status(404).json({message: "Could not find the user for post comments"})
+    }
+
+    avatarUrl = null;
+    for (let i = 0; i < userInformation.rowCount; i++) {
+      const row = userInformation.rows[i];
+      if (row.profilepic) {
+        const key = row.profilepic.includes("/")
+          ? row.profilepic
+          : `avatars/${row.profilepic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.profilepic = avatarUrl;
+      }
+    }
+
     res.status(200).json({
       postInfo: returnedPostInfo.rows[0],
-      currentUser: req.userID
+      currentUser: req.userID,
+      currentUserInfo: userInformation.rows
     })
     //send post data back
   } catch (e) {
@@ -545,11 +574,11 @@ router.post("/forum-comment-post", authenticateToken, async (req, res) => {
     query = `
     INSERT INTO forums.tbl_forum_comment (fld_post, fld_commenter, fld_parent_comment, fld_comment_depth, fld_body, fld_timestamp)
     VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING fld_comment_pk;
     `;
     postComment = await pool.query(query, [postID, currentUser, parentID, depth, body, timestamp]);
 
-    console.log("Successfully entered the new comment!");
-    res.status(200).send("Ok");
+    res.status(200).json({message: postComment.rows});
   } catch (e) {
     console.log("Error when inserting new comment to a forum post", e)
     res.status(500).send("Error");
