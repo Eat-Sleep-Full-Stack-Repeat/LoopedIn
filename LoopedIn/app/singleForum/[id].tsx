@@ -1162,7 +1162,7 @@ export default function ForumPostDetail() {
   //
   const renderItem = useCallback(
     ({item}: {item: Comment}) => {
-      return <>{renderCommentBranch(item, 0)}</>;
+      return <View>{renderCommentBranch(item, 0)}</View>;
     },
     []
   )
