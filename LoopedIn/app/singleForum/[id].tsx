@@ -120,6 +120,9 @@ export default function ForumPostDetail() {
 
   //get user info (to update comments on front-end)
   const currentUserInfo = useRef<userInfo | null>(null);
+  //saving variables
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
@@ -131,7 +134,8 @@ export default function ForumPostDetail() {
 
   useEffect(() => {
     if (post) {
-      fetchComments();
+      fetchComments()
+      fetchSaved();
     }
   }, [post]);
 
@@ -152,6 +156,7 @@ export default function ForumPostDetail() {
     if (refreshing) {
       try {
         fetchPostInfo();
+        fetchSaved();
         fetchComments();
       } catch (e) {
         console.log("error when refreshing data", e);
@@ -188,7 +193,34 @@ export default function ForumPostDetail() {
     } catch (e) {
       console.log("Error when fetching post data", e);
     }
-  };
+  }
+
+  const fetchSaved = async () => {
+    const token = await Storage.getItem("token");
+    try {
+      const res = await fetch(
+        `${API_URL}/api/forum/check_if_saved?id=${postID}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 404) {
+        alert("Could not find that post");
+        router.back();
+      }
+
+      const responseData = await res.json();
+      setIsSaved(responseData.saveStatus);
+    } catch (e) {
+      console.log("Error when fetching save status", e)
+    }
+  }
 
   const fetchComments = async () => {
     const token = await Storage.getItem("token");
@@ -233,6 +265,74 @@ export default function ForumPostDetail() {
       loadingMore.current = false;
     }
   };
+
+
+  const handleSavePress = async() => {
+      //"lock" button during api call to prevent spamming
+      if (isSaving) return;
+      setIsSaving(true);
+
+      const token = await Storage.getItem("token");
+
+      //update UI immediately
+      const original = isSaved;
+      setIsSaved(!original); 
+
+      //unsave
+      if(isSaved){
+        try{
+        const res = await fetch(
+          `${API_URL}/api/forum/unsave_forum?id=${postID}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!res.ok) {
+          //revert UI if the unsave failed :(
+          setIsSaved(original);
+          alert("Failed to unsave post; please try again.");
+        }
+      } catch (e) {
+        console.log("Error when unsaving", e);
+      } finally{
+        //add timeout? or api rate limiter
+        setIsSaving(false);
+      }
+      }
+      else{ //save
+        try{
+        const res = await fetch(
+          `${API_URL}/api/forum/save_forum?id=${postID}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!res.ok) {
+          //revert UI if the save failed :(
+          setIsSaved(original);
+          alert("Failed to save post, please try again.");
+        }
+
+      } catch (e) {
+        console.log("Error when saving", e);
+      } finally{
+        //add timeout? or api rate limiter
+        setIsSaving(false);
+      }
+    }
+  }
 
   // will display the modal where the user can enter a reply
   const handleReplyPress = (
@@ -738,7 +838,12 @@ export default function ForumPostDetail() {
       borderRadius: 8,
       marginTop: 6,
     },
-
+    actionBtnSaved: {
+      backgroundColor: colors.decorativeBackground,
+    },
+    actionTextSaved: {
+      color: colors.decorativeText,
+    },
     divider: { height: 10 },
   });
 
@@ -848,9 +953,19 @@ export default function ForumPostDetail() {
         null}
 
         <View style={styles.actionRow}>
-          <Pressable style={styles.actionBtn}>
-            <Feather name="bookmark" size={18} color={colors.text} />
-            <Text style={styles.actionText}>Save</Text>
+          <Pressable  disabled={isSaving} style={[styles.actionBtn, isSaved && styles.actionBtnSaved, isSaving && { opacity: 0.5 }]} onPress={handleSavePress}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {isSaving ? (
+            <ActivityIndicator size="small" color={colors.text} />) : (
+            <Feather
+              name={isSaved ? "bookmark" : "bookmark"}
+              size={18}
+              color={isSaved ? colors.decorativeText : colors.text}
+            />)}
+            <Text style={[styles.actionText, isSaved && styles.actionTextSaved]}>
+              {isSaved ? "Saved" : "Save"}
+            </Text>
+            </View>
           </Pressable>
           <Pressable
             style={styles.actionBtn}
