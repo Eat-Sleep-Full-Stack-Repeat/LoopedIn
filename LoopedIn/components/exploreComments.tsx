@@ -8,7 +8,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Modal,
   StyleSheet,
@@ -83,13 +83,14 @@ const ExploreCommentsModal = ({
   }
 
   useEffect(() => {
-    if (!isVisible){
+    
+    if (!isVisible) {
       return;
     }
 
     if (currentPost !== null && postCreator !== null) {
       fetchComments();
-    } 
+    }
   }, [isVisible]);
 
   useEffect(() => {
@@ -113,13 +114,17 @@ const ExploreCommentsModal = ({
   // need to use useEffect to ensure previous data is flushed before fetching new data
   useEffect(() => {
     if (refreshing) {
-      try {
-        fetchComments();
-      } catch (e) {
-        console.log("error when refreshing data", e);
-      } finally {
-        setRefreshing(false);
-      }
+      const refreshNewData = async () => {
+        try {
+          await fetchComments();
+        } catch (e) {
+          console.log("error when refreshing data", e);
+        } finally {
+          setRefreshing(false);
+        }
+      };
+
+      refreshNewData();
     }
   }, [refreshing]);
 
@@ -153,8 +158,8 @@ const ExploreCommentsModal = ({
   const fetchComments = async () => {
     const token = await Storage.getItem("token");
 
-    if (currentPost === null || postCreator === null){
-      console.log("Post or creator is null - can't fetch info")
+    if (currentPost === null || postCreator === null) {
+      console.log("Post or creator is null - can't fetch info");
       return;
     }
 
@@ -193,11 +198,11 @@ const ExploreCommentsModal = ({
       const tempArray: Comment[] = responseData.newComments;
 
       //check for stale data:
-      if (!currentPost){
+      if (!currentPost) {
         onClose();
         return;
       }
-      if (Number(responseData.postID) !== currentPost){
+      if (Number(responseData.postID) !== currentPost) {
         console.log("Got old / unusable data -> closing modal");
         onClose();
         return;
@@ -359,6 +364,8 @@ const ExploreCommentsModal = ({
       borderRadius: 20,
       alignItems: "center",
       flexDirection: "column",
+      borderWidth: 1,
+      borderColor: colors.exploreBorder,
     },
     replyContainer: {
       backgroundColor: colors.exploreCardBackground,
@@ -431,15 +438,24 @@ const ExploreCommentsModal = ({
                     width: avatarSize / 2,
                     height: avatarSize / 2,
                     borderRadius: avatarSize / 2,
+                    backgroundColor: "white"
                   }}
                 />
               </View>
             )}
           </Pressable>
           <View style={styles.userInfo}>
-            <Pressable onPress={() => profilePress(item)}>
-              <Text style={{ color: colors.text }}>{item.username}</Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: 5 }}>
+              <Pressable onPress={() => profilePress(item)}>
+                <Text style={{ color: colors.text }}>{item.username}</Text>
+              </Pressable>
+              {postCreator === Number(item.commenterid) && (
+                <Text style={{ color: colors.text }}>(Creator)</Text>
+              )}
+              {currentUser.current === item.commenterid && (
+                <Text style={{ color: colors.text }}>(You)</Text>
+              )}
+            </View>
             <Text style={{ color: colors.text, marginLeft: 5 }}>
               {new Date(item.dateposted).toDateString()}
             </Text>
@@ -452,9 +468,16 @@ const ExploreCommentsModal = ({
         ) : null}
       </View>
       <View style={styles.commentContent}>
-        <Text>{item.body}</Text>
+        <Text style={{ color: colors.text }}>{item.body}</Text>
       </View>
     </View>
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Comment }) => (
+      <View key={item.id}>{renderCommentHeader(item)}</View>
+    ),
+    [currentUser]
   );
 
   return (
@@ -491,11 +514,12 @@ const ExploreCommentsModal = ({
             <View style={{ flex: 1, width: "100%" }}>
               <FlatList
                 data={Comments}
-                renderItem={({ item }) => renderCommentHeader(item)}
+                renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 onEndReached={fetchComments}
                 onEndReachedThreshold={0.5}
                 showsVerticalScrollIndicator={false}
+                extraData={{ currentUser }}
                 ListEmptyComponent={() => {
                   if (loadingMore.current) {
                     return (

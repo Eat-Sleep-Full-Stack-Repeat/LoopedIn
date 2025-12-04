@@ -104,13 +104,17 @@ export default function ForumFeed() {
   // need to use useEffect to ensure previous data is flushed before fetching new data
   useEffect(() => {
     if (refreshing) {
-      try {
-        fetchData();
-      } catch (e) {
-        console.log("error when refreshing data", e);
-      } finally {
-        setRefreshing(false);
-    }
+
+      const refreshNewData = async() => {
+        try {
+          await fetchData();
+        } catch (e) {
+          console.log("error when refreshing data", e);
+        } finally {
+          setRefreshing(false);
+        }
+      }
+      refreshNewData();
     }
 }, [refreshing])
 
@@ -288,15 +292,10 @@ export default function ForumFeed() {
   const headerView = () => (
     <View>
 
-      {/* back button */}
-      <Pressable style={styles.backFab} onPress={() => router.back()}>
-        <Feather name="chevron-left" size={22} color={colors.text} />
-      </Pressable>
-
-      {/* Forum title */}
-      <View style={styles.title}>
-        <Text style={styles.titleText}> Saved Posts </Text>
-      </View>
+        {/* Forum title */}
+        <View style={styles.title}>
+          <Text style={styles.titleText}> Saved Posts </Text>
+        </View>
 
       {/* Refine by craft section */}
       <View style={styles.refineHeader}>
@@ -343,6 +342,11 @@ export default function ForumFeed() {
     <GestureHandlerRootView>
 
       <View style={styles.container}>
+
+        {/* back button */}
+        <Pressable style={styles.backFab} onPress={() => router.back()}>
+          <Feather name="chevron-left" size={22} color={colors.text} />
+        </Pressable>
         <FlatList
             data={forumData}
           renderItem={({ item }) => (

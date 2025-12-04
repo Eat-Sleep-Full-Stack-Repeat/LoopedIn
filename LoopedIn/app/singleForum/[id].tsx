@@ -154,15 +154,21 @@ export default function ForumPostDetail() {
 
   useEffect(() => {
     if (refreshing) {
-      try {
-        fetchPostInfo();
-        fetchSaved();
-        fetchComments();
-      } catch (e) {
-        console.log("error when refreshing data", e);
-      } finally {
-        setRefreshing(false);
+
+      const refreshNewData = async() => {
+        try {
+          await fetchPostInfo();
+          await fetchSaved();
+          await fetchComments();
+        } catch (e) {
+          console.log("error when refreshing data", e);
+        } finally {
+          setRefreshing(false);
+        }
       }
+
+      refreshNewData();
+      
     }
   }, [refreshing]);
 
@@ -1061,7 +1067,7 @@ export default function ForumPostDetail() {
                         />
                       </View>
                     )}
-                    <View style={{ flexDirection: "column" }}>
+                    <View style={{ flexDirection: "column", marginLeft: 5 }}>
                       <View style={styles.commentHeaderText}>
                         <Text style={styles.commentUser} numberOfLines={1}>
                           {node.username}
@@ -1077,7 +1083,7 @@ export default function ForumPostDetail() {
                         <Text style={styles.commentDate}>
                           {new Date(node.date).toDateString()}
                         </Text>
-                        {node.isedited ? <Text style={{fontSize: 12}}> - Edited </Text> : null}
+                        {node.isedited ? <Text style={{fontSize: 12, color: colors.text}}> - Edited </Text> : null}
                       </View>
                     </View>
                   </View>
@@ -1159,6 +1165,12 @@ export default function ForumPostDetail() {
     );
   };
 
+  const renderItem = useCallback(({item} : {item: Comment}) => (
+    <View key={item.id}>
+      {renderCommentBranch(item, 0)}
+    </View>
+  ), [expanded, currentUser])
+
   return (
     <View style={styles.screen}>
       <Pressable style={styles.backFab} onPress={() => router.back()}>
@@ -1176,7 +1188,8 @@ export default function ForumPostDetail() {
             </View>
           </View>
         }
-        renderItem={({ item }) => <View>{renderCommentBranch(item, 0)}</View>}
+        renderItem={renderItem}
+        extraData={{expanded, currentUser}}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         contentContainerStyle={{ paddingBottom: 24 }}
         onEndReached={fetchComments}

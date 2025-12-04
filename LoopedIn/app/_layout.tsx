@@ -1,9 +1,17 @@
-import { ThemeProvider } from "@/context/ThemeContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { Stack } from "expo-router";
+import {StatusBar} from 'expo-status-bar'
+
+function ThemedStatusBar() {
+  const { currentTheme } = useTheme();
+  return <StatusBar style={currentTheme === "dark" ? "light" : "dark"}/>
+}
 
 export default function RootLayout() {
   return (
     <ThemeProvider>
+      
+      <ThemedStatusBar/>
       <Stack>
         <Stack.Screen name="index" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="userProfile" options={{headerShown: false, animation: "none"}}/>
@@ -19,6 +27,8 @@ export default function RootLayout() {
         <Stack.Screen name="myposts" options={{ headerShown: false, animation: "none" }} />
         <Stack.Screen name="savedposts" options={{ headerShown: false, animation: "none" }} />
       </Stack>
-    </ThemeProvider>
+
+      
+    </ ThemeProvider>
   );
 }

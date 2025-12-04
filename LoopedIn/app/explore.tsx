@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -87,11 +87,12 @@ export default function ExplorePage() {
 
   //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [postData, setPostData] = useState<Post[]>([]);
+  const posts: Post[] = useMemo(() => postData, [postData]);
   const loadingMore = useRef<true | false>(false);
   const [refreshing, setRefreshing] = useState(false);
   const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
 
-  const renderPost = ({ item }: { item: Post }) => (
+  const renderPost = useCallback(({ item }: { item: Post }) => (
     <View style={styles.postContainer}>
         <TouchableOpacity style={styles.profileRow} onPress={() => router.push({
             pathname: "/userProfile/[id]",
@@ -138,7 +139,7 @@ export default function ExplorePage() {
         </View>
       </View>
     </View>
-  )
+  ), [])
 
   useEffect(() => {
     if (selectedFilter === "All") { // pass all craft filters to backend
@@ -172,15 +173,21 @@ export default function ExplorePage() {
   // need to use useEffect to ensure previous data is flushed before fetching new data
   useEffect(() => {
     if (refreshing) {
-      try {
-        fetchData();
+
+      const refreshNewData = async () => {
+        try {
+          await fetchData();
+        }
+        catch (e) {
+          console.log("error when refreshing data", e);
+        } 
+        finally {
+          setRefreshing(false);
+        }
       }
-      catch (e) {
-        console.log("error when refreshing data", e);
-      } 
-      finally {
-        setRefreshing(false);
-      }
+
+      refreshNewData();
+      
     }
   }, [refreshing])
 
@@ -421,7 +428,7 @@ export default function ExplorePage() {
           </View>
 
             <FlatList
-              data={postData}
+              data={posts}
               renderItem={renderPost}
               keyExtractor={item => item.id}
               onEndReached={fetchData}
@@ -439,7 +446,7 @@ export default function ExplorePage() {
                 }
               }}
               ListFooterComponent={() => {
-                if (postData.length > 0) {
+                if (posts.length > 0) {
                   if (!hasMore.current) {
                     return (
                       <View style={{paddingBottom: 150}}>
