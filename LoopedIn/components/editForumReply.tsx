@@ -41,7 +41,6 @@ const EditForumReplyModal = ({
   const [newReplyText, setNewReplyText] = useState("");
 
   useEffect (() => {
-    console.log("Running the useEffect");
     if (!postToEdit){
         return;
     }

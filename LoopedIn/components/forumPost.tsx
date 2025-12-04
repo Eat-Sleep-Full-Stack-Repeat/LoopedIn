@@ -1,6 +1,6 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { StyleSheet, View, Image, Text, Pressable, Dimensions } from "react-native";
+import { StyleSheet, View, Image, Text, Pressable, Dimensions, useWindowDimensions } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useState } from "react";
 import { router } from "expo-router";
@@ -22,10 +22,11 @@ type ForumPostViewProps = {
 const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
+  const {width} = useWindowDimensions();
 
   let avatarSize;
 
-  if (Dimensions.get("window").width >= 768) {
+  if (width >= 768) {
     avatarSize = 120;
   } else {
     avatarSize = 100;
@@ -56,7 +57,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       paddingVertical: 10,
       backgroundColor: colors.topBackground,
       borderRadius: 15,
-      width: Dimensions.get("window").width - 40,
+      width: width - 40,
     },
     forumTitle: {
       fontSize: 14,

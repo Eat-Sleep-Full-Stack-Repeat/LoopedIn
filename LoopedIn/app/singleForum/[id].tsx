@@ -40,9 +40,11 @@ type Comment = {
   text: string;
   profileuri: string | null;
   depth: number;
-  children?: Comment[];
+  children: Comment[];
   commenterid: number;
   parentid: number | null;
+  isedited: boolean;
+  isdeleted: boolean;
 };
 
 type Post = {
@@ -66,6 +68,11 @@ type ForumPost = {
   datePosted: string;
 };
 
+type userInfo = {
+  username: string;
+  profilepic: string | null;
+};
+
 // hide the reply action on comments at or beyond this depth
 const MAX_REPLY_DEPTH = 4;
 
@@ -85,7 +92,7 @@ export default function ForumPostDetail() {
   const router = useRouter();
   const navigation = useNavigation();
   const { width: SCREEN_W } = useWindowDimensions();
-  const {id} = useLocalSearchParams();
+  const { id } = useLocalSearchParams();
   const postID = id as string;
   const [passedComments, setPassedComments] = useState<Comment[]>([]);
   const comments: Comment[] = useMemo(() => passedComments, [passedComments]);
@@ -101,7 +108,9 @@ export default function ForumPostDetail() {
 
   //reply variables
   const [isReplyVisible, setIsReplyVisible] = useState(false);
-  const [replyInformation, setReplyInformation] = useState<Post | Comment | null>(null);
+  const [replyInformation, setReplyInformation] = useState<
+    Post | Comment | null
+  >(null);
 
   //edit and delete variables
   const [showEditDeleteModal, setShowEditDeleteModal] = useState(false);
@@ -109,6 +118,8 @@ export default function ForumPostDetail() {
   const [isEditVisible, setIsEditVisible] = useState(false);
   const [editPost, setEditPost] = useState<Comment | null>(null);
 
+  //get user info (to update comments on front-end)
+  const currentUserInfo = useRef<userInfo | null>(null);
   //saving variables
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -117,22 +128,20 @@ export default function ForumPostDetail() {
     navigation.setOptions?.({ headerShown: false });
   }, [navigation]);
 
-  
-
   useEffect(() => {
     fetchPostInfo();
-  }, [postID])
+  }, [postID]);
 
   useEffect(() => {
     if (post) {
       fetchComments()
       fetchSaved();
     }
-  }, [post])
+  }, [post]);
 
-  const handleRefresh = async() => {
+  const handleRefresh = async () => {
     if (refreshing) {
-      return 
+      return;
     } else {
       lastCommentID.current = null;
       lastTimeStamp.current = null;
@@ -141,7 +150,7 @@ export default function ForumPostDetail() {
       setPostInfo(null);
       setRefreshing(true);
     }
-  }
+  };
 
   useEffect(() => {
     if (refreshing) {
@@ -153,9 +162,9 @@ export default function ForumPostDetail() {
         console.log("error when refreshing data", e);
       } finally {
         setRefreshing(false);
+      }
     }
-    }
-  }, [refreshing])
+  }, [refreshing]);
 
   const fetchPostInfo = async () => {
     const token = await Storage.getItem("token");
@@ -180,9 +189,9 @@ export default function ForumPostDetail() {
       const responseData = await res.json();
       setCurrentUser(responseData.currentUser);
       setPostInfo(responseData.postInfo);
-
+      currentUserInfo.current = responseData.currentUserInfo[0];
     } catch (e) {
-      console.log("Error when fetching post data", e)
+      console.log("Error when fetching post data", e);
     }
   }
 
@@ -215,12 +224,11 @@ export default function ForumPostDetail() {
 
   const fetchComments = async () => {
     const token = await Storage.getItem("token");
-    if (loadingMore.current || !hasMore.current){
+    if (loadingMore.current || !hasMore.current) {
       return;
     }
     loadingMore.current = true;
     try {
-
       const includeBefore = lastTimeStamp.current
         ? `&before=${lastTimeStamp.current}`
         : "";
@@ -242,18 +250,21 @@ export default function ForumPostDetail() {
       );
 
       const responseData = await res.json();
-      setPassedComments(prevItems => [ ...prevItems, ...responseData.commentTree]);
-      hasMore.current = (responseData.hasMore);
-      if(hasMore.current){
-      lastTimeStamp.current = responseData.commentTree[responseData.commentTree.length - 1].date
-      lastCommentID.current = responseData.commentTree[responseData.commentTree.length - 1].id
-      }
+      setPassedComments((prevItems) => [
+        ...prevItems,
+        ...responseData.commentTree,
+      ]);
+      hasMore.current = responseData.hasMore;
+      lastTimeStamp.current =
+        responseData.commentTree[responseData.commentTree.length - 1].date;
+      lastCommentID.current =
+        responseData.commentTree[responseData.commentTree.length - 1].id;
     } catch (e) {
       console.log("Error when getting the comments", e);
     } finally {
       loadingMore.current = false;
     }
-  }
+  };
 
 
   const handleSavePress = async() => {
@@ -324,26 +335,28 @@ export default function ForumPostDetail() {
   }
 
   // will display the modal where the user can enter a reply
-  const handleReplyPress = (replyCommentID: string, replyInfo: Post | Comment) => {
+  const handleReplyPress = (
+    replyCommentID: string,
+    replyInfo: Post | Comment
+  ) => {
     setIsReplyVisible(true);
     setReplyInformation(replyInfo);
-  }
+  };
 
   //will actually post the reply in the databases
   const handlePostReply = async (replyText: string) => {
-
     const isPost = (item: Comment | Post): item is Post => {
       return "content" in item;
-    }
+    };
 
-    if (!replyInformation){
+    if (!replyInformation) {
       console.log("Could not find that post");
       return;
     }
 
     let parentID;
     let depth;
-    if (isPost(replyInformation)){
+    if (isPost(replyInformation)) {
       parentID = null;
       depth = 0;
     } else {
@@ -357,7 +370,7 @@ export default function ForumPostDetail() {
       depth,
       body: replyText,
       timestamp: new Date(),
-    }
+    };
 
     const token = await Storage.getItem("token");
     try {
@@ -368,39 +381,126 @@ export default function ForumPostDetail() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(newComment)
-    });
+        body: JSON.stringify(newComment),
+      });
 
       if (!response.ok) {
         alert("Could not create that comment :( ");
         return;
-      } else {
-        handleRefresh();
       }
 
-      console.log("Created the comment yayayayayaya!!!")
+      console.log("Created the comment yayayayayaya!!!");
+      const responseData = await response.json();
 
+      if (!currentUser || !currentUserInfo.current) {
+        console.log("Could not find the current user logged in");
+        return;
+      }
+
+      let tempComment: Comment;
+
+      if (isPost(replyInformation)) {
+        tempComment = {
+          id: responseData.message[0].fld_comment_pk,
+          username: currentUserInfo.current.username,
+          date: String(new Date()),
+          text: replyText,
+          profileuri: currentUserInfo.current.profilepic,
+          depth: 0,
+          children: [],
+          commenterid: currentUser,
+          parentid: null,
+          isedited: false,
+          isdeleted: false,
+        };
+        setPassedComments((prev) => [tempComment, ...prev]);
+      } else {
+        tempComment = {
+          id: responseData.message[0].fld_comment_pk,
+          username: currentUserInfo.current.username,
+          date: String(new Date()),
+          text: replyText,
+          profileuri: currentUserInfo.current.profilepic,
+          depth: replyInformation.depth + 1,
+          children: [],
+          commenterid: currentUser,
+          parentid: Number(replyInformation.id),
+          isedited: false,
+          isdeleted: false,
+        };
+
+        //get the path to the parent comment
+
+        function getParents(arr: any, id: any): any {
+          for (let child of arr) {
+            if (child.id === id) {
+              return id;
+            } else if (child.children.length > 0) {
+              var x = getParents(child.children, id);
+
+              if (x) return Array.isArray(x) ? [...x, child.id] : [x, child.id];
+            }
+          }
+        }
+
+        const result: string[] = getParents(
+          passedComments,
+          replyInformation.id
+        );
+
+        let index;
+
+        //using a temporary array, add the new comment
+        const addCommentArr = structuredClone(passedComments);
+
+        //if there is only 1 comment in path
+        if (!Array.isArray(result)) {
+          index = addCommentArr.findIndex((obj) => obj.id === String(result));
+          addCommentArr[index].children?.unshift(tempComment);
+        } else {
+          //multiple comments in path
+          let count = result.length - 1;
+          let tempCommentHolder = addCommentArr;
+          //ex: result = ["50", "49"]
+          //passedComments[where id = "49"].children[where id = "50"].push(newComment)
+          while (count >= 0) {
+            index = tempCommentHolder.findIndex(
+              (obj) => obj.id === result[count]
+            );
+            tempCommentHolder = tempCommentHolder[index].children;
+            count--;
+          }
+
+          tempCommentHolder.unshift(tempComment);
+        }
+
+        //update the comment state
+        setPassedComments(addCommentArr);
+      }
     } catch (e) {
       console.log("Error when adding forum comment", e);
-      alert("Could not create comments for this forum post. Please try again later");
+      alert(
+        "Could not create comments for this forum post. Please try again later"
+      );
+    } finally {
+      setReplyInformation(null);
     }
-
-  }
+  };
 
   const handleDeleteReply = async (commentToDelete: Comment | null) => {
     const token = await Storage.getItem("token");
-    if (!commentToDelete){
+    if (!commentToDelete) {
       return;
     }
 
     function getParents(arr: any, id: any): any {
       for (let child of arr) {
-        if (child.id === id){
+        if (child.id === id) {
           return id;
-        } else if (child.children.length > 0){
+        } else if (child.children.length > 0) {
           var x = getParents(child.children, id);
 
-          if (x) return Array.isArray(x) ? [ ...x, child.id] : [x, child.id];
+          if (x) return Array.isArray(x) ? [...x, child.id] : [x, child.id];
         }
       }
     }
@@ -408,86 +508,204 @@ export default function ForumPostDetail() {
     const result: string[] = getParents(passedComments, commentToDelete.id);
 
     //double check that the user can delete that comment
-    if (commentToDelete.commenterid === currentUser){
+    if (commentToDelete.commenterid === currentUser) {
       try {
         let hasChildren = false;
-        if (commentToDelete.children){
-          if (commentToDelete.children.length > 0){
+        if (commentToDelete.children) {
+          if (commentToDelete.children.length > 0) {
             hasChildren = true;
           }
         }
 
         let hasParent = true;
-        if (commentToDelete.parentid === null){
+        if (commentToDelete.parentid === null) {
           hasParent = false;
         }
-        const response = await fetch(`${API_URL}/api/forum/forum-comment-delete`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-          body: JSON.stringify({ commenterID: commentToDelete.commenterid, commentID: parseInt(commentToDelete.id), hasChildren, hasParent, pathArray: result, postID}),
-        });
+        const response = await fetch(
+          `${API_URL}/api/forum/forum-comment-delete`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              commenterID: commentToDelete.commenterid,
+              commentID: parseInt(commentToDelete.id),
+              hasChildren,
+              hasParent,
+              pathArray: result,
+              postID,
+            }),
+          }
+        );
 
         if (!response.ok) {
           alert("Error while deleting the forum comment. Try again later.");
           return;
         }
 
-      }
-      catch(error) {
-        console.log("Error while deleting forum comment:", (error as Error).message);
+        let updateArray = structuredClone(passedComments); //temporarily store the array
+        let count = result.length - 1; //get the last id in the path (last id is the root id)
+        let index = updateArray.findIndex((obj) => obj.id === result[count]); //get the index of the first id in the path
+
+        //function to update the array
+        const updateCommentsArr = (index: number, item: Comment[]) => {
+          let tempItem = item[index]; //get the comment in the path
+          if (count < 0) {
+            //this means we never found the comment (technically should not happen but just in case)
+            console.log("Could not find the comment to update");
+            return;
+          }
+          if (tempItem.id === commentToDelete.id) {
+            // if we found the comment to delete, then update the text and exit the function
+            tempItem.text = "This comment has been deleted";
+            tempItem.isdeleted = true;
+            return;
+          } else {
+            //we have not found the comment to delete yet
+            if (!tempItem.children) {
+              //double check if it has children to check for the comment
+              return;
+            }
+            count--; //have to traverse backwards in the result array since the comment to delete is at 0
+            const newIndex = tempItem.children.findIndex(
+              (obj: Comment) => obj.id === result[count]
+            ); //find the index of the next comment in the path
+            updateCommentsArr(newIndex, tempItem.children); //recursion to find the next comment
+          }
+        };
+
+        if (!Array.isArray(result)) {
+          //if the comment to delete is a root comment, it will not be an array (just the id number of the comment)
+          let index = updateArray.findIndex((obj) => obj.id === String(result)); //find where that comment is in the array
+          if (updateArray[index].id === commentToDelete.id) {
+            //double check it is the one to delete
+            updateArray[index].text = "This comment has been deleted"; //update the text
+            updateArray[index].isdeleted = true;
+          }
+        } else {
+          //comment to delete is not a root commet (AKA the path to the comment is an array)
+          updateCommentsArr(index, updateArray);
+        }
+
+        setPassedComments(updateArray);
+      } catch (error) {
+        console.log(
+          "Error while deleting forum comment:",
+          (error as Error).message
+        );
         alert("Server error, please try again later.");
       } finally {
-        handleRefresh();
         setShowEditDeleteModal(false);
       }
-      
     } else {
       alert("You do not have access to delete this comment");
       return;
     }
-  }
+  };
 
   const handleEditReply = (commentToEdit: Comment | null) => {
     setShowEditDeleteModal(false);
-    if (!commentToEdit){
+    if (!commentToEdit) {
       return;
     }
     setEditPost(commentToEdit);
     setIsEditVisible(true);
-  }
+  };
 
   const handleEditedReply = async (newReplyText: string, commentID: string) => {
     const token = await Storage.getItem("token");
-    
+
     try {
       const sendBody = {
         newText: newReplyText,
-        commentID
-      }
-      const response = await fetch(`${API_URL}/api/forum/forum-update-comment`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(sendBody)
-    });
+        commentID,
+      };
+      const response = await fetch(
+        `${API_URL}/api/forum/forum-update-comment`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(sendBody),
+        }
+      );
 
       if (!response.ok) {
         alert("Could not update that comment :( ");
         return;
-      } else {
-        handleRefresh();
       }
+
+      function getParents(arr: any, id: any): any {
+        for (let child of arr) {
+          if (child.id === id) {
+            return id;
+          } else if (child.children.length > 0) {
+            var x = getParents(child.children, id);
+  
+            if (x) return Array.isArray(x) ? [...x, child.id] : [x, child.id];
+          }
+        }
+      }
+  
+      const result: string[] = getParents(passedComments, commentID);
+
+      let updateArray = structuredClone(passedComments); //temporarily store the array
+      let count = result.length - 1; //get the last id in the path (last id is the root id)
+      let index = updateArray.findIndex((obj) => obj.id === result[count]); //get the index of the first id in the path
+
+
+      const updateCommentsArr = (index: number, item: Comment[]) => {
+        let tempItem = item[index]; //get the comment in the path
+        if (count < 0) {
+          //this means we never found the comment (technically should not happen but just in case)
+          console.log("Could not find the comment to update");
+          return;
+        }
+        if (tempItem.id === commentID) {
+          // if we found the comment to delete, then update the text and exit the function
+          tempItem.text = newReplyText;
+          tempItem.isedited = true;
+          return;
+        } else {
+          //we have not found the comment to delete yet
+          if (!tempItem.children) {
+            //double check if it has children to check for the comment
+            return;
+          }
+          count--; //have to traverse backwards in the result array since the comment to delete is at 0
+          const newIndex = tempItem.children.findIndex(
+            (obj: Comment) => obj.id === result[count]
+          ); //find the index of the next comment in the path
+          updateCommentsArr(newIndex, tempItem.children); //recursion to find the next comment
+        }
+      };
+
+      if (!Array.isArray(result)) {
+        //if the comment to delete is a root comment, it will not be an array (just the id number of the comment)
+        let index = updateArray.findIndex((obj) => obj.id === String(result)); //find where that comment is in the array
+        if (updateArray[index].id === commentID) {
+          //double check it is the one to delete
+          updateArray[index].text = newReplyText; //update the text
+          updateArray[index].isedited = true;
+        }
+      } else {
+        //comment to delete is not a root commet (AKA the path to the comment is an array)
+        updateCommentsArr(index, updateArray);
+      }
+
+      setPassedComments(updateArray);
+
+
     } catch (e) {
-      console.log("Error when trying to update comment information", e)
+      console.log("Error when trying to update comment information", e);
     }
-  }
+  };
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggleExpanded = useCallback((id: string) => {
@@ -522,7 +740,11 @@ export default function ForumPostDetail() {
       borderRadius: 16,
       padding: 16,
     },
-    postHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+    postHeaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 10,
+    },
     avatarCircle: {
       width: 48,
       height: 48,
@@ -543,7 +765,12 @@ export default function ForumPostDetail() {
       alignSelf: "center",
     },
 
-    actionRow: { flexDirection: "row", gap: 14, marginTop: 14, alignItems: "center" },
+    actionRow: {
+      flexDirection: "row",
+      gap: 14,
+      marginTop: 14,
+      alignItems: "center",
+    },
     actionBtn: {
       flexDirection: "row",
       alignItems: "center",
@@ -575,7 +802,7 @@ export default function ForumPostDetail() {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      justifyContent: "space-between"
+      justifyContent: "space-between",
     },
     commentAvatarInline: {
       width: 34,
@@ -621,12 +848,12 @@ export default function ForumPostDetail() {
   });
 
   const PostCard = () => {
-    const marginX = 8 + 16; 
+    const marginX = 8 + 16;
     const naturalWidth = SCREEN_W - marginX * 2;
     const maxWidth = SCREEN_W * IMAGE_MAX_FRACTION;
     const imageWidth = Math.min(naturalWidth, maxWidth);
 
-    // State to hold the original image size 
+    // State to hold the original image size
     const [intrinsicSize, setIntrinsicSize] = useState<{
       width: number;
       height: number;
@@ -660,33 +887,43 @@ export default function ForumPostDetail() {
     }
 
     // adding this to get rid of typeErrors and in case the post information can not be fetched
-    if (!post){
+    if (!post) {
       return;
     }
 
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeaderRow}>
-          <TouchableOpacity onPress={() => router.push({
-            pathname: "/userProfile/[id]",
-            params: { id: post.creator }})}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push({
+                pathname: "/userProfile/[id]",
+                params: { id: post.creator },
+              })
+            }
+          >
             {post.profileuri ? (
-                <Image source={{ uri: post.profileuri}} style={styles.avatarCircle}/>
-              ):(
-              <View>
-                <Image
-                source={require("@/assets/images/icons8-cat-profile-50.png")}
+              <Image
+                source={{ uri: post.profileuri }}
                 style={styles.avatarCircle}
               />
+            ) : (
+              <View>
+                <Image
+                  source={require("@/assets/images/icons8-cat-profile-50.png")}
+                  style={styles.avatarCircle}
+                />
               </View>
-              )}
-            </TouchableOpacity>
+            )}
+          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.postTitle}>{post.title}</Text>
             <View style={styles.postUserRow}>
               <Text style={styles.postUser}>{post.username}</Text>
               {post.dateposted ? (
-                <Text style={styles.postDate}>{new Date(post.dateposted).toDateString()}</Text>
+                <Text style={styles.postDate}>
+                  {new Date(post.dateposted).toDateString()}
+                </Text>
               ) : (
                 <Text style={styles.postDate}> Unknown Date</Text>
               )}
@@ -705,16 +942,15 @@ export default function ForumPostDetail() {
             ]}
             resizeMode="cover"
           />
-        ) 
-        // : post.hasImagePlaceholder ? (
+        ) : // : post.hasImagePlaceholder ? (
         //   <View
         //     style={[
         //       styles.imagePlaceholder,
         //       { width: imageWidth, height: imageHeight },
         //     ]}
         //   />
-        // ) 
-        : null}
+        // )
+        null}
 
         <View style={styles.actionRow}>
           <Pressable  disabled={isSaving} style={[styles.actionBtn, isSaved && styles.actionBtnSaved, isSaving && { opacity: 0.5 }]} onPress={handleSavePress}>
@@ -731,14 +967,15 @@ export default function ForumPostDetail() {
             </Text>
             </View>
           </Pressable>
-          <Pressable style={styles.actionBtn} onPress={() => handleReplyPress(post.id, post)}>
+          <Pressable
+            style={styles.actionBtn}
+            onPress={() => handleReplyPress(post.id, post)}
+          >
             <Feather name="message-circle" size={18} color={colors.text} />
             <Text style={styles.actionText}>Reply</Text>
           </Pressable>
         </View>
       </View>
-
-
     );
   };
 
@@ -769,72 +1006,117 @@ export default function ForumPostDetail() {
 
     return (
       <View key={node.id} style={styles.commentWrap}>
-        {(node.text === "This comment has been deleted") && (
-          <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth), flexDirection: "row", gap: 10, alignContent: "center" }]}>
-              <View style={{flexDirection: "row"}}>
-                  <View>
-                    <Image
+        {node.text === "This comment has been deleted" &&
+          node.isdeleted === true && (
+            <View
+              style={[
+                styles.commentBubble,
+                {
+                  marginLeft: bubbleLeftForDepth(depth),
+                  flexDirection: "row",
+                  gap: 10,
+                  alignContent: "center",
+                },
+              ]}
+            >
+              <View style={{ flexDirection: "row" }}>
+                <View>
+                  <Image
                     source={require("@/assets/images/icons8-cat-profile-50.png")}
                     style={styles.commentAvatarInline}
                   />
-                  </View>
+                </View>
               </View>
-            <Text style={styles.commentText}>{node.text}</Text>
-          </View>
-        )}
-        {(node.text !== "This comment has been deleted") && (
-          <View style={[styles.commentBubble, { marginLeft: bubbleLeftForDepth(depth) }]}>
-            <View style={styles.commentHeaderRow}>
-              <TouchableOpacity onPress={() => router.push({
-                pathname: "/userProfile/[id]",
-                params: { id: node.commenterid }})}>
-                <View style={{flexDirection: "row"}}>
-                  {node.profileuri ? (
-                      <Image source={{ uri: node.profileuri}} style={styles.commentAvatarInline}/>
-                    ):(
-                    <View>
+              <Text style={styles.commentText}>{node.text}</Text>
+            </View>
+          )}
+        {node.text !== "This comment has been deleted" &&
+          node.isdeleted === false && (
+            <View
+              style={[
+                styles.commentBubble,
+                { marginLeft: bubbleLeftForDepth(depth) },
+              ]}
+            >
+              <View style={styles.commentHeaderRow}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: "/userProfile/[id]",
+                      params: { id: node.commenterid },
+                    })
+                  }
+                >
+                  <View style={{ flexDirection: "row" }}>
+                    {node.profileuri ? (
                       <Image
-                      source={require("@/assets/images/icons8-cat-profile-50.png")}
-                      style={styles.commentAvatarInline}
-                    />
-                    </View>
+                        source={{ uri: node.profileuri }}
+                        style={styles.commentAvatarInline}
+                      />
+                    ) : (
+                      <View>
+                        <Image
+                          source={require("@/assets/images/icons8-cat-profile-50.png")}
+                          style={styles.commentAvatarInline}
+                        />
+                      </View>
                     )}
-                    <View style={{flexDirection: "column"}}>
+                    <View style={{ flexDirection: "column" }}>
                       <View style={styles.commentHeaderText}>
                         <Text style={styles.commentUser} numberOfLines={1}>
                           {node.username}
                         </Text>
-                        {(post?.creator === node.commenterid) && (
-                        <Text style={{color: colors.text}}>(Creator)</Text>
+                        {post?.creator === node.commenterid && (
+                          <Text style={{ color: colors.text }}>(Creator)</Text>
                         )}
-                        {(currentUser === node.commenterid) && (
-                        <Text style={{color: colors.text}}>(You)</Text>
+                        {currentUser === node.commenterid && (
+                          <Text style={{ color: colors.text }}>(You)</Text>
                         )}
                       </View>
-                        <Text style={styles.commentDate}>{new Date(node.date).toDateString()}</Text>
+                      <View style={{flexDirection: "row", alignItems: "center"}}>
+                        <Text style={styles.commentDate}>
+                          {new Date(node.date).toDateString()}
+                        </Text>
+                        {node.isedited ? <Text style={{fontSize: 12}}> - Edited </Text> : null}
+                      </View>
                     </View>
-                </View>
-              </TouchableOpacity>
-              {(currentUser === node.commenterid) && (
-                <Pressable onPress={() => {setShowEditDeleteModal(true); setNodeToDelete(node)}}>
-                  <Entypo name="dots-three-vertical" size={20} color={colors.text} />
-                </Pressable>
-              )}
-            </View>
+                  </View>
+                </TouchableOpacity>
+                {currentUser === node.commenterid && (
+                  <Pressable
+                    onPress={() => {
+                      setShowEditDeleteModal(true);
+                      setNodeToDelete(node);
+                    }}
+                  >
+                    <Entypo
+                      name="dots-three-vertical"
+                      size={20}
+                      color={colors.text}
+                    />
+                  </Pressable>
+                )}
+              </View>
 
-            <Text style={styles.commentText}>{node.text}</Text>
+              <Text style={styles.commentText}>{node.text}</Text>
 
-            <View style={styles.commentActions}>
-              {depth < MAX_REPLY_DEPTH && (
-                <Pressable style={styles.smallAction} onPress={() => handleReplyPress(node.id, node)}>
-                  <Feather name="message-circle" size={14} color={colors.text} />
-                  <Text style={styles.smallIconText}>Reply</Text>
-                </Pressable>
-              )}
+              <View style={styles.commentActions}>
+                {depth < MAX_REPLY_DEPTH && (
+                  <Pressable
+                    style={styles.smallAction}
+                    onPress={() => handleReplyPress(node.id, node)}
+                  >
+                    <Feather
+                      name="message-circle"
+                      size={14}
+                      color={colors.text}
+                    />
+                    <Text style={styles.smallIconText}>Reply</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
-          </View>
-        )}
-        
+          )}
 
         {showChildren &&
           children.map((child) =>
@@ -849,7 +1131,10 @@ export default function ForumPostDetail() {
         {shouldShowSeeMore && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
-            style={[styles.seeMoreChip, { marginLeft: bubbleLeftForDepth(depth) }]}
+            style={[
+              styles.seeMoreChip,
+              { marginLeft: bubbleLeftForDepth(depth) },
+            ]}
           >
             <Text style={{ color: colors.text, fontWeight: "600" }}>
               See more replies
@@ -860,7 +1145,10 @@ export default function ForumPostDetail() {
         {isGateDepth && thisNodeExpanded && !ancestorExpanded && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
-            style={[styles.seeMoreChip, { marginLeft: bubbleLeftForDepth(depth) }]}
+            style={[
+              styles.seeMoreChip,
+              { marginLeft: bubbleLeftForDepth(depth) },
+            ]}
           >
             <Text style={{ color: colors.text, fontWeight: "600" }}>
               Hide replies
@@ -870,6 +1158,7 @@ export default function ForumPostDetail() {
       </View>
     );
   };
+
   return (
     <View style={styles.screen}>
       <Pressable style={styles.backFab} onPress={() => router.back()}>
@@ -880,27 +1169,32 @@ export default function ForumPostDetail() {
         data={comments}
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={
-          <>
+          <View>
             <PostCard />
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Replies</Text>
             </View>
-          </>
+          </View>
         }
-        renderItem={({ item }) => <>{renderCommentBranch(item, 0)}</>}
+        renderItem={({ item }) => <View>{renderCommentBranch(item, 0)}</View>}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         contentContainerStyle={{ paddingBottom: 24 }}
         onEndReached={fetchComments}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={() => {
           if (loadingMore.current) {
-            return <ActivityIndicator size="small" color={colors.text}/>
+            return <ActivityIndicator size="small" color={colors.text} />;
           } else {
             return (
-              <View style={{paddingVertical: 40, marginLeft: 50}}>
-                <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Recent Comments </Text>
+              <View style={{ paddingVertical: 40, marginLeft: 50 }}>
+                <Text
+                  style={{ color: colors.settingsText, fontWeight: "bold" }}
+                >
+                  {" "}
+                  No Recent Comments{" "}
+                </Text>
               </View>
-            )
+            );
           }
         }}
         ListFooterComponent={() => {
@@ -908,48 +1202,94 @@ export default function ForumPostDetail() {
             if (!hasMore.current) {
               return;
             } else {
-              return (
-                <ActivityIndicator size="small" color={colors.text} />
-              );
+              return <ActivityIndicator size="small" color={colors.text} />;
             }
           }
         }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       />
-      <ForumReplyModal isVisible={isReplyVisible} onClose={() => setIsReplyVisible(false)} onPostReply={handlePostReply} replyPost={replyInformation} postID={post?.id}/>
-      <EditForumReplyModal isVisible={isEditVisible} onClose={() => setIsEditVisible(false)} onPostEditedReply={handleEditedReply} postToEdit={editPost}/>
+      <ForumReplyModal
+        isVisible={isReplyVisible}
+        onClose={() => setIsReplyVisible(false)}
+        onPostReply={handlePostReply}
+        replyPost={replyInformation}
+        postID={post?.id}
+      />
+      <EditForumReplyModal
+        isVisible={isEditVisible}
+        onClose={() => setIsEditVisible(false)}
+        onPostEditedReply={handleEditedReply}
+        postToEdit={editPost}
+      />
       {showEditDeleteModal && (
-          <Modal 
+        <Modal
           animationType="none"
           transparent={true}
           visible={showEditDeleteModal}
           onRequestClose={() => setShowEditDeleteModal(false)}
+        >
+          <TouchableOpacity
+            onPressIn={() => setShowEditDeleteModal(false)}
+            style={{ flex: 1 }}
           >
-            <TouchableOpacity onPressIn={() => setShowEditDeleteModal(false)} style={{flex: 1}}>
-              <View style={{backgroundColor: "rgba(0,0,0,0.5)", flex: 1, alignItems: "center", justifyContent: "center"}}>
-                <TouchableWithoutFeedback>
-                  <View style={{backgroundColor: "white", flexDirection: "column", width: "35%", gap: 10, alignItems: "center", padding: 15, borderRadius: 20}}>
-                    <Pressable onPress={() => handleEditReply(nodeToDelete)}>
-                      <View style={{flexDirection: "row"}}>
-                        <EvilIcons name="pencil" size={35} color={"black"} />
-                        <Text style={{color: "black", fontSize: 20}}> Edit    </Text>
-                      </View>
-                    </Pressable>
-                    <View style={{flex: 1, height: 1, backgroundColor: colors.text, width: "90%"}} />
-                    <Pressable onPress={() => handleDeleteReply(nodeToDelete)}>
-                      <View style={{flexDirection: "row"}}>
-                        <Ionicons name="trash-outline" size={24} color={"black"} />
-                        <Text style={{color: "black", fontSize: 20}}> Delete </Text>
-                      </View>
-                    </Pressable>
-                  </View>
-                </TouchableWithoutFeedback>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        )}
+            <View
+              style={{
+                backgroundColor: "rgba(0,0,0,0.5)",
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <TouchableWithoutFeedback>
+                <View
+                  style={{
+                    backgroundColor: "white",
+                    flexDirection: "column",
+                    width: "35%",
+                    gap: 10,
+                    alignItems: "center",
+                    padding: 15,
+                    borderRadius: 20,
+                  }}
+                >
+                  <Pressable onPress={() => handleEditReply(nodeToDelete)}>
+                    <View style={{ flexDirection: "row" }}>
+                      <EvilIcons name="pencil" size={35} color={"black"} />
+                      <Text style={{ color: "black", fontSize: 20 }}>
+                        {" "}
+                        Edit{" "}
+                      </Text>
+                    </View>
+                  </Pressable>
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      backgroundColor: colors.text,
+                      width: "90%",
+                    }}
+                  />
+                  <Pressable onPress={() => handleDeleteReply(nodeToDelete)}>
+                    <View style={{ flexDirection: "row" }}>
+                      <Ionicons
+                        name="trash-outline"
+                        size={24}
+                        color={"black"}
+                      />
+                      <Text style={{ color: "black", fontSize: 20 }}>
+                        {" "}
+                        Delete{" "}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </View>
   );
 }

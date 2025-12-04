@@ -16,6 +16,7 @@ import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ExploreCommentsModal from "@/components/exploreComments";
 import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
@@ -50,7 +51,10 @@ export default function ExplorePage() {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const filters = ["All", "Crochet", "Knit", "Misc"];
   const insets = useSafeAreaInsets();
-  const router = useRouter()
+  const [areCommentsVisible, setAreCommentsVisible] = useState(false);
+  const router = useRouter();
+  const currentPost = useRef<number | null>(null);
+  const creatorID = useRef<number | null>(null);
 
   //so we have responsive, and not statically-sized components for different screen sizes
   //you can change these variables as needed
@@ -117,8 +121,10 @@ export default function ExplorePage() {
         </View>
 
         <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
-          <Text style={styles.postActionText}>Comment</Text>
+          <Pressable onPress={() => showComments(item)} style={{alignItems: "center"}}>
+            <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
+            <Text style={styles.postActionText}>Comment</Text>
+          </Pressable>
         </View>
 
         <View style={styles.postAction}>
@@ -255,6 +261,12 @@ export default function ExplorePage() {
     }
   }
 
+
+  const showComments = (item: Post) => {
+    currentPost.current = Number(item.id);
+    creatorID.current = Number(item.userID);
+    setAreCommentsVisible(true);
+  }
 
   const styles = StyleSheet.create({
     container: {
@@ -449,6 +461,9 @@ export default function ExplorePage() {
               }
             />
         </GestureHandlerRootView>
+
+        {/* FIXME: update the following modal values once explore implementation has been merged */}
+        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
 
         <BottomNavButton />
       </View>

@@ -253,7 +253,6 @@ router.post(
   }
 );
 
-
 //fetch public posts -> infinite scroll
 router.get("/post", authenticateToken, async (req, res) => {
   try {
@@ -356,6 +355,173 @@ router.get("/post", authenticateToken, async (req, res) => {
   catch(error) {
     console.log("Error fetching posts: ", error)
     res.status(500).json(error)
+  }
+})
+
+// ----------------------------- COMMENTS -----------------------------
+
+// get user info
+router.get("/get-user-info", authenticateToken, async (req, res) => {
+  try {
+    let query;
+
+    query = `
+    SELECT 	fld_username AS username, 
+		        fld_profile_pic AS profilepic 
+    FROM login.tbl_user
+    WHERE fld_user_pk = $1;
+    `
+
+    const userInformation = await pool.query(query, [req.userID]);
+
+    if (userInformation.rowCount !== 1 ){
+      console.log("Could not find the current user");
+      res.status(404).json({message: "Could not find the user for post comments"})
+    }
+
+    let avatarUrl = null;
+    for (let i = 0; i < userInformation.rowCount; i++) {
+      const row = userInformation.rows[i];
+      if (row.profilepic) {
+        const key = row.profilepic.includes("/")
+          ? row.profilepic
+          : `avatars/${row.profilepic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.profilepic = avatarUrl;
+      }
+    }
+
+    res.status(200).json({
+      currentUserID: req.userID,
+      currentUserInfo: userInformation.rows
+    })
+
+  } catch (e) {
+    console.log("Error when getting the user information for post comments", e);
+    res.status(500).json({message: "Error when getting user information for post comments"})
+  }
+})
+
+//fetch comments
+
+router.get("/get-post-comments", authenticateToken, async (req, res) => {
+  const lastTimestamp = req.query.lastTimestamp; //need to fetch comments after this timestamp -> this is the last timestamp of comment on front-end
+  const postID = req.query.postID; //post to fetch comments for
+  const lastPostID = req.query.lastPostID; // ID for the last post returned to front-end
+  let query;
+  let newComments;
+  try {
+    // is this the first fetch? Need to check last timestamp -> no timestamp means front-end does not have any comments yet (fetch first 10)
+    if ((!lastTimestamp) | (lastTimestamp === "null") | (lastTimestamp === "undefined")){
+      query = `
+      SELECT 	fld_comment_pk AS id, 
+          fld_post_fk AS postID, 
+          fld_commenter_fk AS commenterid, 
+          fld_body AS body, 
+          CAST (fld_timestamp AS TIMESTAMPTZ) AS dateposted,
+          fld_username AS username, 
+          fld_profile_pic AS profilepic 
+      FROM posts.tbl_post_comment AS p
+      INNER JOIN login.tbl_user AS l ON p.fld_commenter_fk = l.fld_user_pk
+      WHERE p.fld_post_fk = $1
+      ORDER BY p.fld_timestamp DESC
+      LIMIT 11;
+      `
+      newComments = await pool.query(query, [postID]);
+    } else {
+      // not the first check so can use timestamp to order comments
+      query = `
+      SELECT 	fld_comment_pk AS id, 
+          fld_post_fk AS postID, 
+          fld_commenter_fk AS commenterid, 
+          fld_body AS body, 
+          CAST (fld_timestamp AS TIMESTAMPTZ) AS dateposted,
+          fld_username AS username, 
+          fld_profile_pic AS profilepic 
+      FROM posts.tbl_post_comment AS p
+      INNER JOIN login.tbl_user AS l ON p.fld_commenter_fk = l.fld_user_pk
+      WHERE p.fld_post_fk = $1 AND (fld_timestamp, fld_comment_pk) < ($2, $3)
+      ORDER BY p.fld_timestamp DESC
+      LIMIT 11;
+      `
+      newComments = await pool.query(query, [postID, lastTimestamp, lastPostID]);
+    }
+
+    // check if there are more comments to fetch
+    const hasMoreComments = newComments.rowCount > 10;
+
+    let avatarUrl = null;
+    for (let i = 0; i < newComments.rowCount; i++) {
+      const row = newComments.rows[i];
+      if (row.profilepic) {
+        const key = row.profilepic.includes("/")
+          ? row.profilepic
+          : `avatars/${row.profilepic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.profilepic = avatarUrl;
+      }
+    }
+
+    // return the chunk of comments and whether there are more to fetch
+    res.status(200).json({
+      newComments: newComments.rows.slice(0, 10),
+      hasMoreComments,
+      postID
+    })
+
+  } catch (e) {
+    console.log("Error when trying to fetch post comments", e);
+  }
+})
+
+//add a comment
+router.post("/add-post-comment", authenticateToken, async(req, res) => {
+  const {postID, content} = req.body;
+  const userID = req.userID;
+  const timestamp = new Date();
+  let query;
+
+  if (content === null){
+    res.status(500);
+  }
+
+  try{
+    //try to add the commemnt
+    query = `
+    INSERT INTO posts.tbl_post_comment (fld_post_fk, fld_commenter_fk, fld_body, fld_timestamp)
+    VALUES ($1, $2, $3, $4)
+    RETURNING fld_comment_pk;
+    `
+    const newID = await pool.query(query, [postID, userID, content, timestamp]);
+
+    res.status(200).json({message: newID.rows});
+  } catch (e) {
+    console.log("Error - could not add the post comment", e)
+  }
+})
+
+//delete a comment
+router.delete("/delete-post-comment", authenticateToken, async(req, res) => {
+  const user = req.userID;
+  const commentToDelete = req.body.CommentID
+  try {
+    //try to delete the comment
+    let query;
+    query = `
+    DELETE FROM posts.tbl_post_comment 
+    WHERE fld_comment_pk = $1 AND fld_commenter_fk = $2;
+    `;
+
+    await pool.query(query, [commentToDelete, user]);
+
+    res.status(200).json({message: "Successfully deleted the post comment!"})
+  } catch (e) {
+    console.log("Error - could not delete that comment ", e)
+    res.status(500).json({message: "Could not delete the post comment"});
   }
 })
 
