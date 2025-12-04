@@ -469,7 +469,8 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
     // return the chunk of comments and whether there are more to fetch
     res.status(200).json({
       newComments: newComments.rows.slice(0, 10),
-      hasMoreComments
+      hasMoreComments,
+      postID
     })
 
   } catch (e) {

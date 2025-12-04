@@ -83,16 +83,13 @@ const ExploreCommentsModal = ({
   }
 
   useEffect(() => {
-    //FIXME: need to fetch the current user from backend - IDK if there is a way to get it just on front-end?? - JK that looks complicated lol
-    if (isVisible && currentPost !== null && postCreator !== null) {
-      fetchComments();
-    } else {
-      setComments([]);
-      hasMore.current = true;
-      lastTimeStamp.current = null;
-      lastPostID.current = null;
-      setCommentValue("");
+    if (!isVisible){
+      return;
     }
+
+    if (currentPost !== null && postCreator !== null) {
+      fetchComments();
+    } 
   }, [isVisible]);
 
   useEffect(() => {
@@ -155,6 +152,12 @@ const ExploreCommentsModal = ({
 
   const fetchComments = async () => {
     const token = await Storage.getItem("token");
+
+    if (currentPost === null || postCreator === null){
+      console.log("Post or creator is null - can't fetch info")
+      return;
+    }
+
     if (loadingMore.current || !hasMore.current) {
       return;
     }
@@ -188,6 +191,17 @@ const ExploreCommentsModal = ({
 
       const responseData = await res.json();
       const tempArray: Comment[] = responseData.newComments;
+
+      //check for stale data:
+      if (!currentPost){
+        onClose();
+        return;
+      }
+      if (Number(responseData.postID) !== currentPost){
+        console.log("Got old / unusable data -> closing modal");
+        onClose();
+        return;
+      }
 
       if (tempArray.length < 1) {
         hasMore.current = responseData.hasMore;
@@ -347,12 +361,12 @@ const ExploreCommentsModal = ({
       flexDirection: "column",
     },
     replyContainer: {
-      backgroundColor: "white",
+      backgroundColor: colors.exploreCardBackground,
       marginBottom: 20,
       alignSelf: "center",
       padding: 15,
       borderRadius: 20,
-      borderColor: colors.decorativeBackground,
+      borderColor: colors.exploreBorder,
       borderWidth: 1,
       flexGrow: 1,
       marginLeft: 10,

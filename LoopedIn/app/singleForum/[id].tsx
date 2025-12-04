@@ -1159,14 +1159,6 @@ export default function ForumPostDetail() {
     );
   };
 
-  //
-  const renderItem = useCallback(
-    ({item}: {item: Comment}) => {
-      return <View>{renderCommentBranch(item, 0)}</View>;
-    },
-    []
-  )
-
   return (
     <View style={styles.screen}>
       <Pressable style={styles.backFab} onPress={() => router.back()}>
@@ -1177,14 +1169,14 @@ export default function ForumPostDetail() {
         data={comments}
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={
-          <>
+          <View>
             <PostCard />
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Replies</Text>
             </View>
-          </>
+          </View>
         }
-        renderItem={renderItem}
+        renderItem={({ item }) => <View>{renderCommentBranch(item, 0)}</View>}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         contentContainerStyle={{ paddingBottom: 24 }}
         onEndReached={fetchComments}

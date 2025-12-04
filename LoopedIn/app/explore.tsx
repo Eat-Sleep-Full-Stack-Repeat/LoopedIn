@@ -263,7 +263,6 @@ export default function ExplorePage() {
 
 
   const showComments = (item: Post) => {
-    console.log("Going to display the comments modal");
     currentPost.current = Number(item.id);
     creatorID.current = Number(item.userID);
     setAreCommentsVisible(true);
@@ -464,7 +463,7 @@ export default function ExplorePage() {
         </GestureHandlerRootView>
 
         {/* FIXME: update the following modal values once explore implementation has been merged */}
-        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => setAreCommentsVisible(false)} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
+        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
 
         <BottomNavButton />
       </View>
