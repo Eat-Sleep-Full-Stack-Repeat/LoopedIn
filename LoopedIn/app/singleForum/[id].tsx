@@ -293,7 +293,7 @@ export default function ForumPostDetail() {
       const responseData = await response.json();
 
       if (!currentUser || !currentUserInfo.current) {
-        console.log("Could not find the curernt user logged in");
+        console.log("Could not find the current user logged in");
         return;
       }
 
@@ -376,8 +376,6 @@ export default function ForumPostDetail() {
 
         //update the comment state
         setPassedComments(addCommentArr);
-
-        console.log("Going to add this in in a little bit!");
       }
     } catch (e) {
       console.log("Error when adding forum comment", e);

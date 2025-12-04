@@ -85,7 +85,6 @@ const ExploreCommentsModal = ({
   useEffect(() => {
     //FIXME: need to fetch the current user from backend - IDK if there is a way to get it just on front-end?? - JK that looks complicated lol
     if (isVisible && currentPost !== null && postCreator !== null) {
-      console.log("I will need to fetch the current user here");
       fetchComments();
     } else {
       setComments([]);
@@ -128,11 +127,9 @@ const ExploreCommentsModal = ({
   }, [refreshing]);
 
   const fetchUserInfo = async () => {
-    console.log("Going to fetch the user information");
     const token = await Storage.getItem("token");
 
     try {
-      console.log("Right before fetching user info");
       const res = await fetch(`${API_URL}/api/get-user-info`, {
         method: "GET",
         headers: {
@@ -148,20 +145,15 @@ const ExploreCommentsModal = ({
       }
 
       const responseData = await res.json();
-      console.log("This is the response data", responseData.currentUserID);
 
       currentUserInfo.current = responseData.currentUserInfo[0];
       currentUser.current = responseData.currentUserID;
-
-      console.log("The current user id number is: ", currentUser.current);
-      console.log("The current user info is: ", currentUserInfo.current);
     } catch (e) {
       console.log("Error when getting the current user");
     }
   };
 
   const fetchComments = async () => {
-    console.log("Going to fetch comments");
     const token = await Storage.getItem("token");
     if (loadingMore.current || !hasMore.current) {
       return;
@@ -177,7 +169,6 @@ const ExploreCommentsModal = ({
         ? `&lastPostID=${lastPostID.current}`
         : "";
 
-      console.log("Right before the fetch");
       const res = await fetch(
         `${API_URL}/api/get-post-comments?postID=${currentPost}${includeLastPostID}${includeLastTimeStamp}`,
         {
@@ -203,8 +194,6 @@ const ExploreCommentsModal = ({
         return;
       }
 
-      console.log("The comments being added to the array are: ", tempArray);
-
       setComments((prev) => [...prev, ...tempArray]);
       hasMore.current = responseData.hasMore;
       lastTimeStamp.current = tempArray[tempArray.length - 1].dateposted;
@@ -228,14 +217,12 @@ const ExploreCommentsModal = ({
 
   const checkDeleteComment = (commentToDelete: string) => {
     commentIDToDelete.current = Number(commentToDelete);
-    console.log("Need to make sure they want to delete");
     if (displayCheckDelete === false) {
       setDisplayCheckDelete(true);
     }
   };
 
   const handleDeleteComment = async () => {
-    console.log("Delete the comment with id, ", commentIDToDelete.current);
     const token = await Storage.getItem("token");
     try {
       //FIXME: Delete comment from backend
@@ -254,7 +241,6 @@ const ExploreCommentsModal = ({
         return;
       }
 
-      console.log("Done deleting the comment!!");
       const removeComment: Comment[] = Comments.filter(
         (comment) => Number(comment.id) !== commentIDToDelete.current
       );
@@ -268,7 +254,6 @@ const ExploreCommentsModal = ({
   };
 
   const postComment = async (commentToPost: string) => {
-    console.log("This is the comment to post: ", commentToPost);
     const token = await Storage.getItem("token");
 
     if (commentToPost.trim().length === 0) {
@@ -307,7 +292,6 @@ const ExploreCommentsModal = ({
       }
 
       const responseData = await response.json();
-      console.log("The response data is: ", responseData);
 
       const tempAddComment: Comment = {
         id: responseData.message[0].fld_comment_pk,
@@ -321,8 +305,6 @@ const ExploreCommentsModal = ({
       setComments((prev) => [tempAddComment, ...prev]);
       setCommentValue("");
 
-      console.log(JSON.stringify(Comments, null, 2));
-
       console.log("Created the comment yayayayayaya!!!");
     } catch (e) {
       console.log("Error when trying to post the comment", e);
@@ -330,7 +312,6 @@ const ExploreCommentsModal = ({
   };
 
   const profilePress = (passedItem: Comment) => {
-    console.log("The profile uri is: ", passedItem.profilepic);
     handleCloseComments();
     //fixed -> added clickable post user image
     if (passedItem) {

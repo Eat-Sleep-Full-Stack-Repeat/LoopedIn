@@ -362,7 +362,6 @@ router.get("/post", authenticateToken, async (req, res) => {
 
 // get user info
 router.get("/get-user-info", authenticateToken, async (req, res) => {
-  console.log("Getting the user information");
   try {
     let query;
 
@@ -394,9 +393,6 @@ router.get("/get-user-info", authenticateToken, async (req, res) => {
       }
     }
 
-    console.log("returning this as the user ID: ", req.userID);
-    console.log("Returning this as the user info: ", userInformation.rows);
-
     res.status(200).json({
       currentUserID: req.userID,
       currentUserInfo: userInformation.rows
@@ -411,7 +407,6 @@ router.get("/get-user-info", authenticateToken, async (req, res) => {
 //fetch comments
 
 router.get("/get-post-comments", authenticateToken, async (req, res) => {
-  console.log("In the backend - Going to fetch comments");
   const lastTimestamp = req.query.lastTimestamp; //need to fetch comments after this timestamp -> this is the last timestamp of comment on front-end
   const postID = req.query.postID; //post to fetch comments for
   const lastPostID = req.query.lastPostID; // ID for the last post returned to front-end
@@ -471,8 +466,6 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
       }
     }
 
-    console.log("The rows are: ", newComments.rows.slice(0, 10));
-
     // return the chunk of comments and whether there are more to fetch
     res.status(200).json({
       newComments: newComments.rows.slice(0, 10),
@@ -486,13 +479,10 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
 
 //add a comment
 router.post("/add-post-comment", authenticateToken, async(req, res) => {
-  console.log("Going to add the comment");
   const {postID, content} = req.body;
   const userID = req.userID;
   const timestamp = new Date();
   let query;
-
-  console.log("The entered comment is: ", content);
 
   if (content === null){
     res.status(500);
@@ -515,7 +505,6 @@ router.post("/add-post-comment", authenticateToken, async(req, res) => {
 
 //delete a comment
 router.delete("/delete-post-comment", authenticateToken, async(req, res) => {
-  console.log("Going to delete the comment");
   const user = req.userID;
   const commentToDelete = req.body.CommentID
   try {
