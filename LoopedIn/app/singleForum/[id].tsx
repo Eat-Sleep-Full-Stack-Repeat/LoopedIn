@@ -154,15 +154,21 @@ export default function ForumPostDetail() {
 
   useEffect(() => {
     if (refreshing) {
-      try {
-        fetchPostInfo();
-        fetchSaved();
-        fetchComments();
-      } catch (e) {
-        console.log("error when refreshing data", e);
-      } finally {
-        setRefreshing(false);
+
+      const refreshNewData = async() => {
+        try {
+          await fetchPostInfo();
+          await fetchSaved();
+          await fetchComments();
+        } catch (e) {
+          console.log("error when refreshing data", e);
+        } finally {
+          setRefreshing(false);
+        }
       }
+
+      refreshNewData();
+      
     }
   }, [refreshing]);
 
@@ -335,13 +341,12 @@ export default function ForumPostDetail() {
   }
 
   // will display the modal where the user can enter a reply
-  const handleReplyPress = (
-    replyCommentID: string,
+  const handleReplyPress = useCallback((
     replyInfo: Post | Comment
   ) => {
     setIsReplyVisible(true);
     setReplyInformation(replyInfo);
-  };
+  }, [isReplyVisible, replyInformation]);
 
   //will actually post the reply in the databases
   const handlePostReply = async (replyText: string) => {
@@ -969,7 +974,7 @@ export default function ForumPostDetail() {
           </Pressable>
           <Pressable
             style={styles.actionBtn}
-            onPress={() => handleReplyPress(post.id, post)}
+            onPress={() => handleReplyPress(post)}
           >
             <Feather name="message-circle" size={18} color={colors.text} />
             <Text style={styles.actionText}>Reply</Text>
@@ -981,11 +986,18 @@ export default function ForumPostDetail() {
 
   const bubbleLeftForDepth = (depth: number) => 10 + depth * 12;
 
-  const renderCommentBranch = (
-    node: Comment,
-    depth: number,
-    ancestorExpanded: boolean = false
-  ): React.ReactNode => {
+  type CommentBranchProps = {
+    node: Comment;
+    depth: number;
+    ancestorExpanded: boolean,
+    currentUser: number | null;
+    handleReplyPress: (replyInfo: Post | Comment) => void;
+    toggleExpanded: (id: string) => void;
+    expanded: Record<string, boolean>;
+    post: Post | null;
+  }
+
+  const CommentBranch = React.memo(function renderCommentBranch({node, depth, ancestorExpanded = false, currentUser, handleReplyPress, toggleExpanded, expanded, post} : CommentBranchProps) {
     const children = node.children || [];
 
     const isGateDepth = depth >= HIDE_AFTER_DEPTH;
@@ -1004,6 +1016,10 @@ export default function ForumPostDetail() {
       !ancestorExpanded &&
       !thisNodeExpanded;
 
+    const bubbleStyle = useMemo(() => ({
+      marginLeft: bubbleLeftForDepth(depth)
+    }), [depth])
+
     return (
       <View key={node.id} style={styles.commentWrap}>
         {node.text === "This comment has been deleted" &&
@@ -1011,8 +1027,8 @@ export default function ForumPostDetail() {
             <View
               style={[
                 styles.commentBubble,
+                bubbleStyle,
                 {
-                  marginLeft: bubbleLeftForDepth(depth),
                   flexDirection: "row",
                   gap: 10,
                   alignContent: "center",
@@ -1035,7 +1051,7 @@ export default function ForumPostDetail() {
             <View
               style={[
                 styles.commentBubble,
-                { marginLeft: bubbleLeftForDepth(depth) },
+                bubbleStyle,
               ]}
             >
               <View style={styles.commentHeaderRow}>
@@ -1061,7 +1077,7 @@ export default function ForumPostDetail() {
                         />
                       </View>
                     )}
-                    <View style={{ flexDirection: "column" }}>
+                    <View style={{ flexDirection: "column", marginLeft: 5 }}>
                       <View style={styles.commentHeaderText}>
                         <Text style={styles.commentUser} numberOfLines={1}>
                           {node.username}
@@ -1077,7 +1093,7 @@ export default function ForumPostDetail() {
                         <Text style={styles.commentDate}>
                           {new Date(node.date).toDateString()}
                         </Text>
-                        {node.isedited ? <Text style={{fontSize: 12}}> - Edited </Text> : null}
+                        {node.isedited ? <Text style={{fontSize: 12, color: colors.text}}> - Edited </Text> : null}
                       </View>
                     </View>
                   </View>
@@ -1104,7 +1120,7 @@ export default function ForumPostDetail() {
                 {depth < MAX_REPLY_DEPTH && (
                   <Pressable
                     style={styles.smallAction}
-                    onPress={() => handleReplyPress(node.id, node)}
+                    onPress={() => handleReplyPress(node)}
                   >
                     <Feather
                       name="message-circle"
@@ -1120,12 +1136,17 @@ export default function ForumPostDetail() {
 
         {showChildren &&
           children.map((child) =>
-            renderCommentBranch(
-              child,
-              depth + 1,
-              // Once expanded at this node (or an ancestor), descendants should not show their own gates
-              ancestorExpanded || (isGateDepth && thisNodeExpanded)
-            )
+            <CommentBranch 
+            key={child.id}
+            node={child}
+            depth={depth + 1}
+            ancestorExpanded={ancestorExpanded || (isGateDepth && thisNodeExpanded)}
+            currentUser={currentUser}
+            handleReplyPress={handleReplyPress}
+            toggleExpanded={toggleExpanded}
+            expanded={expanded}
+            post={post}
+            />
           )}
 
         {shouldShowSeeMore && (
@@ -1133,7 +1154,7 @@ export default function ForumPostDetail() {
             onPress={() => toggleExpanded(node.id)}
             style={[
               styles.seeMoreChip,
-              { marginLeft: bubbleLeftForDepth(depth) },
+              bubbleStyle,
             ]}
           >
             <Text style={{ color: colors.text, fontWeight: "600" }}>
@@ -1147,7 +1168,7 @@ export default function ForumPostDetail() {
             onPress={() => toggleExpanded(node.id)}
             style={[
               styles.seeMoreChip,
-              { marginLeft: bubbleLeftForDepth(depth) },
+              bubbleStyle,
             ]}
           >
             <Text style={{ color: colors.text, fontWeight: "600" }}>
@@ -1157,7 +1178,20 @@ export default function ForumPostDetail() {
         )}
       </View>
     );
-  };
+  })
+
+  const renderItem = useCallback(({item} : {item: Comment}) => (
+    <CommentBranch 
+            node={item}
+            depth={0}
+            ancestorExpanded={false}
+            currentUser={currentUser}
+            handleReplyPress={handleReplyPress}
+            toggleExpanded={toggleExpanded}
+            expanded={expanded}
+            post={post}
+            />
+  ), [expanded, currentUser, post, toggleExpanded, handleReplyPress])
 
   return (
     <View style={styles.screen}>
@@ -1176,7 +1210,8 @@ export default function ForumPostDetail() {
             </View>
           </View>
         }
-        renderItem={({ item }) => <View>{renderCommentBranch(item, 0)}</View>}
+        renderItem={renderItem}
+        extraData={[expanded, currentUser]}
         ItemSeparatorComponent={() => <View style={styles.divider} />}
         contentContainerStyle={{ paddingBottom: 24 }}
         onEndReached={fetchComments}
@@ -1200,7 +1235,7 @@ export default function ForumPostDetail() {
         ListFooterComponent={() => {
           if (comments.length > 0) {
             if (!hasMore.current) {
-              return;
+              return null;
             } else {
               return <ActivityIndicator size="small" color={colors.text} />;
             }

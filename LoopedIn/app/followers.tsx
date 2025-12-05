@@ -191,6 +191,7 @@ export default function FollowersScreen() {
       paddingHorizontal: 20,
       height: 45,
       marginBottom: 15,
+      color: colors.text
     },
     userCard: {
       flexDirection: "row",

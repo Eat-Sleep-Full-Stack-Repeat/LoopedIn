@@ -156,14 +156,20 @@ export default function ForumFeed() {
   // need to use useEffect to ensure previous data is flushed before fetching new data
   useEffect(() => {
     if (refreshing) {
-      try {
-        fetchData();
-        fetchSavedData();
-      } catch (e) {
-        console.log("error when refreshing data", e);
-      } finally {
-        setRefreshing(false);
-    }
+
+      const refreshNewData = async() => {
+        try {
+          await fetchData();
+          await fetchSavedData();
+        } catch (e) {
+          console.log("error when refreshing data", e);
+        } finally {
+          setRefreshing(false);
+        }
+      }
+
+      refreshNewData();
+      
     }
 }, [refreshing])
 
