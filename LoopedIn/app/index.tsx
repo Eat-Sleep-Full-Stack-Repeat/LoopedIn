@@ -61,13 +61,21 @@ export default function Index() {
         <Text style={{ color: colors.text }}>Following Page</Text>
       </TouchableOpacity>
 
-      {/* My Posts page link */}
+      {}
       <TouchableOpacity
         onPress={() => router.push("/myposts" as never)}
         style={{ marginTop: 20 }}
       >
         <Text style={{ color: colors.text }}>My Posts Page</Text>
       </TouchableOpacity>
+            
+       <TouchableOpacity
+        onPress={() => router.push("/singlepost" as never)}
+        style={{ marginTop: 20 }}
+      >
+        <Text style={{ color: colors.text }}>Single Post</Text>
+      </TouchableOpacity>
+
 
       <View
         style={{
