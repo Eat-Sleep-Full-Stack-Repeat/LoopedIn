@@ -717,6 +717,9 @@ export default function ForumPostDetail() {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
+  // static tags UI-only
+  const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
+
   const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
 
@@ -786,6 +789,26 @@ export default function ForumPostDetail() {
       borderRadius: 10,
     },
     actionText: { color: colors.text, fontWeight: "600" },
+    tagRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 10,
+    },
+    tagChip: {
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      backgroundColor: "transparent",
+      marginRight: 8,
+      marginBottom: 8,
+    },
+    tagText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.text,
+    },
 
     sectionHeader: { marginHorizontal: 10, marginTop: 20, marginBottom: 8 },
     sectionTitle: { color: colors.text, fontWeight: "700", fontSize: 18 },
@@ -980,6 +1003,16 @@ export default function ForumPostDetail() {
             <Text style={styles.actionText}>Reply</Text>
           </Pressable>
         </View>
+
+        {!!staticTags.length && (
+          <View style={styles.tagRow}>
+            {staticTags.map((tag) => (
+              <View key={`${post.id}-${tag}`} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     );
   };

@@ -33,6 +33,7 @@ export default function MyPosts() {
       content:
         "I just finished a new scarf pattern and wanted to share it! What do you all think?",
       date: "Sun Oct 19 2025",
+      tags: ["knitting", "pattern", "scarf", "cozy","cute"],
     },
     {
       id: 2,
@@ -41,6 +42,7 @@ export default function MyPosts() {
       content:
         "Making good progress on my blanket project. This yarn is so soft!",
       date: "Tue Oct 21 2025",
+      tags: ["crochet", "blanket", "wip", "soft", "yarn"],
     },
   ];
 
@@ -127,6 +129,26 @@ export default function MyPosts() {
               <Text style={[styles.content, { color: colors.text }]}>
                 {post.content}
               </Text>
+              {!!post.tags?.length && (
+                <View style={styles.tagRow}>
+                  {post.tags.slice(0, 5).map((tag) => (
+                    <View
+                      key={`${post.id}-${tag}`}
+                      style={[
+                        styles.tagChip,
+                        {
+                          backgroundColor: colors.topBackground,
+                          borderColor: colors.decorativeBackground,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.tagText, { color: colors.text }]}>
+                        #{tag}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           ))}
 
@@ -244,6 +266,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
+  },
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  tagChip: {
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   floatingButton: {
     position: "absolute",
