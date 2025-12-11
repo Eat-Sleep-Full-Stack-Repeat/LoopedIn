@@ -34,6 +34,7 @@ router.get("/profile", authenticateToken, async (req, res) => {
     // ---- basic user info ----
     const q = `
       SELECT 
+        fld_user_pk     AS "userID",
         fld_username    AS "userName",
         fld_user_bio    AS "userBio",
         fld_profile_pic AS "avatarKey"
@@ -102,6 +103,7 @@ router.get("/profile", authenticateToken, async (req, res) => {
     const savedPosts = [];
 
     return res.status(200).json({
+      userID: row.userID,
       userName: row.userName,
       userBio: row.userBio,
       following: following.rows[0].following,
@@ -192,7 +194,7 @@ router.get("/profile/:id", authenticateToken, async (req, res) => {
 
     //get userdata
     query = `
-      SELECT fld_username, fld_user_bio, fld_profile_pic
+      SELECT fld_username, fld_user_bio, fld_profile_pic, fld_user_pk
       FROM login.tbl_user
       WHERE fld_user_pk = $1
     `
@@ -267,6 +269,7 @@ router.get("/profile/:id", authenticateToken, async (req, res) => {
 
     //return everything
     res.status(200).json({
+      userID: basicUserData.rows[0].fld_user_pk,
       userName: basicUserData.rows[0].fld_username,
       userBio: basicUserData.rows[0].fld_user_bio,
       avatarUrl: avatarUrl,

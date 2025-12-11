@@ -6,11 +6,13 @@ import {
   FlatList,
   useWindowDimensions,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import React, {
   useLayoutEffect,
   useEffect,
   useState,
+  useMemo,
 } from "react";
 import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,9 +24,11 @@ import { Colors } from "@/Styles/colors";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
 import { Feather } from "@expo/vector-icons";
+import { jwtDecode } from "jwt-decode";
 
 
 type User = {
+  userID: string;
   userName: string;
   userBio: string | "";
   avatarUrl?: string | null;
@@ -33,6 +37,10 @@ type User = {
   posts?: any[];
   tags?: any[];
 };
+
+interface Payload {
+  userID: string;
+}
 
 
 function getThumbnailSource(item: any): any | null {
@@ -76,9 +84,12 @@ function getThumbnailSource(item: any): any | null {
 }
 
 
+
 export default function OtherUserProfile() {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
+  // token to trigger reload when screen regains focus
+  const [reloadToken, setReloadToken] = useState(0);
 
   const isTablet = width >= 768;
   const CONTENT_MAX = isTablet ? 720 : width;
@@ -91,6 +102,9 @@ export default function OtherUserProfile() {
 
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [currentPosts, setPosts] = useState<any[]>([]);
+  const [isFollowed, setIsFollowed] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<string>("")
 
   //get rid of header
   useLayoutEffect(() => {
@@ -98,18 +112,23 @@ export default function OtherUserProfile() {
   }, [navigation]);
 
 
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    fetchUser();
-  }, [id])
-
-
   //call helper function to load user profile
   const fetchUser = async () => {
+    if (!id) {
+      return
+    }
+
     const token = await Storage.getItem("token");
+
+    if (!token) {
+      alert("Token does not exist")
+      router.replace("/")
+      return
+    }
+
+    const decoded = jwtDecode<Payload>(token)
+    setCurrentUser(decoded.userID)
+
     try {
       const response = await fetch(`${API_URL}/api/profile/${id}`,
         {
@@ -131,6 +150,7 @@ export default function OtherUserProfile() {
       const data = await response.json();
 
       const new_user: User = {
+        userID: data.userID,
         userName: data.userName ?? "User",
         userBio: data.userBio ?? "",
         avatarUrl: data.avatarUrl ?? null,
@@ -149,6 +169,142 @@ export default function OtherUserProfile() {
       alert("Server error, please try again later.");
     }
   }
+
+  useEffect(() => {
+    fetchUser();
+  }, [reloadToken])
+
+  useEffect(() => {
+    if (otherUser?.userID) {
+      fetchFollow()
+    }
+
+  }, [otherUser])
+
+
+  const fetchFollow = async () => {
+    const otherUserID = otherUser?.userID
+
+    if (otherUserID === null) {
+      console.log("otheruserID is null")
+      return
+    }
+
+    const token = await Storage.getItem("token")
+    try {
+      const response = await fetch(`${API_URL}/api/follow/check-if-follow/${otherUserID}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        alert("Failed to load follow status")
+        return
+      }
+
+      const responseData = await response.json()
+
+      setIsFollowed(responseData.followStatus)
+
+    }
+    catch(error) {
+      console.log("Error checking follow status:", error)
+    }
+  }
+
+  const handleFollowPress = async () => {
+    //so we prevent spam clicking
+    if (isLoading) {
+      return
+    }
+
+    const otherUserID = otherUser?.userID
+
+    if (otherUserID === null) {
+      console.log("otheruserID is null")
+      return
+    }
+
+    setIsLoading(true)
+
+    const original = isFollowed
+    const originalFollowers = Number(otherUser?.followers ?? 0);
+    setIsFollowed(!original)
+
+    //unfollow route
+    if (isFollowed) {
+      try {
+        const token = await Storage.getItem("token");
+
+        const response = await fetch(`${API_URL}/api/follow/unfollow-user`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ followingID: otherUserID}),
+        });
+
+        if (!response.ok) {
+          setIsFollowed(original)
+          alert("Something went wrong when unfollowing this person. Try again later.")
+          return
+        }
+      }
+      catch(error) {
+        console.log("Failed to unfollow user:", error)
+      }
+      finally {
+        //success: state change yay
+        setOtherUser(prev => prev ? { ...prev, followers: originalFollowers + (original ? -1 : 1) } : prev);
+        setIsLoading(false)
+      }
+    }
+    //follow route oooo
+    else {
+      try {
+        const token = await Storage.getItem("token")
+
+          const response = await fetch(`${API_URL}/api/follow/follow-user`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({ otherUserID: otherUserID}),
+        });
+
+        if (!response.ok) {
+          setIsFollowed(original)
+          alert("Something went wrong when following this person. Try again later.")
+          return
+        }
+
+      }
+      catch(error) {
+        console.log("Failed to follow user:", error)
+      }
+      finally {
+        //success: state change yay
+        setOtherUser(prev => prev ? { ...prev, followers: originalFollowers + (original ? -1 : 1) } : prev);
+        setIsLoading(false)
+      }
+    }
+  }
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setReloadToken((t) => t + 1);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
 
   // FIXME: will need to call the userInfo from the backend when time
@@ -282,6 +438,17 @@ export default function OtherUserProfile() {
       paddingHorizontal: 40,
       borderRadius: 15,
     },
+    isFollowedBtn: {
+      backgroundColor: colors.decorativeBackground,
+    },
+    isFollowedText: {
+      fontSize: 14,
+      color: colors.decorativeText,
+    },
+    followText: {
+      fontSize: 14, 
+      color: colors.text,
+    }
   });
   
 
@@ -307,9 +474,17 @@ export default function OtherUserProfile() {
               <View style={{ flexDirection: "row", gap: 20 }}>
 
               {/* Followers */}
+
               <Pressable
                 style={{ flexDirection: "column", alignItems: "center" }}
-                onPress={() => router.push("/followers")}
+                onPress={() => {
+                  if (!userData?.userID) {
+                    alert("Still fetching userdata... try again later")
+                    return
+                  }
+                  router.push({
+                  pathname: "/followers/[id]",
+                  params: {id: userData?.userID}})}}
               >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: colors.decorativeText }}>
@@ -322,7 +497,14 @@ export default function OtherUserProfile() {
               {/* Following */}
               <Pressable
                 style={{ flexDirection: "column", alignItems: "center" }}
-                onPress={() => router.push("/following")}
+                onPress={() => {
+                  if (!userData?.userID) {
+                    alert("Still fetching userdata... try again later")
+                    return
+                  }
+                  router.push({
+                  pathname: "/following/[id]",
+                  params: {id: userData?.userID}})}}
               >
                   <View style={styles.countCircles}>
                     <Text style={{ fontSize: 24, color: colors.decorativeText }}>
@@ -362,14 +544,19 @@ export default function OtherUserProfile() {
           </View>*/}
 
           {/* follow and message buttons */}
+          {currentUser !== "" && currentUser !== userData?.userID ? (
           <View style={styles.contactContainer}>
-            <Pressable style={styles.followContainer}>
-              <Text style={{ fontSize: 14, color: colors.text }}> Follow </Text>
+            <Pressable disabled={isLoading} style={[styles.followContainer, isFollowed && styles.isFollowedBtn]} onPress={handleFollowPress}>
+              {isLoading ? (
+                <ActivityIndicator size="small" color={colors.text} />) :(
+                <Text style={[styles.followText, isFollowed && styles.isFollowedText]}> {isFollowed ? "Followed" : "Follow"} </Text>
+                )}
             </Pressable>
             <View style={styles.followContainer}>
               <Text style={{ fontSize: 14, color: colors.text }}> Message </Text>
             </View>
           </View>
+           ) : (<View></View>)}
         </View>
       </View>
 

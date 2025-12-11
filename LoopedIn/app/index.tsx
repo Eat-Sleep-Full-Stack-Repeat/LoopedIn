@@ -47,20 +47,6 @@ export default function Index() {
         <Text style={{ color: colors.text }}>Welcome Page</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => router.push("/followers")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}>Followers Page</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => router.push("/following")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}>Following Page</Text>
-      </TouchableOpacity>
-
       {}
       <TouchableOpacity
         onPress={() => router.push("/myposts" as never)}
