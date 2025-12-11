@@ -23,7 +23,7 @@ export const Colors = {
     //disabled block button colors; really can just use this for any disabled button lol
     //disabled buttons don't need to follow color contrast requirements per WCAG requirements
     blockedBackground: "#515151ff",
-    blockedText: "#7d7d7dff"
+    blockedText: "#9c9c9cff"
   },
 
   light: {
@@ -47,7 +47,7 @@ export const Colors = {
 
     //disabled block button colors; really can just use this for any disabled button lol
     //disabled buttons don't need to follow color contrast requirements per WCAG requirements
-    blockedBackground: "#7d7d7dff",
-    blockedText: "#515151ff"
+    blockedBackground: "#bbbbbbff",
+    blockedText: "#6e6e6eff"
   },
 };

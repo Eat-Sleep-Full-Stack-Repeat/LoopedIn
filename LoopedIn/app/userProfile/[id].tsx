@@ -9,15 +9,16 @@ import {
   ActivityIndicator,
   Modal,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import React, {
   useLayoutEffect,
   useEffect,
   useState,
-  useMemo,
+  useCallback,
 } from "react";
 import BottomNavButton from "@/components/bottomNavBar";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 // FIXME: delete the following line when backend set up
 import craftIcons from "@/components/craftIcons";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
@@ -114,6 +115,7 @@ export default function OtherUserProfile() {
   const [isLoading, setIsLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<string>("")
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   //blocking/unblocking loading state
   const [isBlocking, setIsBlocking] = useState(false)
@@ -190,6 +192,12 @@ export default function OtherUserProfile() {
 
   useEffect(() => {
     fetchUser();
+  }, [reloadToken])
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    await fetchUser()
+    setIsRefreshing(false)
   }, [reloadToken])
 
   useEffect(() => {
@@ -387,9 +395,6 @@ export default function OtherUserProfile() {
     const originalUserFollow = isUserFollowing //keep track if user is following you
     const originalUsersFollowerCnt = Number(otherUser?.followers ?? 0)
     const originalUsersFollowingCnt = Number(otherUser?.following ?? 0)
-
-
-    console.log("Other user is blocked: ", isBlockedUser)
 
 
     //unblock route
@@ -639,12 +644,19 @@ export default function OtherUserProfile() {
     menuText: {
       fontSize: 16,
     },
+    activityIndicatorDiv: {
+      position: "absolute",
+      top: insets.top + 10,
+      backgroundColor: colors.topBackground,
+      alignItems: "center",
+      zIndex: 10,
+    }
   });
   
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <View style={{flexDirection: "row", justifyContent: "space-between", top: insets.top + 8}}>
+      <View style={{flexDirection: "row", justifyContent: "space-between", paddingTop: 10}}>
         <View style={styles.headerArrowDiv}>
           <Pressable style={styles.backFab} onPress={() => router.back()}>
             <Feather name="chevron-left" size={22} color={colors.text} />
@@ -662,7 +674,7 @@ export default function OtherUserProfile() {
         </View>) : (<View></View>)}
       </View>
 
-      <View style={[styles.renderHeaderStyle, { paddingTop: insets.top + 20 }]}>
+      <View style={[styles.renderHeaderStyle, {paddingTop: 10}]}>
         <View style={{ flexDirection: "column" }}>
           {/* user info: pic, username, follower + friend count */}
           <View style={styles.userInfo}>
@@ -714,7 +726,7 @@ export default function OtherUserProfile() {
                       {userData?.following ?? 0}
                     </Text>
                   </View>
-                   <Text style={styles.countLabel}>Following</Text>
+                  <Text style={styles.countLabel}>Following</Text>
               </Pressable>
               
               </View>
@@ -762,7 +774,7 @@ export default function OtherUserProfile() {
               <Text style={[styles.followText, (isBlockedUser || isBlocked) && styles.isBlockedText]}> Message </Text>
             </View>
           </View>
-           ) : (<View></View>)}
+          ) : (<View></View>)}
         </View>
       </View>
 
@@ -780,7 +792,7 @@ export default function OtherUserProfile() {
   const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS - 10;
 
   return (
-    <View style={[styles.container]}>
+    <SafeAreaView style={[styles.container]}>
       <View style={styles.topBackground} />
       <View style={styles.bottomBackground} />
       <FlatList
@@ -807,6 +819,11 @@ export default function OtherUserProfile() {
             </Pressable>
           );
         }}
+
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh}
+          progressViewOffset={insets.top + 10}/>
+        }
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
           backgroundColor: colors.background,
@@ -816,6 +833,7 @@ export default function OtherUserProfile() {
           marginHorizontal: 10,
         }}
       />
+
       <BottomNavButton />
 
       <Modal
@@ -834,15 +852,20 @@ export default function OtherUserProfile() {
               { backgroundColor: colors.exploreCardBackground },
             ]}
           >
+            {/*very good icon usage here*/}
             <TouchableOpacity disabled={isBlocking} onPress={handleBlock} style={styles.menuOption}>
-              <Feather name="frown" size={18} color={colors.text} />
+              {isBlockedUser ? (
+                <Feather name="smile" size={18} color={colors.text} />
+              ) : (
+                <Feather name="frown" size={18} color={colors.text} />
+              )}
               <Text style={[styles.menuText, { color: colors.text }]}>{isBlockedUser ? "Unblock" : "Block"}</Text>
             </TouchableOpacity>
 
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
