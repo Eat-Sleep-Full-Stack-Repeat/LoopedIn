@@ -20,28 +20,49 @@ router.get("/check-if-follow/:otherUserID", authenticateToken, async (req, res) 
 
         console.log("[follow]: fetching following status")
 
+        let followingUser = false
+        let UserFollowingYou = false
+
+
         //check if currently following
         query = `
         SELECT fld_connection_pk
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
         `
-        const connectionID = await pool.query(query, [req.userID.trim(), otherUserID])
+        let connectionID = await pool.query(query, [req.userID.trim(), otherUserID])
 
-        if (connectionID.rowCount === 0) {
-            console.log("follow status: false")
-            res.status(200).json({followStatus: false})
-            return
+        if (connectionID.rowCount === 1) {
+           followingUser = true
         }
         else if (connectionID.rowCount > 1) {
             console.log("You're following this user multiple times lol")
             res.status(500)
-        }
-        else {
-            console.log("follow status: true")
-            res.status(200).json({followStatus: true})
             return
         }
+
+        //check if other user if following you -> important for blocking functionality in frontend
+        query = `
+        SELECT fld_connection_pk
+	    FROM following_blocked.tbl_follow
+	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
+        `
+        connectionID = await pool.query(query, [otherUserID, req.userID.trim()])
+
+
+        if (connectionID.rowCount === 1) {
+            UserFollowingYou = true
+        }
+        else if (connectionID.rowCount > 1) {
+            console.log("This user is following you multiple times lol")
+            res.status(500)
+            return
+        }
+
+        res.status(200).json({
+            followStatus: followingUser,
+            userFollowingStatus: UserFollowingYou
+        })
 
     }
     catch(error) {

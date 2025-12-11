@@ -8,6 +8,73 @@ const { pool } = require('../backend_connection');
 const authenticateToken = require('../middleware/authenticate');
 
 //------------------------ BLOCK WORK -------------------------------
+//fetch block status for both current user and other user
+router.get('/check-if-block/:otherUserID', authenticateToken, async (req, res) => {
+    try {
+
+        console.log("[block]: fetching block status")
+
+        const { otherUserID } = req.params
+
+        //if blocked by other user
+        let ifBlocked = false
+
+        //if current user blocked other user
+        let ifUserBlocked = false
+
+        //check if you blocked other user
+        query = `
+        SELECT fld_block_pk
+	    FROM following_blocked.tbl_block
+	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
+        `
+
+        let block_id = await pool.query(query, [req.userID.trim(), otherUserID])
+
+        //in block table, so set ifuserblocked variable
+        if (block_id.rowCount === 1) {
+            ifUserBlocked = true
+        }
+        else if (block_id.rowCount > 1) {
+            console.log(`[block]: current user ${req.userID.trim()} double blocked other user ${otherUserID}`)
+            res.status(500)
+            return
+        }
+
+        //check if you blocked other user
+        query = `
+        SELECT fld_block_pk
+	    FROM following_blocked.tbl_block
+	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
+        `
+
+
+        //other way around: check if other user blocked you
+        block_id = await pool.query(query, [otherUserID, req.userID.trim()])
+
+        if (block_id.rowCount === 1) {
+            ifBlocked = true
+        }
+        else if (block_id.rowCount > 1) {
+            console.log(`[block]: other user ${otherUserID} doubled blocked user ${req.userID.trim()}`)
+            res.status(500)
+            return
+        }
+
+        res.status(200).json({
+            ifBlocked: ifBlocked,
+            ifUserBlocked: ifUserBlocked
+        })
+
+    }
+    catch(error) {
+        console.log("Error fetching block status:", error)
+        res.status(500).json(error)
+    }
+})
+
+
+
 //block person
 router.post('/block-user/:userID', authenticateToken, async (req, res) => {
     try {

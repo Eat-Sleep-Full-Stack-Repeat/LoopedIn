@@ -19,6 +19,11 @@ export const Colors = {
     exploreCardBackground: "#2C2C2C",
     exploreBorder: "#444444",
     exploreFilterSelected: "#B57C2B",
+
+    //disabled block button colors; really can just use this for any disabled button lol
+    //disabled buttons don't need to follow color contrast requirements per WCAG requirements
+    blockedBackground: "#515151ff",
+    blockedText: "#7d7d7dff"
   },
 
   light: {
@@ -39,5 +44,10 @@ export const Colors = {
     exploreCardBackground: "#FFFFFF",
     exploreBorder: "#E0E0E0",
     exploreFilterSelected: "#F4B860",
+
+    //disabled block button colors; really can just use this for any disabled button lol
+    //disabled buttons don't need to follow color contrast requirements per WCAG requirements
+    blockedBackground: "#7d7d7dff",
+    blockedText: "#515151ff"
   },
 };

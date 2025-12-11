@@ -7,6 +7,8 @@ import {
   useWindowDimensions,
   Pressable,
   ActivityIndicator,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import React, {
   useLayoutEffect,
@@ -23,7 +25,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Entypo } from "@expo/vector-icons";
 import { jwtDecode } from "jwt-decode";
 
 
@@ -102,9 +104,25 @@ export default function OtherUserProfile() {
 
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [currentPosts, setPosts] = useState<any[]>([]);
+
+  //if you are following user
   const [isFollowed, setIsFollowed] = useState(false)
+
+  //if user is following you
+  const [isUserFollowing, setIsUserFollowing] = useState(false)
+
   const [isLoading, setIsLoading] = useState(false)
   const [currentUser, setCurrentUser] = useState<string>("")
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  //blocking/unblocking loading state
+  const [isBlocking, setIsBlocking] = useState(false)
+  
+  //tracking if the other user blocked current user
+  const [isBlocked, setIsBlocked] = useState(false)
+
+  //tracking if current user blocked other user
+  const [isBlockedUser, setIsBlockedUser] = useState(false)
 
   //get rid of header
   useLayoutEffect(() => {
@@ -177,6 +195,7 @@ export default function OtherUserProfile() {
   useEffect(() => {
     if (otherUser?.userID) {
       fetchFollow()
+      fetchBlock()
     }
 
   }, [otherUser])
@@ -209,10 +228,49 @@ export default function OtherUserProfile() {
       const responseData = await response.json()
 
       setIsFollowed(responseData.followStatus)
+      setIsUserFollowing(responseData.userFollowingStatus)
 
     }
     catch(error) {
       console.log("Error checking follow status:", error)
+    }
+  }
+
+  //for fetching blocked status
+  const fetchBlock = async () => {
+    const otherUserID = otherUser?.userID
+
+    if (otherUserID === null) {
+      console.log("otheruserID is null")
+      return
+    }
+
+    const token = await Storage.getItem("token")
+
+    try {
+      const response = await fetch(`${API_URL}/api/block/check-if-block/${otherUserID}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        alert("Failed to recieve block status")
+        return
+      }
+
+      const responseData = await response.json()
+
+      //don't mix these up lol
+      setIsBlocked(responseData.ifBlocked)
+      setIsBlockedUser(responseData.ifUserBlocked)
+
+    }
+    catch(error) {
+      console.log("Error checking block status:", error)
     }
   }
 
@@ -298,6 +356,113 @@ export default function OtherUserProfile() {
     }
   }
 
+  const openMenu = () => {
+    setMenuVisible(true);
+  };
+
+  //do block stuff
+  const handleBlock = async () => {
+    //prevent spam blocks
+    if (isBlocking) {
+      return
+    }
+
+    const otherUserID = otherUser?.userID
+
+    if (otherUserID === null) {
+      console.log("otheruserID is null")
+      return
+    }
+
+    setIsBlocking(true)
+
+    //is here so it aligns with our optimistic updates
+    setMenuVisible(false)
+
+    //og if current user blocked other user
+    const original = isBlockedUser
+    setIsBlockedUser(!original)
+
+    const originalFollowed = isFollowed //keep track if you followed user
+    const originalUserFollow = isUserFollowing //keep track if user is following you
+    const originalUsersFollowerCnt = Number(otherUser?.followers ?? 0)
+    const originalUsersFollowingCnt = Number(otherUser?.following ?? 0)
+
+
+    console.log("Other user is blocked: ", isBlockedUser)
+
+
+    //unblock route
+    if (isBlockedUser) {
+      const token = await Storage.getItem("token")
+
+      try {
+        const response = await fetch(`${API_URL}/api/block/block-user/${otherUserID}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          setIsBlockedUser(original)
+          alert("Error while unblocking this user. Try again later.");
+          return;
+        }
+
+      }
+      catch(error) {
+        console.log("Failed to unblock user:", error)
+      }
+      finally {
+        //unblock complete
+        setIsBlocking(false)
+      }
+    }
+
+    //block route
+    else {
+      const token = await Storage.getItem("token")
+
+      try {
+        const response = await fetch(`${API_URL}/api/block/block-user/${otherUserID}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          setIsBlockedUser(original)
+          alert("Error while unblocking this user. Try again later.");
+          return;
+        }
+
+      }
+      catch(error) {
+        console.log("Failed to block user:", error)
+      }
+      finally {
+        //if we followed them, update UI to unfollow 
+        if (originalFollowed) {
+          setOtherUser(prev => prev ? { ...prev, followers: originalUsersFollowerCnt + (originalFollowed ? -1 : 1) } : prev);
+        }
+
+        //if user was following us, they will now unfollow us in UI
+        if (originalUserFollow) {
+          setOtherUser(prev => prev ? { ...prev, following: originalUsersFollowingCnt + (originalUserFollow ? -1 : 1) } : prev);
+        }
+
+        //block complete
+        setIsBlocking(false)
+      }
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       setReloadToken((t) => t + 1);
@@ -307,7 +472,7 @@ export default function OtherUserProfile() {
   }, [navigation]);
 
 
-  // FIXME: will need to call the userInfo from the backend when time
+  //userdata from backend yee
   const router = useRouter();
   const userData = otherUser;
 
@@ -318,8 +483,6 @@ export default function OtherUserProfile() {
       flex: 1,
     },
     backFab: {
-      position: "absolute",
-      top: insets.top + 8,
       zIndex: 10,
       width: 40,
       height: 40,
@@ -370,7 +533,6 @@ export default function OtherUserProfile() {
     },
     headerArrowDiv: {
       backgroundColor: colors.topBackground,
-      width: "100%",
       height: 50,
       marginHorizontal: 30,
     },
@@ -448,17 +610,58 @@ export default function OtherUserProfile() {
     followText: {
       fontSize: 14, 
       color: colors.text,
-    }
+    },
+    isBlockedBtn: {
+      backgroundColor: colors.blockedBackground
+    },
+    isBlockedText: {
+      fontSize: 14,
+      color: colors.blockedText,
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+    },
+    menuContainer: {
+      width: 180,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+    },
+    menuOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 8,
+    },
+    menuText: {
+      fontSize: 16,
+    },
   });
   
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <View style={styles.headerArrowDiv}>
-        <Pressable style={styles.backFab} onPress={() => router.back()}>
-          <Feather name="chevron-left" size={22} color={colors.text} />
-        </Pressable>
+      <View style={{flexDirection: "row", justifyContent: "space-between", top: insets.top + 8}}>
+        <View style={styles.headerArrowDiv}>
+          <Pressable style={styles.backFab} onPress={() => router.back()}>
+            <Feather name="chevron-left" size={22} color={colors.text} />
+          </Pressable>
+        </View>
+        {currentUser !== "" && currentUser !== userData?.userID ? (
+        <View style={{zIndex: 10, marginHorizontal: 30, height: 40, justifyContent: "center"}}>
+          <TouchableOpacity onPress={() => openMenu()}>
+            <Entypo
+              name="dots-three-vertical"
+              size={18}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+        </View>) : (<View></View>)}
       </View>
+
       <View style={[styles.renderHeaderStyle, { paddingTop: insets.top + 20 }]}>
         <View style={{ flexDirection: "column" }}>
           {/* user info: pic, username, follower + friend count */}
@@ -546,14 +749,17 @@ export default function OtherUserProfile() {
           {/* follow and message buttons */}
           {currentUser !== "" && currentUser !== userData?.userID ? (
           <View style={styles.contactContainer}>
-            <Pressable disabled={isLoading} style={[styles.followContainer, isFollowed && styles.isFollowedBtn]} onPress={handleFollowPress}>
+            <Pressable disabled={isLoading || isBlocking || isBlocked || isBlockedUser} style={[styles.followContainer, isFollowed && styles.isFollowedBtn, 
+              (isBlockedUser || isBlocked) && styles.isBlockedBtn]} 
+              onPress={handleFollowPress}>
               {isLoading ? (
                 <ActivityIndicator size="small" color={colors.text} />) :(
-                <Text style={[styles.followText, isFollowed && styles.isFollowedText]}> {isFollowed ? "Followed" : "Follow"} </Text>
+                <Text style={[styles.followText, isFollowed && styles.isFollowedText, (isBlockedUser || isBlocked) && styles.isBlockedText]}> 
+                  {isFollowed ? "Followed" : "Follow"} </Text>
                 )}
             </Pressable>
-            <View style={styles.followContainer}>
-              <Text style={{ fontSize: 14, color: colors.text }}> Message </Text>
+            <View style={[styles.followContainer, (isBlockedUser || isBlocked) && styles.isBlockedBtn]}>
+              <Text style={[styles.followText, (isBlockedUser || isBlocked) && styles.isBlockedText]}> Message </Text>
             </View>
           </View>
            ) : (<View></View>)}
@@ -611,6 +817,31 @@ export default function OtherUserProfile() {
         }}
       />
       <BottomNavButton />
+
+      <Modal
+        transparent
+        visible={menuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setMenuVisible(false)}
+        >
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
+          >
+            <TouchableOpacity disabled={isBlocking} onPress={handleBlock} style={styles.menuOption}>
+              <Feather name="frown" size={18} color={colors.text} />
+              <Text style={[styles.menuText, { color: colors.text }]}>{isBlockedUser ? "Unblock" : "Block"}</Text>
+            </TouchableOpacity>
+
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
