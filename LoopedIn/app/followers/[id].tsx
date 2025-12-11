@@ -1,9 +1,10 @@
 import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter,  useNavigation } from "expo-router";
+import { useRouter,  useNavigation, useLocalSearchParams } from "expo-router";
 import { useState, useLayoutEffect, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
-import { Storage } from "../utils/storage";
+import { Storage } from "../../utils/storage";
+import { jwtDecode } from "jwt-decode";
 import API_URL from "@/utils/config";
 
 // Define a type for a user
@@ -13,24 +14,44 @@ type User = {
   image: any; // You can refine this type if using React Native ImageSourcePropType
 };
 
+interface Payload {
+  userID: string;
+}
+
 export default function FollowersScreen() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [followers, setFollowers] = useState<User[]>([]);
+  const { id } = useLocalSearchParams();
+
+  const [currentUser, setCurrentUser] = useState<string>("")
 
   useEffect(() => {
     //get followers
     const getFollowers = async () => {
       //obtain token
       const token = await Storage.getItem("token");
+      if (!token) {
+        alert("Token does not exist")
+        router.replace("/")
+        return
+      }
+
+      const decoded = jwtDecode<Payload>(token)
+      setCurrentUser(decoded.userID)
+
+      if (!id) {
+        alert(`Cannot fetch followers at this time. User ID does not exist: ${id}`)
+        return
+      }
 
       console.log("getting followers")
 
       //obtain followers
       try {
-        const response = await fetch(`${API_URL}/api/follow/get-followers`, {
+        const response = await fetch(`${API_URL}/api/follow/get-followers/${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -265,7 +286,7 @@ export default function FollowersScreen() {
         renderItem={({ item }) => (
           <View style={styles.userCard}>
             <View style={styles.userInfo}>
-              <TouchableOpacity onPress={() => router.push({
+              <TouchableOpacity onPress={() => router.replace({
                   pathname: "/userProfile/[id]",
                   params: { id: item.id },
                 })}>
@@ -275,6 +296,7 @@ export default function FollowersScreen() {
                 <Text numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
               </View>
             </View>
+            {currentUser !== "" && currentUser === id ? (
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
@@ -289,6 +311,8 @@ export default function FollowersScreen() {
                 <Text style={styles.buttonText}>Block</Text>
               </TouchableOpacity>
             </View>
+            ) : (
+            <View></View>)}
           </View>
         )}
       />

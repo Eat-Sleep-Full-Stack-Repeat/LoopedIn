@@ -13,9 +13,70 @@ const { getSignedFile } = require('../s3_connection');
 //------------------------ FOLLOW/FOLLOWER API SETUP -------------------------------
 //for currently logged-in user only
 
-//get followers for user
-router.get("/get-followers", authenticateToken, async (req, res) => {
+//check if follow other user
+router.get("/check-if-follow/:otherUserID", authenticateToken, async (req, res) => {
     try {
+        const { otherUserID } = req.params
+
+        console.log("[follow]: fetching following status")
+
+        let followingUser = false
+        let UserFollowingYou = false
+
+
+        //check if currently following
+        query = `
+        SELECT fld_connection_pk
+	    FROM following_blocked.tbl_follow
+	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
+        `
+        let connectionID = await pool.query(query, [req.userID.trim(), otherUserID])
+
+        if (connectionID.rowCount === 1) {
+           followingUser = true
+        }
+        else if (connectionID.rowCount > 1) {
+            console.log("You're following this user multiple times lol")
+            res.status(500)
+            return
+        }
+
+        //check if other user if following you -> important for blocking functionality in frontend
+        query = `
+        SELECT fld_connection_pk
+	    FROM following_blocked.tbl_follow
+	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
+        `
+        connectionID = await pool.query(query, [otherUserID, req.userID.trim()])
+
+
+        if (connectionID.rowCount === 1) {
+            UserFollowingYou = true
+        }
+        else if (connectionID.rowCount > 1) {
+            console.log("This user is following you multiple times lol")
+            res.status(500)
+            return
+        }
+
+        res.status(200).json({
+            followStatus: followingUser,
+            userFollowingStatus: UserFollowingYou
+        })
+
+    }
+    catch(error) {
+        console.log("Error while fetching followers:", error)
+        res.status(500).json(error)
+    }
+})
+
+
+
+//get followers for user
+router.get("/get-followers/:userID", authenticateToken, async (req, res) => {
+    try {
+        const { userID } = req.params
         console.log("get followers test")
 
         //get all usernames and pfps of followers
@@ -26,7 +87,7 @@ router.get("/get-followers", authenticateToken, async (req, res) => {
 		    ON u.fld_user_pk = f.fld_follower_id
 	    WHERE f.fld_user_id = $1;
         `
-        const followers  = await pool.query(query, [req.userID.trim()])
+        const followers  = await pool.query(query, [userID])
 
         // adds a signed URL (avatarUrl) for each row, if a key exists
         const rows = await Promise.all(
@@ -55,8 +116,9 @@ router.get("/get-followers", authenticateToken, async (req, res) => {
 
 
 //get who they're following for user
-router.get("/get-following", authenticateToken, async (req, res) => {
+router.get("/get-following/:userID", authenticateToken, async (req, res) => {
     try {
+        const { userID } = req.params
         console.log("get following");
         //get all usernames and pfps of people user is following
         let query = `
@@ -66,7 +128,7 @@ router.get("/get-following", authenticateToken, async (req, res) => {
          WHERE f.fld_follower_id = $1;
         `
 
-        const following = await pool.query(query, [req.userID.trim()])
+        const following = await pool.query(query, [userID])
 
         // adds signed URL (avatarUrl) per row
         const rows = await Promise.all(
@@ -150,7 +212,7 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
 	    FROM following_blocked.tbl_block
 	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
         `
-        let block_id = await pool.query(query, [userID, req.userID.trim()])
+        let block_id = await pool.query(query, [otherUserID, req.userID.trim()])
 
         //if blocked, can't follow
         if (block_id.rowCount > 0) {
@@ -165,7 +227,7 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
 	    FROM following_blocked.tbl_block
 	    WHERE fld_user_id = $1 AND fld_blocked_user_id = $2;
         `
-        block_id = await pool.query(query, [req.userID.trim(), userID])
+        block_id = await pool.query(query, [req.userID.trim(), otherUserID])
 
         //if blocked, can't follow
         if (block_id.rowCount > 0) {
@@ -180,7 +242,7 @@ router.post("/follow-user", authenticateToken, async (req, res) => {
 	    FROM following_blocked.tbl_follow
 	    WHERE fld_follower_id = $1 AND fld_user_id = $2;
         `
-        const connectionID = await pool.query(query, [req.userID.trim(), followingID])
+        const connectionID = await pool.query(query, [req.userID.trim(), otherUserID])
 
         //when person is already followed
         if (connectionID.rowCount > 0) {

@@ -30,6 +30,7 @@ import { Feather } from "@expo/vector-icons";
 
 /* ----------------------------- Types ----------------------------- */
 type User = {
+  userID: string;
   userName: string;
   userBio: string | null;
   avatarUrl?: string | null;
@@ -184,14 +185,18 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             </Text>
 
             <View style={{ flexDirection: "row", gap: 20 }}>
-              <Pressable style={s.countCol} onPress={() => router.push("/followers")}>
+              <Pressable style={s.countCol} onPress={() => router.push({
+                pathname: "/followers/[id]",
+                params: {id: originalUser?.userID}})}>
                 <View style={s.countCircles}>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>{originalUser?.followers}</Text>
                 </View>
                 <Text style={[s.countLabel, { color: colors.text }]}>Followers</Text>
               </Pressable>
 
-              <Pressable style={s.countCol} onPress={() => router.push("/following")}>
+              <Pressable style={s.countCol} onPress={() => router.push({
+                pathname: "/following/[id]",
+                params: {id: originalUser?.userID}})}>
                 <View style={s.countCircles}>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>{originalUser?.following}</Text>
                 </View>
@@ -374,6 +379,7 @@ export default function UserProfile() {
         const u = (await res.json()) as Partial<User>;
 
         const merged: User = {
+          userID: u.userID ?? "",
           userName: u.userName ?? "User",
           userBio: u.userBio ?? "",
           avatarUrl: u.avatarUrl ?? null,
