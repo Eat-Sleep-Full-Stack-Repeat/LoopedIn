@@ -25,6 +25,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const {width} = useWindowDimensions();
 
   let avatarSize;
+  const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
 
   if (width >= 768) {
     avatarSize = 120;
@@ -92,6 +93,25 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       borderRadius: 20,
       margin: 2,
     },
+    tagRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 6,
+    },
+    tagChip: {
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      backgroundColor: colors.topBackground,
+    },
+    tagText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.text,
+    },
   });
 
   return (
@@ -147,6 +167,15 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
             {postInfo.content}
           </Text>
         </View>
+        {!!staticTags.length && (
+          <View style={styles.tagRow}>
+            {staticTags.map((tag) => (
+              <View key={`${postInfo.id}-${tag}`} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
         <View style={styles.postDate}>
           <Text style={{ color: colors.text }}>
             {new Date(postInfo.datePosted).toDateString()}
