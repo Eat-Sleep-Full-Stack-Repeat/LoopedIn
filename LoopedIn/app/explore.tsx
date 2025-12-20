@@ -50,6 +50,7 @@ export default function ExplorePage() {
   const colors = Colors[currentTheme];
   const [selectedFilter, setSelectedFilter] = useState("All");
   const filters = ["All", "Crochet", "Knit", "Misc"];
+  const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
   const insets = useSafeAreaInsets();
   const [areCommentsVisible, setAreCommentsVisible] = useState(false);
   const router = useRouter();
@@ -113,6 +114,16 @@ export default function ExplorePage() {
           ellipsizeMode="tail"
         >{item.caption}</Text>
       </View>
+
+      {!!staticTags.length && (
+        <View style={styles.tagRow}>
+          {staticTags.map((tag) => (
+            <View key={`${item.id}-${tag}`} style={styles.tagChip}>
+              <Text style={styles.tagText}>#{tag}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Post Actions */}
       <View style={styles.postActions}>
@@ -379,6 +390,26 @@ export default function ExplorePage() {
     postActionText: {
       color: colors.text,
       fontSize: 12,
+    },
+    tagRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 10,
+    },
+    tagChip: {
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      backgroundColor: "transparent",
+      marginRight: 8,
+      marginBottom: 8,
+    },
+    tagText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.text,
     },
   });
 

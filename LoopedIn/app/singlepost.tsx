@@ -7,6 +7,8 @@ import {
   Image,
   ScrollView,
   Pressable,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +25,7 @@ type SinglePostParams = {
   imageUrl?: string;
   profilePic?: string;
   datePosted?: string;
+  tags?: string[] | string;
 };
 
 export default function SinglePost() {
@@ -32,6 +35,14 @@ export default function SinglePost() {
   const router = useRouter();
 
   const params = useLocalSearchParams<SinglePostParams>();
+  const resolvedTags = (() => {
+    if (!params.tags) return ["cozy", "crochet", "blanket","money","daily"];
+    if (Array.isArray(params.tags)) return params.tags;
+    return params.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  })();
 
   // fallback mock data so the UI always renders
   const post = {
@@ -46,10 +57,25 @@ export default function SinglePost() {
       "https://images.pexels.com/photos/3738085/pexels-photo-3738085.jpeg",
     profilePic: params.profilePic ?? "",
     datePosted: params.datePosted ?? "Sun Oct 19 2025",
+    tags: resolvedTags,
   };
 
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const handleEdit = () => {
+    setMenuVisible(false);
+    router.push({
+      pathname: "/editpost",
+      params: { id: post.id },
+    });
+  };
+
+  const handleDelete = () => {
+    setMenuVisible(false);
+    console.log(`Deleting post ID: ${post.id}`);
+  };
 
   return (
     <SafeAreaView
@@ -108,7 +134,7 @@ export default function SinglePost() {
 
             <View style={{ flex: 1 }} />
 
-            <Pressable hitSlop={10}>
+            <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}>
               <Entypo
                 name="dots-three-vertical"
                 size={18}
@@ -177,8 +203,61 @@ export default function SinglePost() {
           <Text style={[styles.content, { color: colors.text }]}>
             {post.content}
           </Text>
+
+          {!!post.tags?.length && (
+            <View style={styles.tagRow}>
+              {post.tags.slice(0, 5).map((tag) => (
+                <View
+                  key={`${post.id}-${tag}`}
+                  style={[
+                    styles.tagChip,
+                    {
+                      backgroundColor: "transparent",
+                      borderColor: colors.decorativeBackground,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.tagText, { color: colors.text }]}>
+                    #{tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
+
+      <Modal
+        transparent
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setMenuVisible(false)}
+        >
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
+          >
+            <TouchableOpacity onPress={handleEdit} style={styles.menuOption}>
+              <Feather name="edit" size={18} color={colors.text} />
+              <Text style={[styles.menuText, { color: colors.text }]}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleDelete} style={styles.menuOption}>
+              <Feather name="trash-2" size={18} color={colors.warning} />
+              <Text style={[styles.menuText, { color: colors.warning }]}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <BottomNavButton />
     </SafeAreaView>
@@ -264,5 +343,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
+  },
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  tagChip: {
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    backgroundColor: "transparent",
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
+  menuContainer: {
+    width: 180,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  menuOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  menuText: {
+    fontSize: 16,
   },
 });
