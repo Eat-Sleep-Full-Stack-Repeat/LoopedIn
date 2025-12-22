@@ -19,7 +19,7 @@ import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Storage } from "../utils/storage";
 import API_URL from "@/utils/config";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import SettingsOverlay from "@/components/settingsoverlay";
 import * as ImagePicker from "expo-image-picker";
@@ -56,7 +56,7 @@ function getThumbnailSource(item: any): any | null {
   if (item.previewUrl) {
     return { uri: item.previewUrl };
   }
-  if (item.preview_url) {
+  if (item.preview_url && item.postId) {
     return { uri: item.preview_url };
   }
 
@@ -66,18 +66,21 @@ function getThumbnailSource(item: any): any | null {
   }
 
   if (Array.isArray(item) && item.length > 0) {
+    //console.log("ARRAY ROUTE HIT")
     const first = item[0];
     if (typeof first === "string") return { uri: first };
     if (first?.uri || first?.url || first?.imageUrl) {
-      return { uri: first.uri || first.url || first.imageUrl };
+      return { uri: first.uri || first.url || first.imageUrl};
     }
-    return first;
+    return {first};
   }
 
   const photosArray =
     item.photos || item.images || item.pics || item.postPics || null;
 
   if (Array.isArray(photosArray) && photosArray.length > 0) {
+    //console.log("ARRAY ROUTE2 HIT")
+
     const first = photosArray[0];
     if (typeof first === "string") return { uri: first };
     if (first?.uri || first?.url || first?.imageUrl) {
@@ -132,7 +135,7 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
     avatarSize,
     onLogout,
   } = props;
-
+  
   const s = themedStyles(colors);
 
   const placeholderBio =
@@ -294,6 +297,7 @@ export default function UserProfile() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { tab } = useLocalSearchParams();
 
   // THEME
   const { currentTheme } = useTheme();
@@ -315,8 +319,9 @@ export default function UserProfile() {
   const [hasToken, setHasToken] = useState<boolean | null>(null);
 
   // Posts tab – data from API
-  const [activeTab, setTab] = useState<"posts" | "saved">("posts");
+  const [activeTab, setTab] = useState(tab === "saved" ? "saved" : "posts");
   const [currentPosts, setPosts] = useState<any[]>([]);
+  //console.log("tab is", activeTab);
 
   // Settings overlay
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -376,7 +381,7 @@ export default function UserProfile() {
           const t = await res.text().catch(() => "");
           throw new Error(`GET /api/profile failed (${res.status}) ${t}`);
         }
-        const u = (await res.json()) as Partial<User>;
+        const u = (await res.json()) as Partial<User>;   
 
         const merged: User = {
           userID: u.userID ?? "",
@@ -391,8 +396,13 @@ export default function UserProfile() {
 
         setOriginalUser(merged);
         setDraftBio(merged.userBio ?? "");
-        setPosts(merged.posts ?? []);
-        setTab("posts");
+        setPosts(
+          activeTab === "saved"
+            ? merged.savedPosts ?? []
+            : merged.posts ?? []
+        );
+
+        //setTab("posts");
       } catch (e: any) {
         if (e.name !== "AbortError") setLoadError(e?.message ?? String(e));
       } finally {
@@ -728,10 +738,13 @@ export default function UserProfile() {
         }
         renderItem={({ item }) => {
           const thumbSource = getThumbnailSource(item);
+          const id = item.postId;
           if (!thumbSource) return null;
 
           return (
-            <Pressable onPress={() => router.push("/")}>
+            <Pressable onPress={() => router.push({
+            pathname: "/singlePost/[id]",
+            params: { id, tab: activeTab }})}>
               <Image
                 source={thumbSource}
                 resizeMode="cover"

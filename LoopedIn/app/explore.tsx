@@ -105,25 +105,30 @@ export default function ExplorePage() {
           </Text>
         </TouchableOpacity>
 
-      <Image style={[styles.postImage,  {height: imageHeight}]} source={{uri: item.postImage}}/>
+      {/* make everything but the username area and the bottom buttons clickable */}
+      <Pressable onPress={() => router.push({
+            pathname: "/singlePost/[id]",
+            params: { id: item.id }})}>
+        <Image style={[styles.postImage,  {height: imageHeight}]} source={{uri: item.postImage}}/>
 
-      <View style={{marginVertical: 20, flexShrink: 1}}>
-        <Text
-          style={styles.postCaption}
-          numberOfLines={5}
-          ellipsizeMode="tail"
-        >{item.caption}</Text>
-      </View>
-
-      {!!staticTags.length && (
-        <View style={styles.tagRow}>
-          {staticTags.map((tag) => (
-            <View key={`${item.id}-${tag}`} style={styles.tagChip}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
-          ))}
+        <View style={{marginVertical: 20, flexShrink: 1}}>
+          <Text
+            style={styles.postCaption}
+            numberOfLines={5}
+            ellipsizeMode="tail"
+          >{item.caption}</Text>
         </View>
-      )}
+
+        {!!staticTags.length && (
+          <View style={styles.tagRow}>
+            {staticTags.map((tag) => (
+              <View key={`${item.id}-${tag}`} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View> 
+        )}
+      </Pressable>
 
       {/* Post Actions */}
       <View style={styles.postActions}>
