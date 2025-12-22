@@ -100,7 +100,43 @@ router.get("/profile", authenticateToken, async (req, res) => {
       posts = [];
     }
     
-    const savedPosts = [];
+    //now do the same but for saved
+    let savedPosts = [];
+    try {
+      const postsSql2 = `
+        SELECT
+          p.fld_post_pk AS "postId",
+          p.fld_caption AS "caption",
+          (
+            SELECT pic.fld_post_pic
+            FROM posts.tbl_post_pic pic
+            WHERE pic.fld_post_fk = p.fld_post_pk
+            ORDER BY pic.fld_pic_id ASC
+            LIMIT 1
+          ) AS "previewKey"
+        FROM posts.tbl_post p
+          INNER JOIN posts.tbl_post_saves AS s
+            ON p.fld_post_pk = s.fld_post_fk
+        WHERE s.fld_user_fk = $1
+        ORDER BY p.fld_post_pk DESC
+      `;
+
+      const pr = await pool.query(postsSql2, [userPk]);
+
+      savedPosts = await Promise.all(
+        pr.rows.map(async (postRow) => {
+          const previewUrl = await signPostKeyIfPresent(postRow.previewKey);
+          return {
+            postId: postRow.postId,
+            caption: postRow.caption,
+            previewUrl, // full signed URL or null
+          };
+        })
+      );
+    } catch (err) {
+      console.error("GET /profile: error loading saved posts:", err);
+      savedPosts = [];
+    }
 
     return res.status(200).json({
       userID: row.userID,
@@ -263,9 +299,6 @@ router.get("/profile/:id", authenticateToken, async (req, res) => {
       console.log("GET /profile: error loading posts:", error);
       posts = [];
     }
-
-
-    console.log("fetched user")
 
     //return everything
     res.status(200).json({
