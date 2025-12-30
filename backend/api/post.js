@@ -525,4 +525,78 @@ router.delete("/delete-post-comment", authenticateToken, async(req, res) => {
   }
 })
 
+// ----------------------------- SINGLE POST -----------------------------
+
+router.get("/single-post", authenticateToken, async(req,res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  try {
+    //query to find all info EXCEPT tags
+    let query = `
+    SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
+      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
+        ON u.fld_user_pk = p.fld_creator
+        INNER JOIN posts.tbl_post_pic AS i
+          ON i.fld_post_fk = p.fld_post_pk
+      WHERE p.fld_post_pk = $1`
+  
+    //still called "return feed" even though there's only 1 post lol
+    returnFeed = await pool.query(query, [postID])
+
+    //find tags
+    let query2 = `
+    SELECT t.fld_tag_name
+    FROM posts.tbl_post AS p INNER JOIN posts.tbl_post_tag AS tp
+      ON tp.fld_post = p.fld_post_pk
+      INNER JOIN tags.tbl_tags AS t
+        ON t.fld_tags_pk = tp.fld_tag
+    WHERE p.fld_post_pk = $1`
+    returnFeed2 = await pool.query(query2, [postID]);
+    let tags = [];
+    for (let i = 0; i < returnFeed2.rowCount; i++) {
+      tags.push(returnFeed2.rows[i].fld_tag_name) 
+    }
+
+    //fetch profile picture from S3 if it exists
+    let avatarUrl = null;
+    if(returnFeed.rowCount > 0){
+    const row = returnFeed.rows[0];
+      if (row.fld_profile_pic) {
+        const key = row.fld_profile_pic.includes("/")
+          ? row.fld_profile_pic
+          : `avatars/${row.fld_profile_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.fld_profile_pic = avatarUrl;
+      }
+    }
+
+    //fetch post images (up to 5) from S3
+    let postPics = [];
+    let newVal;
+    for (let i = 0; i < returnFeed.rowCount; i++) {
+      const row = returnFeed.rows[i];
+      if (row.fld_post_pic) {
+        const key = row.fld_post_pic.includes("/")
+          ? row.fld_post_pic
+          : `posts/${row.fld_post_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        newVal = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        postPics.push(newVal);
+      }
+    }
+
+    //return data
+    res.status(200).json({postInfo: returnFeed.rows[0], postPics, currentUser, tags})
+
+  } catch (error) {
+      console.log("Error fetching posts: ", error)
+      res.status(500).json(error)
+  }
+
+})
+
 module.exports = router;
