@@ -21,17 +21,16 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
 
-
 type Post = {
   id: string;
   username: string;
   userID: string;
   profilePic: string | null;
-  postImage: string; //because we only load up the most recent image
+  postImage: string; // only most recent image
   postImageID: string;
   caption: string;
   datePosted: string;
-}
+};
 
 type BackendPost = {
   fld_post_pk: string;
@@ -44,196 +43,77 @@ type BackendPost = {
   fld_user_pk: string;
 };
 
-
 export default function ExplorePage() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+
   const [selectedFilter, setSelectedFilter] = useState("All");
   const filters = ["All", "Crochet", "Knit", "Misc"];
+
   const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
-  const insets = useSafeAreaInsets();
+
   const [areCommentsVisible, setAreCommentsVisible] = useState(false);
-  const router = useRouter();
   const currentPost = useRef<number | null>(null);
   const creatorID = useRef<number | null>(null);
 
-  //so we have responsive, and not statically-sized components for different screen sizes
-  //you can change these variables as needed
+  // responsive sizes
   const { width } = useWindowDimensions();
-  let avatarSize
-  let usernameSize
-  let imageHeight //for max height calculations
-  
+  let avatarSize: number;
+  let usernameSize: number;
+  let imageHeight: number;
+
   if (width >= 900) {
-    usernameSize = 18
-    avatarSize = 50
-    imageHeight = 700
-  }
-  else if (width >= 768) {
-    usernameSize = 17
-    avatarSize = 45
-    imageHeight = 600
-  }
-  else {
-    usernameSize = 15
-    avatarSize = 35
-    imageHeight = 300
+    usernameSize = 18;
+    avatarSize = 50;
+    imageHeight = 700;
+  } else if (width >= 768) {
+    usernameSize = 17;
+    avatarSize = 45;
+    imageHeight = 600;
+  } else {
+    usernameSize = 15;
+    avatarSize = 35;
+    imageHeight = 300;
   }
 
-  //limit -> change if we want
   const limit = 10;
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
   const hasMore = useRef(true);
+  const loadingMore = useRef(false);
 
-  //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [postData, setPostData] = useState<Post[]>([]);
   const posts: Post[] = useMemo(() => postData, [postData]);
-  const loadingMore = useRef<true | false>(false);
+
   const [refreshing, setRefreshing] = useState(false);
   const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
 
-  const renderPost = useCallback(({ item }: { item: Post }) => (
-    <View style={styles.postContainer}>
-        <TouchableOpacity style={styles.profileRow} onPress={() => router.push({
-            pathname: "/userProfile/[id]",
-            params: { id: item.userID }})}>
-          <Image style={styles.profilePic} 
-            source={ item?.profilePic ? {uri: item.profilePic} : require("@/assets/images/icons8-cat-profile-100.png")}/>
-          <Text style={styles.username}>
-            {item.username}
-          </Text>
-        </TouchableOpacity>
-
-      {/* make everything but the username area and the bottom buttons clickable */}
-      <Pressable onPress={() => router.push({
-            pathname: "/singlePost/[id]",
-            params: { id: item.id }})}>
-        <Image style={[styles.postImage,  {height: imageHeight}]} source={{uri: item.postImage}}/>
-
-        <View style={{marginVertical: 20, flexShrink: 1}}>
-          <Text
-            style={styles.postCaption}
-            numberOfLines={5}
-            ellipsizeMode="tail"
-          >{item.caption}</Text>
-        </View>
-
-        {!!staticTags.length && (
-          <View style={styles.tagRow}>
-            {staticTags.map((tag) => (
-              <View key={`${item.id}-${tag}`} style={styles.tagChip}>
-                <Text style={styles.tagText}>#{tag}</Text>
-              </View>
-            ))}
-          </View> 
-        )}
-      </Pressable>
-
-      {/* Post Actions */}
-      <View style={styles.postActions}>
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/heart.png")} />
-          <Text style={styles.postActionText}>Like</Text>
-        </View>
-
-        <View style={styles.postAction}>
-          <Pressable onPress={() => showComments(item)} style={{alignItems: "center"}}>
-            <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
-            <Text style={styles.postActionText}>Comment</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/tags.png")} />
-          <Text style={styles.postActionText}>Tags</Text>
-        </View>
-
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/saved.png")} />
-          <Text style={styles.postActionText}>Saved</Text>
-        </View>
-      </View>
-    </View>
-  ), [])
-
-  useEffect(() => {
-    if (selectedFilter === "All") { // pass all craft filters to backend
-      setCraftFilter(["Crochet", "Knit", "Misc"]);
-    } 
-    else { //pass specific craft to backend
-      setCraftFilter([selectedFilter]);
-    }
-  }, [selectedFilter]);
-
-  useEffect(() => {
-    if (!refreshing) {
-      handleRefresh();
-    }
-  }, [craftFilter])
-
-
-  const handleRefresh = async() => {
-    if (refreshing) {
-      return 
-    } 
-    else {
-      setRefreshing(true);
-      setPostData([]);
-      lastPostID.current = null;
-      lastTimeStamp.current = null;
-      hasMore.current = true;
-    }
-  }
-
-  // need to use useEffect to ensure previous data is flushed before fetching new data
-  useEffect(() => {
-    if (refreshing) {
-
-      const refreshNewData = async () => {
-        try {
-          await fetchData();
-        }
-        catch (e) {
-          console.log("error when refreshing data", e);
-        } 
-        finally {
-          setRefreshing(false);
-        }
-      }
-
-      refreshNewData();
-      
-    }
-  }, [refreshing])
+  const showComments = (item: Post) => {
+    currentPost.current = Number(item.id);
+    creatorID.current = Number(item.userID);
+    setAreCommentsVisible(true);
+  };
 
   const fetchData = async () => {
     const token = await Storage.getItem("token");
-    if (loadingMore.current || !hasMore.current) {
-      //if already loading more data or there is no more data in database then return
-      return;
-    }
 
+    if (loadingMore.current || !hasMore.current) return;
     loadingMore.current = true;
 
     try {
-      //load timestamp if exists
-      const includeBefore = lastTimeStamp.current
-        ? `&before=${lastTimeStamp.current}`
-        : "";
-
-      const includePostID = lastPostID.current
-        ? `&postID=${lastPostID.current}`
-        : "";
+      const includeBefore = lastTimeStamp.current ? `&before=${lastTimeStamp.current}` : "";
+      const includePostID = lastPostID.current ? `&postID=${lastPostID.current}` : "";
 
       let craftURL = ``;
-      craftFilter.forEach(element => {
-        let tempElement = element.replace(/"/g, '');
-        craftURL = craftURL + `&craft[]=${tempElement}`
+      craftFilter.forEach((element) => {
+        const tempElement = element.replace(/"/g, "");
+        craftURL += `&craft[]=${tempElement}`;
       });
 
-
-      const response = await fetch(`${API_URL}/api/post?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
+      const response = await fetch(
+        `${API_URL}/api/post?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
         {
           method: "GET",
           headers: {
@@ -242,54 +122,165 @@ export default function ExplorePage() {
           },
           credentials: "include",
         }
-      )
+      );
 
-      if (response.status == 404) {
-        alert("Woah! You hit a new category with no posts. Start posting now!")
+      if (response.status === 404) {
+        alert("Woah! You hit a new category with no posts. Start posting now!");
         return;
       }
 
-      else if (!response.ok) {
-        alert("Error during post fetch from backend. You're probably not logged in.")
-        router.replace("/")
+      if (!response.ok) {
+        alert("Error during post fetch from backend. You're probably not logged in.");
+        router.replace("/");
         return;
       }
 
       const responseData = await response.json();
 
-      let tempPostData: Post[] = responseData.newFeed.map(
-        (post: BackendPost) => ({
-          id: post.fld_post_pk,
-          username: post.fld_username,
-          userID: post.fld_user_pk,
-          profilePic: post.fld_profile_pic,
-          postImage: post.fld_post_pic,
-          postImageID: post.fld_pic_id,
-          caption: post.fld_caption,
-          datePosted: post.fld_timestamp,
-        })
-      )
-      
+      const tempPostData: Post[] = responseData.newFeed.map((post: BackendPost) => ({
+        id: post.fld_post_pk,
+        username: post.fld_username,
+        userID: post.fld_user_pk,
+        profilePic: post.fld_profile_pic,
+        postImage: post.fld_post_pic,
+        postImageID: post.fld_pic_id,
+        caption: post.fld_caption,
+        datePosted: post.fld_timestamp,
+      }));
+
       setPostData((prev) => [...prev, ...tempPostData]);
-      hasMore.current = (responseData.hasMore);
-      lastTimeStamp.current = tempPostData[tempPostData.length - 1].datePosted;
-      lastPostID.current = Number(tempPostData[tempPostData.length - 1].id);
-    }
-    catch(error) {
-      console.log("Error fetching posts: ", error)
-    }
-    finally {
-      // even if fetching data fails, we will update loading more
+
+      hasMore.current = responseData.hasMore;
+
+      if (tempPostData.length > 0) {
+        lastTimeStamp.current = tempPostData[tempPostData.length - 1].datePosted;
+        lastPostID.current = Number(tempPostData[tempPostData.length - 1].id);
+      }
+    } catch (error) {
+      console.log("Error fetching posts: ", error);
+    } finally {
       loadingMore.current = false;
     }
-  }
+  };
 
+  // filter -> craft array for backend
+  useEffect(() => {
+    if (selectedFilter === "All") setCraftFilter(["Crochet", "Knit", "Misc"]);
+    else setCraftFilter([selectedFilter]);
+  }, [selectedFilter]);
 
-  const showComments = (item: Post) => {
-    currentPost.current = Number(item.id);
-    creatorID.current = Number(item.userID);
-    setAreCommentsVisible(true);
-  }
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+
+    // reset pagination + data
+    setPostData([]);
+    lastPostID.current = null;
+    lastTimeStamp.current = null;
+    hasMore.current = true;
+  };
+
+  // when craft filter changes, refresh and refetch
+  useEffect(() => {
+    handleRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [craftFilter]);
+
+  // fetch after refresh flips true
+  useEffect(() => {
+    if (!refreshing) return;
+
+    const run = async () => {
+      try {
+        await fetchData();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshing]);
+
+  const renderPost = useCallback(
+    ({ item }: { item: Post }) => (
+      <View style={styles.postContainer}>
+        <TouchableOpacity
+          style={styles.profileRow}
+          onPress={() =>
+            router.push({
+              pathname: "/userProfile/[id]",
+              params: { id: item.userID },
+            })
+          }
+        >
+          <Image
+            style={styles.profilePic}
+            source={
+              item?.profilePic
+                ? { uri: item.profilePic }
+                : require("@/assets/images/icons8-cat-profile-100.png")
+            }
+          />
+          <Text style={styles.username}>{item.username}</Text>
+        </TouchableOpacity>
+
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/singlePost/[id]",
+              params: { id: item.id },
+            })
+          }
+        >
+          <Image style={[styles.postImage, { height: imageHeight }]} source={{ uri: item.postImage }} />
+
+          <View style={{ marginVertical: 20, flexShrink: 1 }}>
+            <Text style={styles.postCaption} numberOfLines={5} ellipsizeMode="tail">
+              {item.caption}
+            </Text>
+          </View>
+
+          {!!staticTags.length && (
+            <View style={styles.tagRow}>
+              {staticTags.map((tag) => (
+                <View key={`${item.id}-${tag}`} style={styles.tagChip}>
+                  <Text style={styles.tagText}>#{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </Pressable>
+
+        <View style={styles.postActions}>
+          <View style={styles.postAction}>
+            <Image style={[styles.actionIcon, { tintColor: colors.text }]} source={require("../assets/images/heart.png")} />
+            <Text style={styles.postActionText}>Like</Text>
+          </View>
+
+          <View style={styles.postAction}>
+            <Pressable onPress={() => showComments(item)} style={{ alignItems: "center" }}>
+              <Image style={[styles.actionIcon, { tintColor: colors.text }]} source={require("../assets/images/comment.png")} />
+              <Text style={styles.postActionText}>Comment</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.postAction}>
+            <Image style={[styles.actionIcon, { tintColor: colors.text }]} source={require("../assets/images/tags.png")} />
+            <Text style={styles.postActionText}>Tags</Text>
+          </View>
+
+          <View style={styles.postAction}>
+            <Image style={[styles.actionIcon, { tintColor: colors.text }]} source={require("../assets/images/saved.png")} />
+            <Text style={styles.postActionText}>Saved</Text>
+          </View>
+        </View>
+      </View>
+    ),
+    [colors.text, imageHeight, router, staticTags]
+  );
 
   const styles = StyleSheet.create({
     container: {
@@ -310,7 +301,6 @@ export default function ExplorePage() {
       borderWidth: 1,
       borderRadius: 8,
       paddingHorizontal: 10,
-      marginHorizontal: 20,
       borderColor: colors.exploreFilterSelected,
       backgroundColor: "#FFFFFF",
       color: "#000000",
@@ -373,9 +363,8 @@ export default function ExplorePage() {
     },
     postCaption: {
       fontSize: 14,
-      //fontWeight: "bold",
       color: colors.text,
-      flexShrink: 1, 
+      flexShrink: 1,
     },
     postActions: {
       flexDirection: "row",
@@ -420,97 +409,83 @@ export default function ExplorePage() {
 
   return (
     <>
-      {/* ✅ Disable transition animation for Explore only */}
-      <Stack.Screen
-        options={{
-          headerShown: false,
-          animation: "none", // disables slide-in animation
-        }}
-      />
-
       <View style={styles.container}>
-        <GestureHandlerRootView>
+        <GestureHandlerRootView style={{ flex: 1 }}>
           <Text style={styles.pageTitle}>Explore</Text>
 
-          {/* Search Bar */}
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search"
-            placeholderTextColor="#666"
-          />
+          <Pressable onPress={() => router.push("/exploreSearch")} style={{ marginHorizontal: 20 }}>
+            <View pointerEvents="none">
+              <TextInput
+                style={styles.searchBar}
+                placeholder="Search username or tags"
+                placeholderTextColor="#666"
+                editable={false}
+              />
+            </View>
+          </Pressable>
 
-          {/* Filter Buttons */}
           <View style={styles.filterContainer}>
             {filters.map((filterOption) => (
               <Pressable
                 key={filterOption}
                 onPress={() => setSelectedFilter(filterOption)}
-                style={[
-                  styles.filterTag,
-                  selectedFilter === filterOption && styles.filterTagSelected,
-                ]}
+                style={[styles.filterTag, selectedFilter === filterOption && styles.filterTagSelected]}
               >
-                <Text
-                  style={[
-                    styles.filterText,
-                    selectedFilter === filterOption &&
-                      styles.filterTextSelected,
-                  ]}
-                >
+                <Text style={[styles.filterText, selectedFilter === filterOption && styles.filterTextSelected]}>
                   {filterOption}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-            <FlatList
-              data={posts}
-              renderItem={renderPost}
-              keyExtractor={item => item.id}
-              onEndReached={fetchData}
-              onEndReachedThreshold={0.2}
-              ListEmptyComponent={() => {
-                if (loadingMore.current) {
-                  return <ActivityIndicator size="small" color={colors.text}/>
-                } 
-                else {
-                  return (
-                    <View style={{paddingVertical: 40}}>
-                      <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No Recent Posts </Text>
-                    </View>
-                  )
-                }
-              }}
-              ListFooterComponent={() => {
-                if (posts.length > 0) {
-                  if (!hasMore.current) {
-                    return (
-                      <View style={{paddingBottom: 150}}>
-                        <Text style={{ color: colors.text }}> No More Data To Load </Text>
-                      </View>
-                    )
-                  } else {
-                    return (
-                      <View style={{paddingBottom: 150}}>
-                        <ActivityIndicator size="small" color={colors.text} />
-                      </View>
-                    );
-                  }
-                }
-              }}
-              ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            onEndReached={fetchData}
+            onEndReachedThreshold={0.2}
+            ListEmptyComponent={() => {
+              if (loadingMore.current) return <ActivityIndicator size="small" color={colors.text} />;
+              return (
+                <View style={{ paddingVertical: 40 }}>
+                  <Text style={{ color: colors.settingsText, fontWeight: "bold", textAlign: "center" }}>
+                    No Recent Posts
+                  </Text>
+                </View>
+              );
+            }}
+            ListFooterComponent={() => {
+              if (posts.length === 0) return <View style={{ height: 160 }} />;
+              if (!hasMore.current) {
+                return (
+                  <View style={{ paddingBottom: 150, alignItems: "center", marginTop: 15 }}>
+                    <Text style={{ color: colors.text }}>No More Data To Load</Text>
+                  </View>
+                );
               }
-            />
+              return (
+                <View style={{ paddingBottom: 150, alignItems: "center", marginTop: 15 }}>
+                  <ActivityIndicator size="small" color={colors.text} />
+                </View>
+              );
+            }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          />
         </GestureHandlerRootView>
 
-        {/* FIXME: update the following modal values once explore implementation has been merged */}
-        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
+        <ExploreCommentsModal
+          isVisible={areCommentsVisible}
+          onClose={() => {
+            setAreCommentsVisible(false);
+            currentPost.current = null;
+            creatorID.current = null;
+          }}
+          currentPost={currentPost.current}
+          postCreator={creatorID.current}
+        />
 
         <BottomNavButton />
       </View>
     </>
   );
 }
-
