@@ -267,7 +267,9 @@ router.get("/post", authenticateToken, async (req, res) => {
     //selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
     if (req.query.before === "undefined" || !req.query.before) {
       query = `
-      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
+      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+        CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+        CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
       FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
         ON u.fld_user_pk = p.fld_creator
         INNER JOIN posts.tbl_post_pic AS i
@@ -276,6 +278,12 @@ router.get("/post", authenticateToken, async (req, res) => {
             ON tp.fld_post = p.fld_post_pk
             INNER JOIN tags.tbl_tags AS t
               ON t.fld_tags_pk = tp.fld_tag
+              LEFT JOIN posts.tbl_post_likes AS pl
+                ON pl.fld_post_fk = p.fld_post_pk
+                AND pl.fld_user_fk = $2
+              LEFT JOIN posts.tbl_post_saves AS ps
+                ON ps.fld_post_fk = p.fld_post_pk
+                AND ps.fld_user_fk = $2
       WHERE p.fld_is_public = true AND t.fld_tag_name = ANY($1) AND u.fld_user_pk <> $2
       ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
       LIMIT ($3 + 1);
@@ -294,7 +302,9 @@ router.get("/post", authenticateToken, async (req, res) => {
       //mad lad query right here
       //also selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
       query = `
-      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
+      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+        CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+        CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
       FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
         ON u.fld_user_pk = p.fld_creator
         INNER JOIN posts.tbl_post_pic AS i
@@ -303,6 +313,12 @@ router.get("/post", authenticateToken, async (req, res) => {
             ON tp.fld_post = p.fld_post_pk
             INNER JOIN tags.tbl_tags AS t
               ON t.fld_tags_pk = tp.fld_tag
+              LEFT JOIN posts.tbl_post_likes AS pl
+                ON pl.fld_post_fk = p.fld_post_pk
+                AND pl.fld_user_fk = $4
+              LEFT JOIN posts.tbl_post_saves AS ps
+                ON ps.fld_post_fk = p.fld_post_pk
+                AND ps.fld_user_fk = $4
       WHERE p.fld_is_public = true AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2) AND t.fld_tag_name = ANY($3) AND u.fld_user_pk <> $4
       ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
       LIMIT ($5 + 1);
@@ -534,15 +550,23 @@ router.get("/single-post", authenticateToken, async(req,res) => {
   try {
     //query to find all info EXCEPT tags
     let query = `
-    SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic
+    SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+      CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+      CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
       FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
         ON u.fld_user_pk = p.fld_creator
         INNER JOIN posts.tbl_post_pic AS i
           ON i.fld_post_fk = p.fld_post_pk
+        LEFT JOIN posts.tbl_post_likes AS pl
+          ON pl.fld_post_fk = p.fld_post_pk
+          AND pl.fld_user_fk = $2
+        LEFT JOIN posts.tbl_post_saves AS ps
+          ON ps.fld_post_fk = p.fld_post_pk
+          AND ps.fld_user_fk = $2
       WHERE p.fld_post_pk = $1`
   
     //still called "return feed" even though there's only 1 post lol
-    returnFeed = await pool.query(query, [postID])
+    returnFeed = await pool.query(query, [postID, currentUser])
 
     //find tags
     let query2 = `
@@ -598,5 +622,97 @@ router.get("/single-post", authenticateToken, async(req,res) => {
   }
 
 })
+
+// ----------------------------- POST LIKES -----------------------------
+
+router.post("/toggle_like", authenticateToken, async (req, res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  if (!postID) {
+    return res.status(400).json({ message: "Missing post id" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      WITH deleted AS (
+        DELETE FROM posts.tbl_post_likes
+        WHERE fld_post_fk = $1 AND fld_user_fk = $2
+        RETURNING 1
+      )
+      INSERT INTO posts.tbl_post_likes (fld_post_fk, fld_user_fk, fld_time_saved)
+      SELECT $1, $2, NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM deleted)
+      RETURNING fld_post_fk
+      `,
+      [postID, currentUser]
+    );
+
+    const liked = result.rowCount > 0;
+    res.status(200).json({ liked });
+  } catch (e) {
+    console.log("Error toggling like: ", e);
+    res.status(500).json({ message: "Could not toggle like" });
+  }
+});
+
+router.post("/toggle_save", authenticateToken, async (req, res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  if (!postID) {
+    return res.status(400).json({ message: "Missing post id" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      WITH deleted AS (
+        DELETE FROM posts.tbl_post_saves
+        WHERE fld_post_fk = $1 AND fld_user_fk = $2
+        RETURNING 1
+      )
+      INSERT INTO posts.tbl_post_saves (fld_post_fk, fld_user_fk, fld_time_saved)
+      SELECT $1, $2, NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM deleted)
+      RETURNING fld_post_fk
+      `,
+      [postID, currentUser]
+    );
+
+    const saved = result.rowCount > 0;
+    res.status(200).json({ saved });
+  } catch (e) {
+    console.log("Error toggling save: ", e);
+    res.status(500).json({ message: "Could not toggle save" });
+  }
+});
+
+router.get("/check_if_liked", authenticateToken, async (req, res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  if (!postID) {
+    return res.status(400).json({ message: "Missing post id" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT EXISTS (
+        SELECT 1
+        FROM posts.tbl_post_likes
+        WHERE fld_post_fk = $1 AND fld_user_fk = $2
+      ) AS liked
+      `,
+      [postID, currentUser]
+    );
+    res.status(200).json({ liked: result.rows[0].liked });
+  } catch (e) {
+    console.log("Error checking post like: ", e);
+    res.status(500).json({ message: "Could not check like status" });
+  }
+});
 
 module.exports = router;

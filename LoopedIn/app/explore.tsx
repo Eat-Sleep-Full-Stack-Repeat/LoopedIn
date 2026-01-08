@@ -31,6 +31,8 @@ type Post = {
   postImageID: string;
   caption: string;
   datePosted: string;
+  isLiked: boolean;
+  isSaved: boolean;
 }
 
 type BackendPost = {
@@ -42,6 +44,8 @@ type BackendPost = {
   fld_username: string;
   fld_timestamp: string;
   fld_user_pk: string;
+  fld_is_liked: boolean;
+  fld_is_saved: boolean;
 };
 
 
@@ -92,70 +96,103 @@ export default function ExplorePage() {
   const loadingMore = useRef<true | false>(false);
   const [refreshing, setRefreshing] = useState(false);
   const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
+  const likingIds = useRef<Set<string>>(new Set());
+  const savingIds = useRef<Set<string>>(new Set());
 
-  const renderPost = useCallback(({ item }: { item: Post }) => (
-    <View style={styles.postContainer}>
-        <TouchableOpacity style={styles.profileRow} onPress={() => router.push({
-            pathname: "/userProfile/[id]",
-            params: { id: item.userID }})}>
-          <Image style={styles.profilePic} 
-            source={ item?.profilePic ? {uri: item.profilePic} : require("@/assets/images/icons8-cat-profile-100.png")}/>
-          <Text style={styles.username}>
-            {item.username}
-          </Text>
-        </TouchableOpacity>
+  const updateLikeInState = useCallback((postId: string, isLiked: boolean) => {
+    setPostData((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, isLiked } : post))
+    );
+  }, []);
 
-      {/* make everything but the username area and the bottom buttons clickable */}
-      <Pressable onPress={() => router.push({
-            pathname: "/singlePost/[id]",
-            params: { id: item.id }})}>
-        <Image style={[styles.postImage,  {height: imageHeight}]} source={{uri: item.postImage}}/>
+  const updateSaveInState = useCallback((postId: string, isSaved: boolean) => {
+    setPostData((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, isSaved } : post))
+    );
+  }, []);
 
-        <View style={{marginVertical: 20, flexShrink: 1}}>
-          <Text
-            style={styles.postCaption}
-            numberOfLines={5}
-            ellipsizeMode="tail"
-          >{item.caption}</Text>
-        </View>
+  const handleLikePress = useCallback(async (item: Post) => {
+    if (likingIds.current.has(item.id)) {
+      return;
+    }
 
-        {!!staticTags.length && (
-          <View style={styles.tagRow}>
-            {staticTags.map((tag) => (
-              <View key={`${item.id}-${tag}`} style={styles.tagChip}>
-                <Text style={styles.tagText}>#{tag}</Text>
-              </View>
-            ))}
-          </View> 
-        )}
-      </Pressable>
+    likingIds.current.add(item.id);
+    const original = item.isLiked;
+    updateLikeInState(item.id, !original);
 
-      {/* Post Actions */}
-      <View style={styles.postActions}>
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/heart.png")} />
-          <Text style={styles.postActionText}>Like</Text>
-        </View>
+    try {
+      const token = await Storage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/api/toggle_like?id=${item.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
 
-        <View style={styles.postAction}>
-          <Pressable onPress={() => showComments(item)} style={{alignItems: "center"}}>
-            <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
-            <Text style={styles.postActionText}>Comment</Text>
-          </Pressable>
-        </View>
+      if (!res.ok) {
+        updateLikeInState(item.id, original);
+        alert("Failed to update like. Please try again.");
+        console.log("toggle_like status", res.status);
+        return;
+      }
 
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/tags.png")} />
-          <Text style={styles.postActionText}>Tags</Text>
-        </View>
+      const data = await res.json();
+      if (typeof data?.liked === "boolean") {
+        updateLikeInState(item.id, data.liked);
+      }
+    } catch (e) {
+      console.log("Error updating like: ", e);
+      updateLikeInState(item.id, original);
+    } finally {
+      likingIds.current.delete(item.id);
+    }
+  }, [updateLikeInState]);
 
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/saved.png")} />
-          <Text style={styles.postActionText}>Saved</Text>
-        </View>
-      </View>
-    </View>
-  ), [])
+  const handleSavePress = useCallback(async (item: Post) => {
+    if (savingIds.current.has(item.id)) {
+      return;
+    }
+
+    savingIds.current.add(item.id);
+    const original = item.isSaved;
+    updateSaveInState(item.id, !original);
+
+    try {
+      const token = await Storage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/api/toggle_save?id=${item.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        updateSaveInState(item.id, original);
+        alert("Failed to update save. Please try again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (typeof data?.saved === "boolean") {
+        updateSaveInState(item.id, data.saved);
+      }
+    } catch (e) {
+      console.log("Error updating save: ", e);
+      updateSaveInState(item.id, original);
+    } finally {
+      savingIds.current.delete(item.id);
+    }
+  }, [updateSaveInState]);
 
   useEffect(() => {
     if (selectedFilter === "All") { // pass all craft filters to backend
@@ -267,6 +304,8 @@ export default function ExplorePage() {
           postImageID: post.fld_pic_id,
           caption: post.fld_caption,
           datePosted: post.fld_timestamp,
+          isLiked: !!post.fld_is_liked,
+          isSaved: !!post.fld_is_saved,
         })
       )
       
@@ -417,6 +456,89 @@ export default function ExplorePage() {
       color: colors.text,
     },
   });
+
+  const renderPost = useCallback(({ item }: { item: Post }) => (
+    <View style={styles.postContainer}>
+        <TouchableOpacity style={styles.profileRow} onPress={() => router.push({
+            pathname: "/userProfile/[id]",
+            params: { id: item.userID }})}>
+          <Image style={styles.profilePic} 
+            source={ item?.profilePic ? {uri: item.profilePic} : require("@/assets/images/icons8-cat-profile-100.png")}/>
+          <Text style={styles.username}>
+            {item.username}
+          </Text>
+        </TouchableOpacity>
+
+      {/* make everything but the username area and the bottom buttons clickable */}
+      <Pressable onPress={() => router.push({
+            pathname: "/singlePost/[id]",
+            params: { id: item.id }})}>
+        <Image style={[styles.postImage,  {height: imageHeight}]} source={{uri: item.postImage}}/>
+
+        <View style={{marginVertical: 20, flexShrink: 1}}>
+          <Text
+            style={styles.postCaption}
+            numberOfLines={5}
+            ellipsizeMode="tail"
+          >{item.caption}</Text>
+        </View>
+
+        {!!staticTags.length && (
+          <View style={styles.tagRow}>
+            {staticTags.map((tag) => (
+              <View key={`${item.id}-${tag}`} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View> 
+        )}
+      </Pressable>
+
+      {/* Post Actions */}
+      <View style={styles.postActions}>
+        <Pressable style={styles.postAction} onPress={() => handleLikePress(item)}>
+          <Image
+            style={[styles.actionIcon, { tintColor: item.isLiked ? "#E57373" : colors.text }]}
+            source={require("../assets/images/heart.png")}
+          />
+          <Text style={styles.postActionText}>{item.isLiked ? "Liked" : "Like"}</Text>
+        </Pressable>
+
+        <View style={styles.postAction}>
+          <Pressable onPress={() => showComments(item)} style={{alignItems: "center"}}>
+            <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
+            <Text style={styles.postActionText}>Comment</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.postAction}>
+          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/tags.png")} />
+          <Text style={styles.postActionText}>Tags</Text>
+        </View>
+
+        <Pressable style={styles.postAction} onPress={() => handleSavePress(item)}>
+          <Image
+            style={[
+              styles.actionIcon,
+              { tintColor: item.isSaved ? colors.exploreFilterSelected : colors.text },
+            ]}
+            source={require("../assets/images/saved.png")}
+          />
+          <Text style={styles.postActionText}>{item.isSaved ? "Saved" : "Save"}</Text>
+        </Pressable>
+      </View>
+    </View>
+  ), [
+    colors.exploreFilterSelected,
+    colors.text,
+    handleLikePress,
+    handleSavePress,
+    imageHeight,
+    router,
+    showComments,
+    staticTags,
+    styles,
+  ]);
 
   return (
     <>
