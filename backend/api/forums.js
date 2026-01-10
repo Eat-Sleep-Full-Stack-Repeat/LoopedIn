@@ -1294,4 +1294,89 @@ router.post("/search", authenticateToken, async (req, res) => {
   }
 });
 
+
+//for fetching my-post feed
+router.get("/my-forum-posts", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim()
+    const limit = req.query.limit
+    let more_posts = true
+    let returnFeed
+
+    //if not fetched before -> similar to forums and post feed
+    if (req.query.before === "undefined" || !req.query.before) {
+      query = `
+      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ), JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tag_data
+      FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
+        ON u.fld_user_pk = f.fld_creator
+        INNER JOIN forums.tbl_forum_tag AS ft
+          ON ft.fld_post = f.fld_post_pk
+          INNER JOIN tags.tbl_tags AS t
+            ON t.fld_tags_pk = ft.fld_tag
+      WHERE u.fld_user_pk = $1 AND t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')
+      GROUP BY f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, u.fld_user_pk, u.fld_username, u.fld_profile_pic
+      ORDER BY f.fld_timestamp DESC
+      LIMIT ($2 + 1);`
+
+      returnFeed = await pool.query(query, [curr_user, limit])
+
+      if (returnFeed.rowCount === 0) {
+        console.log("[forums]: no posts in my post feed")
+        res.status(404).json({message: "No posts. Start creating posts"})
+        return
+      }
+
+    }
+    else { //if fetched before
+      query = `
+      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ), JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor',t.fld_tag_color)) AS tag_data
+      FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
+        ON u.fld_user_pk = f.fld_creator
+        INNER JOIN forums.tbl_forum_tag AS ft
+          ON ft.fld_post = f.fld_post_pk
+          INNER JOIN tags.tbl_tags AS t
+            ON t.fld_tags_pk = ft.fld_tag
+      WHERE u.fld_user_pk = $1 AND (f.fld_timestamp, f.fld_post_pk) < ($2, $3) AND t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')
+      GROUP BY f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, u.fld_user_pk, u.fld_username, u.fld_profile_pic
+      ORDER BY f.fld_timestamp DESC
+      LIMIT ($4 + 1);`
+
+      returnFeed = await pool.query(query, [curr_user, req.query.before, req.query.postID, limit])
+
+    }
+
+    //if feed is below or reaches limit, all posts have been fetched
+    if (returnFeed.rowCount <= limit) {
+      more_posts = false
+    }
+
+    
+    //fetch profile picture from S3 if it exists
+    let avatarUrl = null;
+    for (let i = 0; i < returnFeed.rowCount; i++) {
+      const row = returnFeed.rows[i];
+      if (row.fld_profile_pic) {
+        const key = row.fld_profile_pic.includes("/")
+          ? row.fld_profile_pic
+          : `avatars/${row.fld_profile_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.fld_profile_pic = avatarUrl;
+      }
+    }
+
+    console.log("[forums]: fetched current-user posts")
+    res.status(200).json({hasMore: more_posts, newFeed: returnFeed.rows.slice(0, limit)})
+
+  }
+  catch(error) {
+    console.log("Error fetching my forum posts: ", error)
+    res.status(500).json(error)
+  }
+})
+
+
+//fetching data for the edit post UI
+
 module.exports = router;

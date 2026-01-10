@@ -628,7 +628,9 @@ export default function ExplorePage() {
         </GestureHandlerRootView>
 
         {/* FIXME: update the following modal values once explore implementation has been merged */}
-        <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
+        {/*only render if comments are visible -> gets rid of double error popup for explore page if user is not logged in*/}
+        {( areCommentsVisible ? (<ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
+        ) : null)}
 
         <BottomNavButton />
       </View>

@@ -311,7 +311,7 @@ export default function SinglePost() {
                 {post.username}
               </Text>
               <Text style={[styles.date, { color: colors.text }]}>
-                {post.datePosted}
+                {new Date(post.datePosted).toDateString()}
               </Text>
             </View>
             </Pressable>
