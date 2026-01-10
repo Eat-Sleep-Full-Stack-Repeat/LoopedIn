@@ -90,14 +90,65 @@ export default function MyPosts() {
   const handleEdit = () => {
     if (selectedPostId === null) return;
     setMenuVisible(false);
-    router.push("/editforum");
+    router.push({
+      pathname: "/editforum/[id]",
+      params: {id: selectedPostId}
+    });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedPostId !== null) {
       setMenuVisible(false);
       console.log(`Deleting post ID: ${selectedPostId}`);
       // future delete logic here
+
+      //check token
+      const token = await Storage.getItem("token");
+
+      //login check to reduce unnecessary fetches
+      if (!token) {
+        alert("Hold on there... you need to login first!")
+        router.replace("/login")
+        return
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/forum/forum_post/${selectedPostId}`,
+          {
+            method: "DELETE",
+            headers : {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        )
+
+        if (response.status === 403) {
+          alert("Forbidden: You do not have permission to edit this post.")
+          return
+        }
+        
+        else if (response.status === 404) {
+          alert("Cannot delete: forum post does not exist")
+        }
+
+        else if (!response.ok) {
+          alert("Server error occured. Please try again later.")
+          router.back()
+          return
+        }
+
+        alert("Forum post successfully deleted!")
+
+        //for refreshing
+        router.replace("/myposts")
+
+      }
+      catch(error) {
+        alert("Server error. Please try again later.")
+        console.log("Error editing post:", error)
+      }
     }
   };
 
@@ -249,7 +300,9 @@ export default function MyPosts() {
       <Text style={[styles.postTitle, { color: colors.text }]}>
         {item.header}
       </Text>
-      <Text style={[styles.content, { color: colors.text }]}>
+      <Text style={[styles.content, { color: colors.text }]}
+            numberOfLines={2}
+            ellipsizeMode="tail">
         {item.body}
       </Text>
         {!!item.tag_data.length && (

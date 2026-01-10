@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Image,
   ImageSourcePropType,
@@ -14,7 +14,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { useRouter } from "expo-router";
+import API_URL from "@/utils/config";
+import { Storage } from "@/utils/storage";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
 type CraftOption = {
   id: string;
@@ -29,21 +31,31 @@ type Attachment = {
   thumbnail?: ImageSourcePropType;
 };
 
+
+type ForumPost = {
+  id: string;
+  header: string;
+  body: string;
+  picture: string;
+  craftID: string;
+  craftType: string;
+};
+
 const craftOptions: CraftOption[] = [
   {
     id: "Crochet",
     label: "Crochet",
-    icon: require("../assets/images/chrocheticon.png"),
+    icon: require("@/assets/images/chrocheticon.png"),
   },
   {
     id: "Knit",
     label: "Knit",
-    icon: require("../assets/images/kniticon.png"),
+    icon: require("@/assets/images/kniticon.png"),
   },
   {
     id: "Misc",
     label: "Misc",
-    icon: require("../assets/images/paw-icon.png"),
+    icon: require("@/assets/images/paw-icon.png"),
   },
 ];
 
@@ -57,8 +69,149 @@ export default function EditForum() {
   const [postContent, setPostContent] = useState<string>("");
   const [lockedCraftId, setLockedCraftId] = useState<string | null>(null);
   const [attachments] = useState<Attachment[]>([]);
+
+  const [forumData, setForumData] = useState<ForumPost | null>(null)
+
+  //lock after saved changes
+  const [savedChanges, setSavedChanges] = useState(false);
   const lockedCraft =
     craftOptions.find((option) => option.id === lockedCraftId) || null;
+
+
+  const { id } = useLocalSearchParams();
+
+  const fetchData = async () => {
+    //check token
+    const token = await Storage.getItem("token");
+
+    //login check to reduce unnecessary fetches
+    if (!token) {
+      alert("Hold on there... you need to login first!")
+      router.replace("/login")
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/forum/my-forum-posts/${id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      )
+
+      //if editing post that doesn't exist or someone doesn't have access to edit
+      if (response.status == 404) {
+        alert("This forum post doesn't exist")
+        return;
+      }
+
+      //expired token not taken away from storage or overall not allowed to access resource
+      else if (response.status == 403) {
+        alert("Hold on there... you need to login first!")
+        router.replace("/login")
+        return
+      }
+
+      else if (!response.ok) {
+        alert("Server error occured. Please try again later.")
+        router.back()
+        return;
+      }
+
+      const responseData = await response.json();
+
+      let tempPostData: ForumPost = {
+        id: responseData.fld_post_pk,
+        header: responseData.fld_header,
+        body: responseData.fld_body,
+        picture: responseData.fld_pic,
+        craftID: responseData.fld_tags_pk,
+        craftType: responseData.fld_tag_name
+      }
+
+      setForumData(tempPostData)
+      setPostTitle(tempPostData.header)
+      setPostContent(tempPostData.body)
+      setLockedCraftId(tempPostData.craftType)
+    
+    }
+    catch(error) {
+      console.log("Error fetching posts: ", error)
+      alert("Server error. Please try again later.")
+      router.back()
+    }
+  }
+
+
+  const editForum = async () => {
+    //check token
+    const token = await Storage.getItem("token");
+
+    //login check to reduce unnecessary fetches
+    if (!token) {
+      alert("Hold on there... you need to login first!")
+      router.replace("/login")
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/forum/forum_post/${id}`,
+        {
+          method: "PATCH",
+          headers : {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            header: postTitle,
+            body: postContent,
+          }),
+          credentials: "include",
+        }
+      )
+
+      if (response.status === 403) {
+        alert("Forbidden: You do not have permission to edit this post.")
+        return
+      }
+
+      else if (!response.ok) {
+        alert("Server error occured. Please try again later.")
+        router.back()
+        return
+      }
+
+      setSavedChanges(true)
+
+      alert("Forum post successfully saved!")
+
+    }
+    catch(error) {
+      alert("Server error. Please try again later.")
+      console.log("Error editing post:", error)
+
+    }
+  }
+
+
+  //saved changes button handler
+  const saveChangedHandler = () => {
+    setSavedChanges(true)
+    //api endpoint call
+    editForum()
+
+    router.replace("/myposts")
+  }
+
+
+  useEffect(() => {
+    fetchData()
+    console.log("Edit forum data fetched")
+  }, [id])
 
   const styles = StyleSheet.create({
     keyboardAvoider: {
@@ -307,7 +460,7 @@ export default function EditForum() {
           )}
         </View>
 
-        <Pressable style={styles.saveButton} disabled>
+        <Pressable style={styles.saveButton} disabled={savedChanges} onPress={saveChangedHandler}>
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </Pressable>
       </ScrollView>

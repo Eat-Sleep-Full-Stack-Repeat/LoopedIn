@@ -1026,7 +1026,7 @@ router.delete("/forum_post/:forumID", authenticateToken, async (req, res) => {
       //will wait to delete forum image later if we have issues deleting post but not image
       query = `
       UPDATE forums.tbl_forum_post
-      SET fld_header = $1, fld_body = $2, fld_pic = NULL, fld_edited = FALSE
+      SET fld_header = $1, fld_body = $2, fld_pic = NULL, fld_deleted = TRUE
       WHERE fld_post_pk = $3
       RETURNING *;
       `
@@ -1306,14 +1306,16 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
     //if not fetched before -> similar to forums and post feed
     if (req.query.before === "undefined" || !req.query.before) {
       query = `
-      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ), JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tag_data
+      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color))
+      FILTER (WHERE t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
         ON u.fld_user_pk = f.fld_creator
         INNER JOIN forums.tbl_forum_tag AS ft
           ON ft.fld_post = f.fld_post_pk
           INNER JOIN tags.tbl_tags AS t
             ON t.fld_tags_pk = ft.fld_tag
-      WHERE u.fld_user_pk = $1 AND t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')
+      WHERE u.fld_user_pk = $1 AND fld_deleted = FALSE
       GROUP BY f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, u.fld_user_pk, u.fld_username, u.fld_profile_pic
       ORDER BY f.fld_timestamp DESC
       LIMIT ($2 + 1);`
@@ -1327,16 +1329,17 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
       }
 
     }
-    else { //if fetched before
+    else { //if fetched before -> very hienous query
       query = `
-      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ), JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor',t.fld_tag_color)) AS tag_data
-      FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
+      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color))
+      FILTER (WHERE t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')), '[]'::jsonb) AS tag_data
         ON u.fld_user_pk = f.fld_creator
         INNER JOIN forums.tbl_forum_tag AS ft
           ON ft.fld_post = f.fld_post_pk
           INNER JOIN tags.tbl_tags AS t
             ON t.fld_tags_pk = ft.fld_tag
-      WHERE u.fld_user_pk = $1 AND (f.fld_timestamp, f.fld_post_pk) < ($2, $3) AND t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')
+      WHERE u.fld_user_pk = $1 AND (f.fld_timestamp, f.fld_post_pk) < ($2, $3) AND fld_deleted = FALSE
       GROUP BY f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, u.fld_user_pk, u.fld_username, u.fld_profile_pic
       ORDER BY f.fld_timestamp DESC
       LIMIT ($4 + 1);`
@@ -1378,5 +1381,39 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
 
 
 //fetching data for the edit post UI
+router.get("/my-forum-posts/:forumID", authenticateToken, async(req, res) => {
+  try {
+    const { forumID } = req.params
+    const curr_user = req.userID.trim()
+
+    //fetch post
+    query = `
+    SELECT f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, t.fld_tags_pk, t.fld_tag_name
+    FROM forums.tbl_forum_post AS f INNER JOIN forums.tbl_forum_tag AS ft
+      ON ft.fld_post = f.fld_post_pk
+      INNER JOIN tags.tbl_tags AS t
+        ON t.fld_tags_pk = ft.fld_tag
+    WHERE f.fld_creator = $1 AND f.fld_post_pk = $2 AND t.fld_tag_name IN ('Knit', 'Crochet', 'Misc');`
+
+    const fetchedPost = await pool.query(query, [curr_user, forumID])
+
+    if (fetchedPost.rowCount === 0) {
+      console.log("[forums]: post you're trying to edit does not exist")
+      res.status(404).json({message: "Post does not exist"})
+      return
+    }
+
+    //FIXME: add attachment fetcher once we implement image upload for forum posts
+
+    console.log("[forums]: found desired post to edit")
+    res.status(200).json(fetchedPost.rows[0])
+
+  }
+  catch(error) {
+    console.log("Error loading edit forum overlay:", error)
+    res.status(500).json(error)
+  }
+})
+
 
 module.exports = router;
