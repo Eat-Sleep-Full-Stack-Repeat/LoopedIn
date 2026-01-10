@@ -389,11 +389,18 @@ export default function MyPosts() {
             ListEmptyComponent={() => {
               if (loadingMore.current) {
                 return <ActivityIndicator size="small" color={colors.text}/>
+              }
+              else if (noPosts) {
+                return (
+                  <View style={{paddingVertical: 10}}>
+                    <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No posts to see here... create a forum post now! </Text>
+                  </View>
+                )
               } 
               else {
                 return (
                   <View style={{paddingVertical: 10}}>
-                    <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No posts to see here... create a forum post now! </Text>
+                    <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> Loading... </Text>
                   </View>
                 )
               }
