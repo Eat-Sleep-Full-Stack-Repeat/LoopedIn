@@ -138,7 +138,10 @@ export default function Newformpost() {
       
       console.log("Post created successfully!");
       Alert.alert("Yippee!", "Your forum post has been created.");
-      router.back();
+
+      //so that users can see that their post was indeed, posted
+      //also helps refresh the mypost screen for most recent data
+      router.replace("/myposts");
 
     }
     catch(error) {
