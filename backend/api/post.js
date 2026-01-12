@@ -369,7 +369,92 @@ router.post("/search", authenticateToken, async (req, res) => {
         profilePic: r.fld_profile_pic ?? null,
       }));
 
-      return res.status(200).json({ users, hasMore });
+      return res.status(201).json({
+        postId,
+        message: "Post created successfully",
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error("POST /post error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+//fetch public posts -> infinite scroll
+router.get("/post", authenticateToken, async (req, res) => {
+  try {
+    //declare variables
+    const curr_user = req.userID.trim()
+    const limit = req.query.limit
+    let morePosts = true
+    let returnFeed
+    let craftFilter = req.query.craft
+
+    //fetch data if feed wasn't populated before
+    //selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
+    if (req.query.before === "undefined" || !req.query.before) {
+      query = `
+      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+        CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+        CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
+      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
+        ON u.fld_user_pk = p.fld_creator
+        INNER JOIN posts.tbl_post_pic AS i
+          ON i.fld_post_fk = p.fld_post_pk
+          INNER JOIN posts.tbl_post_tag AS tp
+            ON tp.fld_post = p.fld_post_pk
+            INNER JOIN tags.tbl_tags AS t
+              ON t.fld_tags_pk = tp.fld_tag
+              LEFT JOIN posts.tbl_post_likes AS pl
+                ON pl.fld_post_fk = p.fld_post_pk
+                AND pl.fld_user_fk = $2
+              LEFT JOIN posts.tbl_post_saves AS ps
+                ON ps.fld_post_fk = p.fld_post_pk
+                AND ps.fld_user_fk = $2
+      WHERE p.fld_is_public = true AND t.fld_tag_name = ANY($1) AND u.fld_user_pk <> $2
+      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
+      LIMIT ($3 + 1);
+      `
+      returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit])
+
+      if (returnFeed.rowCount === 0) {
+        console.log("There's no posts here")
+        res.status(404).json({message: "No posts whatsoever"})
+        return
+      }
+
+    }
+    else {
+      //fetch data if feed was previously populated
+      //mad lad query right here
+      //also selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
+      query = `
+      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+        CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+        CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
+      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
+        ON u.fld_user_pk = p.fld_creator
+        INNER JOIN posts.tbl_post_pic AS i
+          ON i.fld_post_fk = p.fld_post_pk
+          INNER JOIN posts.tbl_post_tag AS tp
+            ON tp.fld_post = p.fld_post_pk
+            INNER JOIN tags.tbl_tags AS t
+              ON t.fld_tags_pk = tp.fld_tag
+              LEFT JOIN posts.tbl_post_likes AS pl
+                ON pl.fld_post_fk = p.fld_post_pk
+                AND pl.fld_user_fk = $4
+              LEFT JOIN posts.tbl_post_saves AS ps
+                ON ps.fld_post_fk = p.fld_post_pk
+                AND ps.fld_user_fk = $4
+      WHERE p.fld_is_public = true AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2) AND t.fld_tag_name = ANY($3) AND u.fld_user_pk <> $4
+      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
+      LIMIT ($5 + 1);
+      `
+
+      returnFeed = await pool.query(query, [req.query.before, req.query.postID, "{" + craftFilter.join(",") + "}", curr_user, limit])
     }
 
     // -------------------- TAG SEARCH: posts only + infinite scroll --------------------
@@ -638,15 +723,23 @@ router.get("/single-post", authenticateToken, async (req, res) => {
 
   try {
     let query = `
-      SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic,
-             p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ) AS fld_timestamp,
-             i.fld_pic_id, i.fld_post_pic
-      FROM login.tbl_user AS u
-      INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
-      INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
-      WHERE p.fld_post_pk = $1
-    `;
-    const returnFeed = await pool.query(query, [postID]);
+    SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+      CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+      CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
+      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
+        ON u.fld_user_pk = p.fld_creator
+        INNER JOIN posts.tbl_post_pic AS i
+          ON i.fld_post_fk = p.fld_post_pk
+        LEFT JOIN posts.tbl_post_likes AS pl
+          ON pl.fld_post_fk = p.fld_post_pk
+          AND pl.fld_user_fk = $2
+        LEFT JOIN posts.tbl_post_saves AS ps
+          ON ps.fld_post_fk = p.fld_post_pk
+          AND ps.fld_user_fk = $2
+      WHERE p.fld_post_pk = $1`
+  
+    //still called "return feed" even though there's only 1 post lol
+    returnFeed = await pool.query(query, [postID, currentUser])
 
     let query2 = `
       SELECT t.fld_tag_name
@@ -687,6 +780,98 @@ router.get("/single-post", authenticateToken, async (req, res) => {
   } catch (error) {
     console.log("Error fetching posts: ", error);
     res.status(500).json(error);
+  }
+});
+
+// ----------------------------- POST LIKES -----------------------------
+
+router.post("/toggle_like", authenticateToken, async (req, res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  if (!postID) {
+    return res.status(400).json({ message: "Missing post id" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      WITH deleted AS (
+        DELETE FROM posts.tbl_post_likes
+        WHERE fld_post_fk = $1 AND fld_user_fk = $2
+        RETURNING 1
+      )
+      INSERT INTO posts.tbl_post_likes (fld_post_fk, fld_user_fk, fld_time_saved)
+      SELECT $1, $2, NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM deleted)
+      RETURNING fld_post_fk
+      `,
+      [postID, currentUser]
+    );
+
+    const liked = result.rowCount > 0;
+    res.status(200).json({ liked });
+  } catch (e) {
+    console.log("Error toggling like: ", e);
+    res.status(500).json({ message: "Could not toggle like" });
+  }
+});
+
+router.post("/toggle_save", authenticateToken, async (req, res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  if (!postID) {
+    return res.status(400).json({ message: "Missing post id" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      WITH deleted AS (
+        DELETE FROM posts.tbl_post_saves
+        WHERE fld_post_fk = $1 AND fld_user_fk = $2
+        RETURNING 1
+      )
+      INSERT INTO posts.tbl_post_saves (fld_post_fk, fld_user_fk, fld_time_saved)
+      SELECT $1, $2, NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM deleted)
+      RETURNING fld_post_fk
+      `,
+      [postID, currentUser]
+    );
+
+    const saved = result.rowCount > 0;
+    res.status(200).json({ saved });
+  } catch (e) {
+    console.log("Error toggling save: ", e);
+    res.status(500).json({ message: "Could not toggle save" });
+  }
+});
+
+router.get("/check_if_liked", authenticateToken, async (req, res) => {
+  const postID = req.query.id;
+  const currentUser = req.userID;
+
+  if (!postID) {
+    return res.status(400).json({ message: "Missing post id" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT EXISTS (
+        SELECT 1
+        FROM posts.tbl_post_likes
+        WHERE fld_post_fk = $1 AND fld_user_fk = $2
+      ) AS liked
+      `,
+      [postID, currentUser]
+    );
+    res.status(200).json({ liked: result.rows[0].liked });
+  } catch (e) {
+    console.log("Error checking post like: ", e);
+    res.status(500).json({ message: "Could not check like status" });
   }
 });
 

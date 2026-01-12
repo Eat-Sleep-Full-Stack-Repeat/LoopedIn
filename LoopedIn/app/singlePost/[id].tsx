@@ -43,6 +43,8 @@ export default function SinglePost() {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const likingRef = useRef(false);
+  const savingRef = useRef(false);
   const [tags, setTags] = useState<string[]>([]);
   const { id, from } = useLocalSearchParams();
   const postID = id as string;
@@ -119,6 +121,8 @@ export default function SinglePost() {
       setPostInfo(mappedPost);
       setCurrentUser(responseData.currentUser);
       setTags(responseData.tags);
+      setLiked(!!responseData.postInfo?.fld_is_liked);
+      setSaved(!!responseData.postInfo?.fld_is_saved);
     } catch (e) {
       console.log("Error when fetching post data", e);
     }
@@ -134,6 +138,82 @@ export default function SinglePost() {
     creatorID.current = Number(item.creatorID);
     setAreCommentsVisible(true);
   }
+
+  const handleLikePress = async () => {
+    if (likingRef.current) return;
+    likingRef.current = true;
+    const original = liked;
+    setLiked(!original);
+
+    try {
+      const token = await Storage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/api/toggle_like?id=${postID}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        setLiked(original);
+        alert("Failed to update like. Please try again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (typeof data?.liked === "boolean") {
+        setLiked(data.liked);
+      }
+    } catch (e) {
+      console.log("Error updating like", e);
+      setLiked(original);
+    } finally {
+      likingRef.current = false;
+    }
+  };
+
+  const handleSavePress = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    const original = saved;
+    setSaved(!original);
+
+    try {
+      const token = await Storage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/api/toggle_save?id=${postID}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        setSaved(original);
+        alert("Failed to update save. Please try again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (typeof data?.saved === "boolean") {
+        setSaved(data.saved);
+      }
+    } catch (e) {
+      console.log("Error updating save", e);
+      setSaved(original);
+    } finally {
+      savingRef.current = false;
+    }
+  };
 
   // adding this to get rid of typeErrors and in case the post information can not be fetched
   if (!post) {
@@ -231,7 +311,7 @@ export default function SinglePost() {
                 {post.username}
               </Text>
               <Text style={[styles.date, { color: colors.text }]}>
-                {post.datePosted}
+                {new Date(post.datePosted).toDateString()}
               </Text>
             </View>
             </Pressable>
@@ -323,7 +403,7 @@ export default function SinglePost() {
           <View style={styles.actionsRow}>
             <Pressable
               style={styles.actionButton}
-              onPress={() => setLiked((prev) => !prev)}
+              onPress={handleLikePress}
             >
               <Feather
                 name="heart"
@@ -351,7 +431,7 @@ export default function SinglePost() {
 
             <Pressable
               style={styles.actionButton}
-              onPress={() => setSaved((prev) => !prev)}
+              onPress={handleSavePress}
             >
               <Feather
                 name="bookmark"

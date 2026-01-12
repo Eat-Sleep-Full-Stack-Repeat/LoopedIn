@@ -1026,7 +1026,7 @@ router.delete("/forum_post/:forumID", authenticateToken, async (req, res) => {
       //will wait to delete forum image later if we have issues deleting post but not image
       query = `
       UPDATE forums.tbl_forum_post
-      SET fld_header = $1, fld_body = $2, fld_pic = NULL, fld_edited = FALSE
+      SET fld_header = $1, fld_body = $2, fld_pic = NULL, fld_deleted = TRUE
       WHERE fld_post_pk = $3
       RETURNING *;
       `
@@ -1293,5 +1293,128 @@ router.post("/search", authenticateToken, async (req, res) => {
     res.status(500).json({ results: [], error: "Search failed" });
   }
 });
+
+
+//for fetching my-post feed
+router.get("/my-forum-posts", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim()
+    const limit = req.query.limit
+    let more_posts = true
+    let returnFeed
+
+    //if not fetched before -> similar to forums and post feed
+    if (req.query.before === "undefined" || !req.query.before) {
+      query = `
+      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color))
+      FILTER (WHERE t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')), '[]'::jsonb) AS tag_data
+      FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
+        ON u.fld_user_pk = f.fld_creator
+        INNER JOIN forums.tbl_forum_tag AS ft
+          ON ft.fld_post = f.fld_post_pk
+          INNER JOIN tags.tbl_tags AS t
+            ON t.fld_tags_pk = ft.fld_tag
+      WHERE u.fld_user_pk = $1 AND fld_deleted = FALSE
+      GROUP BY f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, u.fld_user_pk, u.fld_username, u.fld_profile_pic
+      ORDER BY f.fld_timestamp DESC
+      LIMIT ($2 + 1);`
+
+      returnFeed = await pool.query(query, [curr_user, limit])
+
+      if (returnFeed.rowCount === 0) {
+        console.log("[forums]: no posts in my post feed")
+        res.status(404).json({message: "No posts. Start creating posts"})
+        return
+      }
+
+    }
+    else { //if fetched before -> very hienous query
+      query = `
+      SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color))
+      FILTER (WHERE t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')), '[]'::jsonb) AS tag_data
+      FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
+        ON u.fld_user_pk = f.fld_creator
+        INNER JOIN forums.tbl_forum_tag AS ft
+          ON ft.fld_post = f.fld_post_pk
+          INNER JOIN tags.tbl_tags AS t
+            ON t.fld_tags_pk = ft.fld_tag
+      WHERE u.fld_user_pk = $1 AND (f.fld_timestamp, f.fld_post_pk) < ($2, $3) AND fld_deleted = FALSE
+      GROUP BY f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, u.fld_user_pk, u.fld_username, u.fld_profile_pic
+      ORDER BY f.fld_timestamp DESC
+      LIMIT ($4 + 1);`
+
+      returnFeed = await pool.query(query, [curr_user, req.query.before, req.query.postID, limit])
+
+    }
+
+    //if feed is below or reaches limit, all posts have been fetched
+    if (returnFeed.rowCount <= limit) {
+      more_posts = false
+    }
+
+    
+    //fetch profile picture from S3 if it exists
+    let avatarUrl = null;
+    for (let i = 0; i < returnFeed.rowCount; i++) {
+      const row = returnFeed.rows[i];
+      if (row.fld_profile_pic) {
+        const key = row.fld_profile_pic.includes("/")
+          ? row.fld_profile_pic
+          : `avatars/${row.fld_profile_pic}`;
+        const folder = key.split("/")[0];
+        const fileName = key.split("/").slice(1).join("/");
+        avatarUrl = await getSignedFile(folder, fileName); // fresh 12h URL, every rerender refreshes timer
+        row.fld_profile_pic = avatarUrl;
+      }
+    }
+
+    console.log("[forums]: fetched current-user posts")
+    res.status(200).json({hasMore: more_posts, newFeed: returnFeed.rows.slice(0, limit)})
+
+  }
+  catch(error) {
+    console.log("Error fetching my forum posts: ", error)
+    res.status(500).json(error)
+  }
+})
+
+
+//fetching data for the edit post UI
+router.get("/my-forum-posts/:forumID", authenticateToken, async(req, res) => {
+  try {
+    const { forumID } = req.params
+    const curr_user = req.userID.trim()
+
+    //fetch post
+    query = `
+    SELECT f.fld_post_pk, f.fld_header, f.fld_body, f.fld_pic, t.fld_tags_pk, t.fld_tag_name
+    FROM forums.tbl_forum_post AS f INNER JOIN forums.tbl_forum_tag AS ft
+      ON ft.fld_post = f.fld_post_pk
+      INNER JOIN tags.tbl_tags AS t
+        ON t.fld_tags_pk = ft.fld_tag
+    WHERE f.fld_creator = $1 AND f.fld_post_pk = $2 AND t.fld_tag_name IN ('Knit', 'Crochet', 'Misc');`
+
+    const fetchedPost = await pool.query(query, [curr_user, forumID])
+
+    if (fetchedPost.rowCount === 0) {
+      console.log("[forums]: post you're trying to edit does not exist")
+      res.status(404).json({message: "Post does not exist"})
+      return
+    }
+
+    //FIXME: add attachment fetcher once we implement image upload for forum posts
+
+    console.log("[forums]: found desired post to edit")
+    res.status(200).json(fetchedPost.rows[0])
+
+  }
+  catch(error) {
+    console.log("Error loading edit forum overlay:", error)
+    res.status(500).json(error)
+  }
+})
+
 
 module.exports = router;
