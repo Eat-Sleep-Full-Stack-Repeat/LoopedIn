@@ -28,6 +28,29 @@ const upload = multer({
   },
 });
 
+
+function normalizeCraftFilter(craft) {
+  if (!craft) return ["Crochet", "Knit", "Misc"];
+  if (Array.isArray(craft)) return craft.map(String);
+  return [String(craft)];
+}
+
+function normalizeBeforeParam(beforeRaw) {
+  if (beforeRaw == null) return null;
+
+  let b = String(beforeRaw);
+
+  b = b.replace(/ /g, "+");
+
+  try {
+    b = decodeURIComponent(b);
+  } catch {
+
+  }
+
+  return b;
+}
+
 /**
  * POST /api/post
  *
@@ -114,26 +137,30 @@ router.post("/post", authenticateToken, upload.array("photos", 5), async (req, r
     }
 
     // 2.5) craft filter tag (assumes craft exists in tags.tbl_tags)
-    let query = `
-      SELECT fld_tags_pk
-      FROM tags.tbl_tags
-      WHERE fld_tag_name = $1;
-    `;
-    const filterResult = await client.query(query, [craft.trim()]);
-    const filterID = filterResult.rows?.[0]?.fld_tags_pk;
-
-    if (filterID) {
-      query = `
-        INSERT INTO posts.tbl_post_tag(fld_post, fld_tag)
-        VALUES ($1, $2)
-        ON CONFLICT (fld_post, fld_tag) DO NOTHING;
+    if (craft && String(craft).trim()) {
+      let q = `
+        SELECT fld_tags_pk
+        FROM tags.tbl_tags
+        WHERE fld_tag_name = $1;
       `;
-      await client.query(query, [postId, filterID]);
+      const filterResult = await client.query(q, [String(craft).trim()]);
+      const filterID = filterResult.rows?.[0]?.fld_tags_pk;
+
+      if (filterID) {
+        q = `
+          INSERT INTO posts.tbl_post_tag(fld_post, fld_tag)
+          VALUES ($1, $2)
+          ON CONFLICT (fld_post, fld_tag) DO NOTHING;
+        `;
+        await client.query(q, [postId, filterID]);
+      }
     }
 
     // 3) Map tags -> IDs, insert missing tags, then link in posts.tbl_post_tag
     if (Array.isArray(tagArray) && tagArray.length > 0) {
-      const cleanTags = tagArray.map((t) => (t || "").trim()).filter((t) => t.length > 0);
+      const cleanTags = tagArray
+        .map((t) => (t || "").trim())
+        .filter((t) => t.length > 0);
 
       if (cleanTags.length > 0) {
         const lowerNames = cleanTags.map((t) => t.toLowerCase());
@@ -206,20 +233,24 @@ router.post("/post", authenticateToken, upload.array("photos", 5), async (req, r
   }
 });
 
-// fetch public posts -> infinite scroll
 router.get("/post", authenticateToken, async (req, res) => {
   try {
     const curr_user = (req.userID || "").trim();
-    const limit = Number(req.query.limit || 10);
+    const limit = Math.min(Number(req.query.limit || 10), 50);
 
-    let morePosts = true;
+    const craftFilter = normalizeCraftFilter(req.query.craft);
+
     let returnFeed;
-    let craftFilter = req.query.craft;
+    let query;
+    let params;
 
-    if (!craftFilter) craftFilter = ["Crochet", "Knit", "Misc"];
+    const before = normalizeBeforeParam(req.query.before);
+    const postID = req.query.postID ? Number(req.query.postID) : null;
 
-    if (req.query.before === "undefined" || !req.query.before) {
-      const query = `
+    const isFresh = !before || before === "undefined" || before === "null";
+
+    if (isFresh) {
+      query = `
         SELECT DISTINCT ON (p.fld_post_pk)
           u.fld_user_pk,
           p.fld_post_pk,
@@ -228,25 +259,29 @@ router.get("/post", authenticateToken, async (req, res) => {
           p.fld_caption,
           CAST(p.fld_timestamp AS TIMESTAMPTZ) AS fld_timestamp,
           i.fld_pic_id,
-          i.fld_post_pic
+          i.fld_post_pic,
+          CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
           INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
           INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
+          LEFT JOIN posts.tbl_post_likes AS pl
+            ON pl.fld_post_fk = p.fld_post_pk
+            AND pl.fld_user_fk = $2
+          LEFT JOIN posts.tbl_post_saves AS ps
+            ON ps.fld_post_fk = p.fld_post_pk
+            AND ps.fld_user_fk = $2
         WHERE p.fld_is_public = true
           AND t.fld_tag_name = ANY($1)
           AND u.fld_user_pk <> $2
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
         LIMIT ($3 + 1);
       `;
-      returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit]);
-
-      if (returnFeed.rowCount === 0) {
-        return res.status(404).json({ message: "No posts whatsoever" });
-      }
+      params = ["{" + craftFilter.join(",") + "}", curr_user, limit];
     } else {
-      const query = `
+      query = `
         SELECT DISTINCT ON (p.fld_post_pk)
           u.fld_user_pk,
           p.fld_post_pk,
@@ -255,31 +290,37 @@ router.get("/post", authenticateToken, async (req, res) => {
           p.fld_caption,
           CAST(p.fld_timestamp AS TIMESTAMPTZ) AS fld_timestamp,
           i.fld_pic_id,
-          i.fld_post_pic
+          i.fld_post_pic,
+          CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
           INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
           INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
+          LEFT JOIN posts.tbl_post_likes AS pl
+            ON pl.fld_post_fk = p.fld_post_pk
+            AND pl.fld_user_fk = $4
+          LEFT JOIN posts.tbl_post_saves AS ps
+            ON ps.fld_post_fk = p.fld_post_pk
+            AND ps.fld_user_fk = $4
         WHERE p.fld_is_public = true
-          AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2)
+          AND (p.fld_timestamp, p.fld_post_pk) < ($1::timestamptz, $2)
           AND t.fld_tag_name = ANY($3)
           AND u.fld_user_pk <> $4
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
         LIMIT ($5 + 1);
       `;
-      returnFeed = await pool.query(query, [
-        req.query.before,
-        Number(req.query.postID),
-        "{" + craftFilter.join(",") + "}",
-        curr_user,
-        limit,
-      ]);
+      params = [before, postID, "{" + craftFilter.join(",") + "}", curr_user, limit];
     }
 
-    morePosts = returnFeed.rowCount > limit;
+    returnFeed = await pool.query(query, params);
 
-    // sign avatars + post pics (slice AFTER signing is okay but we sign only what we return)
+    if (returnFeed.rowCount === 0) {
+      return res.status(404).json({ message: "No posts whatsoever" });
+    }
+
+    const hasMore = returnFeed.rowCount > limit;
     const sliced = returnFeed.rows.slice(0, limit);
 
     for (const row of sliced) {
@@ -297,15 +338,14 @@ router.get("/post", authenticateToken, async (req, res) => {
       }
     }
 
-    return res.status(200).json({ hasMore: morePosts, newFeed: sliced });
+    return res.status(200).json({ hasMore, newFeed: sliced });
   } catch (error) {
     console.log("Error fetching posts: ", error);
-    res.status(500).json(error);
+    return res.status(500).json(error);
   }
 });
 
-// ----------------------------- SEARCH (USER OR TAG) -----------------------------
-// POST /api/search  (server mounts this router at app.use("/api", postRouter))
+
 router.post("/search", authenticateToken, async (req, res) => {
   try {
     const curr_user = (req.userID?.trim?.() || req.userID || "").trim();
@@ -318,7 +358,7 @@ router.post("/search", authenticateToken, async (req, res) => {
       return res.status(400).json({ message: "Invalid search request" });
     }
 
-    // -------------------- USER SEARCH: users only + infinite scroll --------------------
+    // ---------------- USER SEARCH ----------------
     if (type === "user") {
       const uBeforeName = req.query.u_before_name ? String(req.query.u_before_name).toLowerCase() : null;
       const uBeforeId = req.query.u_before_id ? String(req.query.u_before_id) : null;
@@ -369,96 +409,11 @@ router.post("/search", authenticateToken, async (req, res) => {
         profilePic: r.fld_profile_pic ?? null,
       }));
 
-      return res.status(201).json({
-        postId,
-        message: "Post created successfully",
-      });
-    } catch (err) {
-      await client.query("ROLLBACK");
-      console.error("POST /post error:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    } finally {
-      client.release();
-    }
-  }
-);
-
-//fetch public posts -> infinite scroll
-router.get("/post", authenticateToken, async (req, res) => {
-  try {
-    //declare variables
-    const curr_user = req.userID.trim()
-    const limit = req.query.limit
-    let morePosts = true
-    let returnFeed
-    let craftFilter = req.query.craft
-
-    //fetch data if feed wasn't populated before
-    //selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
-    if (req.query.before === "undefined" || !req.query.before) {
-      query = `
-      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
-        CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
-        CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
-      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
-        ON u.fld_user_pk = p.fld_creator
-        INNER JOIN posts.tbl_post_pic AS i
-          ON i.fld_post_fk = p.fld_post_pk
-          INNER JOIN posts.tbl_post_tag AS tp
-            ON tp.fld_post = p.fld_post_pk
-            INNER JOIN tags.tbl_tags AS t
-              ON t.fld_tags_pk = tp.fld_tag
-              LEFT JOIN posts.tbl_post_likes AS pl
-                ON pl.fld_post_fk = p.fld_post_pk
-                AND pl.fld_user_fk = $2
-              LEFT JOIN posts.tbl_post_saves AS ps
-                ON ps.fld_post_fk = p.fld_post_pk
-                AND ps.fld_user_fk = $2
-      WHERE p.fld_is_public = true AND t.fld_tag_name = ANY($1) AND u.fld_user_pk <> $2
-      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
-      LIMIT ($3 + 1);
-      `
-      returnFeed = await pool.query(query, ["{" + craftFilter.join(",") + "}", curr_user, limit])
-
-      if (returnFeed.rowCount === 0) {
-        console.log("There's no posts here")
-        res.status(404).json({message: "No posts whatsoever"})
-        return
-      }
-
-    }
-    else {
-      //fetch data if feed was previously populated
-      //mad lad query right here
-      //also selects 10 public posts with their post recently added image, where their tags fulfill the craft filter
-      query = `
-      SELECT DISTINCT ON (p.fld_post_pk) u.fld_user_pk, p.fld_post_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
-        CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
-        CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
-      FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
-        ON u.fld_user_pk = p.fld_creator
-        INNER JOIN posts.tbl_post_pic AS i
-          ON i.fld_post_fk = p.fld_post_pk
-          INNER JOIN posts.tbl_post_tag AS tp
-            ON tp.fld_post = p.fld_post_pk
-            INNER JOIN tags.tbl_tags AS t
-              ON t.fld_tags_pk = tp.fld_tag
-              LEFT JOIN posts.tbl_post_likes AS pl
-                ON pl.fld_post_fk = p.fld_post_pk
-                AND pl.fld_user_fk = $4
-              LEFT JOIN posts.tbl_post_saves AS ps
-                ON ps.fld_post_fk = p.fld_post_pk
-                AND ps.fld_user_fk = $4
-      WHERE p.fld_is_public = true AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2) AND t.fld_tag_name = ANY($3) AND u.fld_user_pk <> $4
-      ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
-      LIMIT ($5 + 1);
-      `
-
-      returnFeed = await pool.query(query, [req.query.before, req.query.postID, "{" + craftFilter.join(",") + "}", curr_user, limit])
+      return res.status(200).json({ hasMore, users });
     }
 
-    // -------------------- TAG SEARCH: posts only + infinite scroll --------------------
-    const before = req.query.before;
+    // ---------------- TAG SEARCH ----------------
+    const before = normalizeBeforeParam(req.query.before);
     const postID = req.query.postID ? Number(req.query.postID) : null;
     const isFresh = !before || before === "undefined" || before === "null";
 
@@ -475,12 +430,20 @@ router.get("/post", authenticateToken, async (req, res) => {
           p.fld_caption,
           CAST(p.fld_timestamp AS TIMESTAMPTZ) AS fld_timestamp,
           i.fld_pic_id,
-          i.fld_post_pic
+          i.fld_post_pic,
+          CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
           INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
           INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
+          LEFT JOIN posts.tbl_post_likes AS pl
+            ON pl.fld_post_fk = p.fld_post_pk
+            AND pl.fld_user_fk = $2
+          LEFT JOIN posts.tbl_post_saves AS ps
+            ON ps.fld_post_fk = p.fld_post_pk
+            AND ps.fld_user_fk = $2
         WHERE p.fld_is_public = true
           AND LOWER(t.fld_tag_name) LIKE $1
           AND u.fld_user_pk <> $2
@@ -498,14 +461,22 @@ router.get("/post", authenticateToken, async (req, res) => {
           p.fld_caption,
           CAST(p.fld_timestamp AS TIMESTAMPTZ) AS fld_timestamp,
           i.fld_pic_id,
-          i.fld_post_pic
+          i.fld_post_pic,
+          CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
+          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
           INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
           INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
+          LEFT JOIN posts.tbl_post_likes AS pl
+            ON pl.fld_post_fk = p.fld_post_pk
+            AND pl.fld_user_fk = $4
+          LEFT JOIN posts.tbl_post_saves AS ps
+            ON ps.fld_post_fk = p.fld_post_pk
+            AND ps.fld_user_fk = $4
         WHERE p.fld_is_public = true
-          AND (p.fld_timestamp, p.fld_post_pk) < ($1, $2)
+          AND (p.fld_timestamp, p.fld_post_pk) < ($1::timestamptz, $2)
           AND LOWER(t.fld_tag_name) LIKE $3
           AND u.fld_user_pk <> $4
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
@@ -514,10 +485,10 @@ router.get("/post", authenticateToken, async (req, res) => {
       postParams = [before, postID, `%${q}%`, curr_user, limit];
     }
 
-    const returnFeed = await pool.query(postQuery, postParams);
+    const feedR = await pool.query(postQuery, postParams);
 
-    const hasMore = returnFeed.rowCount > limit;
-    const sliced = returnFeed.rows.slice(0, limit);
+    const hasMore = feedR.rowCount > limit;
+    const sliced = feedR.rows.slice(0, limit);
 
     for (const row of sliced) {
       if (row.fld_profile_pic) {
@@ -570,11 +541,9 @@ router.get("/post", authenticateToken, async (req, res) => {
   }
 });
 
-// ----------------------------- COMMENTS -----------------------------
-
 router.get("/get-user-info", authenticateToken, async (req, res) => {
   try {
-    let query = `
+    const query = `
       SELECT fld_username AS username,
              fld_profile_pic AS profilepic
       FROM login.tbl_user
@@ -650,7 +619,6 @@ router.get("/get-post-comments", authenticateToken, async (req, res) => {
     }
 
     const hasMoreComments = newComments.rowCount > 10;
-
     const sliced = newComments.rows.slice(0, 10);
 
     for (const row of sliced) {
@@ -736,10 +704,9 @@ router.get("/single-post", authenticateToken, async (req, res) => {
         LEFT JOIN posts.tbl_post_saves AS ps
           ON ps.fld_post_fk = p.fld_post_pk
           AND ps.fld_user_fk = $2
-      WHERE p.fld_post_pk = $1`
-  
-    //still called "return feed" even though there's only 1 post lol
-    returnFeed = await pool.query(query, [postID, currentUser])
+      WHERE p.fld_post_pk = $1`;
+
+    const returnFeed = await pool.query(query, [postID, currentUser]);
 
     let query2 = `
       SELECT t.fld_tag_name
@@ -784,7 +751,6 @@ router.get("/single-post", authenticateToken, async (req, res) => {
 });
 
 // ----------------------------- POST LIKES -----------------------------
-
 router.post("/toggle_like", authenticateToken, async (req, res) => {
   const postID = req.query.id;
   const currentUser = req.userID;

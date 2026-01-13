@@ -21,6 +21,9 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import BottomNavButton from "@/components/bottomNavBar";
+import ExploreCommentsModal from "@/components/exploreComments";
+
 type SearchType = "user" | "tag";
 
 type UserResult = {
@@ -38,6 +41,8 @@ type BackendPostRow = {
   fld_timestamp: string;
   fld_pic_id: string;
   fld_post_pic: string;
+  fld_is_liked?: boolean;
+  fld_is_saved?: boolean;
 };
 
 type TagObj = { name: string; color: string };
@@ -51,6 +56,9 @@ type Post = {
   postImageID: string;
   caption: string;
   datePosted: string;
+
+  isLiked: boolean;
+  isSaved: boolean;
 };
 
 export default function ExploreSearch() {
@@ -86,6 +94,13 @@ export default function ExploreSearch() {
   const hasMorePosts = useRef(true);
 
   const loadingMore = useRef(false);
+
+  const [areCommentsVisible, setAreCommentsVisible] = useState(false);
+  const currentPost = useRef<number | null>(null);
+  const creatorID = useRef<number | null>(null);
+
+  const likingIds = useRef<Set<string>>(new Set());
+  const savingIds = useRef<Set<string>>(new Set());
 
   const resetPaging = () => {
     lastUserName.current = null;
@@ -194,6 +209,9 @@ export default function ExploreSearch() {
           postImageID: String(row.fld_pic_id),
           caption: row.fld_caption,
           datePosted: row.fld_timestamp,
+
+          isLiked: !!row.fld_is_liked,
+          isSaved: !!row.fld_is_saved,
         }));
 
         setPosts((prev) => {
@@ -234,6 +252,98 @@ export default function ExploreSearch() {
       router.replace("/explore");
     }
   };
+
+  const updateLikeInState = useCallback((postId: string, isLiked: boolean) => {
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, isLiked } : p)));
+  }, []);
+
+  const updateSaveInState = useCallback((postId: string, isSaved: boolean) => {
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, isSaved } : p)));
+  }, []);
+
+  const handleLikePress = useCallback(
+    async (item: Post) => {
+      if (likingIds.current.has(item.id)) return;
+
+      likingIds.current.add(item.id);
+      const original = item.isLiked;
+      updateLikeInState(item.id, !original);
+
+      try {
+        const token = await Storage.getItem("token");
+        const res = await fetch(`${API_URL}/api/toggle_like?id=${item.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          updateLikeInState(item.id, original);
+          alert("Failed to update like. Please try again.");
+          return;
+        }
+
+        const data = await res.json();
+        if (typeof data?.liked === "boolean") {
+          updateLikeInState(item.id, data.liked);
+        }
+      } catch (e) {
+        console.log("Error updating like: ", e);
+        updateLikeInState(item.id, original);
+      } finally {
+        likingIds.current.delete(item.id);
+      }
+    },
+    [updateLikeInState]
+  );
+
+  const handleSavePress = useCallback(
+    async (item: Post) => {
+      if (savingIds.current.has(item.id)) return;
+
+      savingIds.current.add(item.id);
+      const original = item.isSaved;
+      updateSaveInState(item.id, !original);
+
+      try {
+        const token = await Storage.getItem("token");
+        const res = await fetch(`${API_URL}/api/toggle_save?id=${item.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          updateSaveInState(item.id, original);
+          alert("Failed to update save. Please try again.");
+          return;
+        }
+
+        const data = await res.json();
+        if (typeof data?.saved === "boolean") {
+          updateSaveInState(item.id, data.saved);
+        }
+      } catch (e) {
+        console.log("Error updating save: ", e);
+        updateSaveInState(item.id, original);
+      } finally {
+        savingIds.current.delete(item.id);
+      }
+    },
+    [updateSaveInState]
+  );
+
+  const showComments = useCallback((item: Post) => {
+    currentPost.current = Number(item.id);
+    creatorID.current = Number(item.userID);
+    setAreCommentsVisible(true);
+  }, []);
 
   const renderUser = ({ item }: { item: UserResult }) => (
     <Pressable
@@ -300,6 +410,54 @@ export default function ExploreSearch() {
             </View>
           )}
         </Pressable>
+
+        {/* ✅ ACTION ROW ADDED (Like / Comment / Tags / Save) */}
+        <View style={styles(colors, isTablet).postActions}>
+          <Pressable style={styles(colors, isTablet).postAction} onPress={() => handleLikePress(item)}>
+            <Image
+              style={[
+                styles(colors, isTablet).actionIcon,
+                { tintColor: item.isLiked ? "#E57373" : colors.text },
+              ]}
+              source={require("../assets/images/heart.png")}
+            />
+            <Text style={styles(colors, isTablet).postActionText}>{item.isLiked ? "Liked" : "Like"}</Text>
+          </Pressable>
+
+          <View style={styles(colors, isTablet).postAction}>
+            <Pressable onPress={() => showComments(item)} style={{ alignItems: "center" }}>
+              <Image
+                style={[styles(colors, isTablet).actionIcon, { tintColor: colors.text }]}
+                source={require("../assets/images/comment.png")}
+              />
+              <Text style={styles(colors, isTablet).postActionText}>Comment</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={styles(colors, isTablet).postAction}
+            onPress={() => {
+              console.log("Tags pressed for post", item.id);
+            }}
+          >
+            <Image
+              style={[styles(colors, isTablet).actionIcon, { tintColor: colors.text }]}
+              source={require("../assets/images/tags.png")}
+            />
+            <Text style={styles(colors, isTablet).postActionText}>Tags</Text>
+          </Pressable>
+
+          <Pressable style={styles(colors, isTablet).postAction} onPress={() => handleSavePress(item)}>
+            <Image
+              style={[
+                styles(colors, isTablet).actionIcon,
+                { tintColor: item.isSaved ? colors.exploreFilterSelected : colors.text },
+              ]}
+              source={require("../assets/images/saved.png")}
+            />
+            <Text style={styles(colors, isTablet).postActionText}>{item.isSaved ? "Saved" : "Save"}</Text>
+          </Pressable>
+        </View>
       </View>
     );
   };
@@ -407,11 +565,26 @@ export default function ExploreSearch() {
 
                   return <View style={{ height: 40 }} />;
                 }}
-                contentContainerStyle={{ paddingBottom: 80 }}
+                contentContainerStyle={{ paddingBottom: 160 }}
               />
             )}
           </View>
         </KeyboardAvoidingView>
+
+        {areCommentsVisible ? (
+          <ExploreCommentsModal
+            isVisible={areCommentsVisible}
+            onClose={() => {
+              setAreCommentsVisible(false);
+              currentPost.current = null;
+              creatorID.current = null;
+            }}
+            currentPost={currentPost.current}
+            postCreator={creatorID.current}
+          />
+        ) : null}
+
+        <BottomNavButton />
       </View>
     </>
   );
@@ -437,7 +610,7 @@ const styles = (colors: any, isTablet: boolean) =>
     },
     headerText: {
       fontSize: 22,
-      fontWeight: "900",
+      fontWeight: "700",
       color: colors.text,
     },
 
@@ -546,6 +719,26 @@ const styles = (colors: any, isTablet: boolean) =>
     tagText: {
       color: colors.text,
       fontWeight: "700",
+      fontSize: 12,
+    },
+
+    postActions: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      marginTop: 10,
+    },
+    postAction: {
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+    },
+    actionIcon: {
+      width: 20,
+      height: 20,
+      resizeMode: "contain",
+    },
+    postActionText: {
+      color: colors.text,
       fontSize: 12,
     },
   });
