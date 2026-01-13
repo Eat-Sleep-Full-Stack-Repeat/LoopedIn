@@ -21,19 +21,18 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
 
-
 type Post = {
   id: string;
   username: string;
   userID: string;
   profilePic: string | null;
-  postImage: string; //because we only load up the most recent image
+  postImage: string;
   postImageID: string;
   caption: string;
   datePosted: string;
   isLiked: boolean;
   isSaved: boolean;
-}
+};
 
 type BackendPost = {
   fld_post_pk: string;
@@ -48,7 +47,6 @@ type BackendPost = {
   fld_is_saved: boolean;
 };
 
-
 export default function ExplorePage() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
@@ -61,36 +59,30 @@ export default function ExplorePage() {
   const currentPost = useRef<number | null>(null);
   const creatorID = useRef<number | null>(null);
 
-  //so we have responsive, and not statically-sized components for different screen sizes
-  //you can change these variables as needed
   const { width } = useWindowDimensions();
-  let avatarSize
-  let usernameSize
-  let imageHeight //for max height calculations
-  
+  let avatarSize;
+  let usernameSize;
+  let imageHeight;
+
   if (width >= 900) {
-    usernameSize = 18
-    avatarSize = 50
-    imageHeight = 700
-  }
-  else if (width >= 768) {
-    usernameSize = 17
-    avatarSize = 45
-    imageHeight = 600
-  }
-  else {
-    usernameSize = 15
-    avatarSize = 35
-    imageHeight = 300
+    usernameSize = 18;
+    avatarSize = 50;
+    imageHeight = 700;
+  } else if (width >= 768) {
+    usernameSize = 17;
+    avatarSize = 45;
+    imageHeight = 600;
+  } else {
+    usernameSize = 15;
+    avatarSize = 35;
+    imageHeight = 300;
   }
 
-  //limit -> change if we want
   const limit = 10;
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
   const hasMore = useRef(true);
 
-  //the following is used to only display 10 posts, and then change to an infinite scroll when user hits seee more
   const [postData, setPostData] = useState<Post[]>([]);
   const posts: Post[] = useMemo(() => postData, [postData]);
   const loadingMore = useRef<true | false>(false);
@@ -100,235 +92,197 @@ export default function ExplorePage() {
   const savingIds = useRef<Set<string>>(new Set());
 
   const updateLikeInState = useCallback((postId: string, isLiked: boolean) => {
-    setPostData((prev) =>
-      prev.map((post) => (post.id === postId ? { ...post, isLiked } : post))
-    );
+    setPostData((prev) => prev.map((post) => (post.id === postId ? { ...post, isLiked } : post)));
   }, []);
 
   const updateSaveInState = useCallback((postId: string, isSaved: boolean) => {
-    setPostData((prev) =>
-      prev.map((post) => (post.id === postId ? { ...post, isSaved } : post))
-    );
+    setPostData((prev) => prev.map((post) => (post.id === postId ? { ...post, isSaved } : post)));
   }, []);
 
-  const handleLikePress = useCallback(async (item: Post) => {
-    if (likingIds.current.has(item.id)) {
-      return;
-    }
+  const handleLikePress = useCallback(
+    async (item: Post) => {
+      if (likingIds.current.has(item.id)) return;
 
-    likingIds.current.add(item.id);
-    const original = item.isLiked;
-    updateLikeInState(item.id, !original);
+      likingIds.current.add(item.id);
+      const original = item.isLiked;
+      updateLikeInState(item.id, !original);
 
-    try {
-      const token = await Storage.getItem("token");
-      const res = await fetch(
-        `${API_URL}/api/toggle_like?id=${item.id}`,
-        {
+      try {
+        const token = await Storage.getItem("token");
+        const res = await fetch(`${API_URL}/api/toggle_like?id=${item.id}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           credentials: "include",
-        }
-      );
+        });
 
-      if (!res.ok) {
+        if (!res.ok) {
+          updateLikeInState(item.id, original);
+          alert("Failed to update like. Please try again.");
+          return;
+        }
+
+        const data = await res.json();
+        if (typeof data?.liked === "boolean") updateLikeInState(item.id, data.liked);
+      } catch (e) {
+        console.log("Error updating like: ", e);
         updateLikeInState(item.id, original);
-        alert("Failed to update like. Please try again.");
-        console.log("toggle_like status", res.status);
-        return;
+      } finally {
+        likingIds.current.delete(item.id);
       }
+    },
+    [updateLikeInState]
+  );
 
-      const data = await res.json();
-      if (typeof data?.liked === "boolean") {
-        updateLikeInState(item.id, data.liked);
-      }
-    } catch (e) {
-      console.log("Error updating like: ", e);
-      updateLikeInState(item.id, original);
-    } finally {
-      likingIds.current.delete(item.id);
-    }
-  }, [updateLikeInState]);
+  const handleSavePress = useCallback(
+    async (item: Post) => {
+      if (savingIds.current.has(item.id)) return;
 
-  const handleSavePress = useCallback(async (item: Post) => {
-    if (savingIds.current.has(item.id)) {
-      return;
-    }
+      savingIds.current.add(item.id);
+      const original = item.isSaved;
+      updateSaveInState(item.id, !original);
 
-    savingIds.current.add(item.id);
-    const original = item.isSaved;
-    updateSaveInState(item.id, !original);
-
-    try {
-      const token = await Storage.getItem("token");
-      const res = await fetch(
-        `${API_URL}/api/toggle_save?id=${item.id}`,
-        {
+      try {
+        const token = await Storage.getItem("token");
+        const res = await fetch(`${API_URL}/api/toggle_save?id=${item.id}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           credentials: "include",
+        });
+
+        if (!res.ok) {
+          updateSaveInState(item.id, original);
+          alert("Failed to update save. Please try again.");
+          return;
         }
-      );
 
-      if (!res.ok) {
+        const data = await res.json();
+        if (typeof data?.saved === "boolean") updateSaveInState(item.id, data.saved);
+      } catch (e) {
+        console.log("Error updating save: ", e);
         updateSaveInState(item.id, original);
-        alert("Failed to update save. Please try again.");
-        return;
+      } finally {
+        savingIds.current.delete(item.id);
       }
-
-      const data = await res.json();
-      if (typeof data?.saved === "boolean") {
-        updateSaveInState(item.id, data.saved);
-      }
-    } catch (e) {
-      console.log("Error updating save: ", e);
-      updateSaveInState(item.id, original);
-    } finally {
-      savingIds.current.delete(item.id);
-    }
-  }, [updateSaveInState]);
+    },
+    [updateSaveInState]
+  );
 
   useEffect(() => {
-    if (selectedFilter === "All") { // pass all craft filters to backend
-      setCraftFilter(["Crochet", "Knit", "Misc"]);
-    } 
-    else { //pass specific craft to backend
-      setCraftFilter([selectedFilter]);
-    }
+    if (selectedFilter === "All") setCraftFilter(["Crochet", "Knit", "Misc"]);
+    else setCraftFilter([selectedFilter]);
   }, [selectedFilter]);
 
   useEffect(() => {
-    if (!refreshing) {
-      handleRefresh();
-    }
-  }, [craftFilter])
+    if (!refreshing) handleRefresh();
+  }, [craftFilter]);
 
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setPostData([]);
+    lastPostID.current = null;
+    lastTimeStamp.current = null;
+    hasMore.current = true;
+  };
 
-  const handleRefresh = async() => {
-    if (refreshing) {
-      return 
-    } 
-    else {
-      setRefreshing(true);
-      setPostData([]);
-      lastPostID.current = null;
-      lastTimeStamp.current = null;
-      hasMore.current = true;
-    }
-  }
-
-  // need to use useEffect to ensure previous data is flushed before fetching new data
   useEffect(() => {
-    if (refreshing) {
+    if (!refreshing) return;
 
-      const refreshNewData = async () => {
-        try {
-          await fetchData();
-        }
-        catch (e) {
-          console.log("error when refreshing data", e);
-        } 
-        finally {
-          setRefreshing(false);
-        }
+    const refreshNewData = async () => {
+      try {
+        await fetchData();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
       }
+    };
 
-      refreshNewData();
-      
-    }
-  }, [refreshing])
+    refreshNewData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshing]);
 
   const fetchData = async () => {
     const token = await Storage.getItem("token");
-    if (loadingMore.current || !hasMore.current) {
-      //if already loading more data or there is no more data in database then return
-      return;
-    }
+    if (loadingMore.current || !hasMore.current) return;
 
     loadingMore.current = true;
 
     try {
-      //load timestamp if exists
       const includeBefore = lastTimeStamp.current
-        ? `&before=${lastTimeStamp.current}`
+        ? `&before=${encodeURIComponent(lastTimeStamp.current)}`
         : "";
 
-      const includePostID = lastPostID.current
-        ? `&postID=${lastPostID.current}`
-        : "";
+      const includePostID = lastPostID.current ? `&postID=${lastPostID.current}` : "";
 
       let craftURL = ``;
-      craftFilter.forEach(element => {
-        let tempElement = element.replace(/"/g, '');
-        craftURL = craftURL + `&craft[]=${tempElement}`
+      craftFilter.forEach((element) => {
+        const tempElement = element.replace(/"/g, "");
+        craftURL = craftURL + `&craft[]=${encodeURIComponent(tempElement)}`;
       });
 
+      const url = `${API_URL}/api/post?limit=${limit}${includeBefore}${includePostID}${craftURL}`;
 
-      const response = await fetch(`${API_URL}/api/post?limit=${limit}${includeBefore}${includePostID}${craftURL}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      )
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
-      if (response.status == 404) {
-        alert("Woah! You hit a new category with no posts. Start posting now!")
+      if (response.status === 404) {
+        alert("Woah! You hit a new category with no posts. Start posting now!");
         return;
-      }
-
-      else if (!response.ok) {
-        alert("Error during post fetch from backend. You're probably not logged in.")
-        router.replace("/")
+      } else if (!response.ok) {
+        const txt = await response.text().catch(() => "");
+        console.log("Explore fetch failed:", response.status, txt);
+        alert("Error during post fetch from backend. You're probably not logged in.");
+        router.replace("/");
         return;
       }
 
       const responseData = await response.json();
 
-      let tempPostData: Post[] = responseData.newFeed.map(
-        (post: BackendPost) => ({
-          id: post.fld_post_pk,
-          username: post.fld_username,
-          userID: post.fld_user_pk,
-          profilePic: post.fld_profile_pic,
-          postImage: post.fld_post_pic,
-          postImageID: post.fld_pic_id,
-          caption: post.fld_caption,
-          datePosted: post.fld_timestamp,
-          isLiked: !!post.fld_is_liked,
-          isSaved: !!post.fld_is_saved,
-        })
-      )
-      
+      const tempPostData: Post[] = responseData.newFeed.map((post: BackendPost) => ({
+        id: post.fld_post_pk,
+        username: post.fld_username,
+        userID: post.fld_user_pk,
+        profilePic: post.fld_profile_pic,
+        postImage: post.fld_post_pic,
+        postImageID: post.fld_pic_id,
+        caption: post.fld_caption,
+        datePosted: post.fld_timestamp,
+        isLiked: !!post.fld_is_liked,
+        isSaved: !!post.fld_is_saved,
+      }));
+
       setPostData((prev) => [...prev, ...tempPostData]);
-      hasMore.current = (responseData.hasMore);
-      lastTimeStamp.current = tempPostData[tempPostData.length - 1].datePosted;
-      lastPostID.current = Number(tempPostData[tempPostData.length - 1].id);
-    }
-    catch(error) {
-      console.log("Error fetching posts: ", error)
-    }
-    finally {
-      // even if fetching data fails, we will update loading more
+      hasMore.current = responseData.hasMore;
+
+      if (tempPostData.length > 0) {
+        lastTimeStamp.current = tempPostData[tempPostData.length - 1].datePosted;
+        lastPostID.current = Number(tempPostData[tempPostData.length - 1].id);
+      }
+    } catch (error) {
+      console.log("Error fetching posts: ", error);
+    } finally {
       loadingMore.current = false;
     }
-  }
-
+  };
 
   const showComments = (item: Post) => {
     currentPost.current = Number(item.id);
     creatorID.current = Number(item.userID);
     setAreCommentsVisible(true);
-  }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -412,9 +366,8 @@ export default function ExplorePage() {
     },
     postCaption: {
       fontSize: 14,
-      //fontWeight: "bold",
       color: colors.text,
-      flexShrink: 1, 
+      flexShrink: 1,
     },
     postActions: {
       flexDirection: "row",
@@ -457,126 +410,141 @@ export default function ExplorePage() {
     },
   });
 
-  const renderPost = useCallback(({ item }: { item: Post }) => (
-    <View style={styles.postContainer}>
-        <TouchableOpacity style={styles.profileRow} onPress={() => router.push({
-            pathname: "/userProfile/[id]",
-            params: { id: item.userID }})}>
-          <Image style={styles.profilePic} 
-            source={ item?.profilePic ? {uri: item.profilePic} : require("@/assets/images/icons8-cat-profile-100.png")}/>
-          <Text style={styles.username}>
-            {item.username}
-          </Text>
+  const renderPost = useCallback(
+    ({ item }: { item: Post }) => (
+      <View style={styles.postContainer}>
+        <TouchableOpacity
+          style={styles.profileRow}
+          onPress={() =>
+            router.push({
+              pathname: "/userProfile/[id]",
+              params: { id: item.userID },
+            })
+          }
+        >
+          <Image
+            style={styles.profilePic}
+            source={
+              item?.profilePic
+                ? { uri: item.profilePic }
+                : require("@/assets/images/icons8-cat-profile-100.png")
+            }
+          />
+          <Text style={styles.username}>{item.username}</Text>
         </TouchableOpacity>
 
-      {/* make everything but the username area and the bottom buttons clickable */}
-      <Pressable onPress={() => router.push({
-            pathname: "/singlePost/[id]",
-            params: { id: item.id }})}>
-        <Image style={[styles.postImage,  {height: imageHeight}]} source={{uri: item.postImage}}/>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/singlePost/[id]",
+              params: { id: item.id },
+            })
+          }
+        >
+          <Image style={[styles.postImage, { height: imageHeight }]} source={{ uri: item.postImage }} />
 
-        <View style={{marginVertical: 20, flexShrink: 1}}>
-          <Text
-            style={styles.postCaption}
-            numberOfLines={5}
-            ellipsizeMode="tail"
-          >{item.caption}</Text>
-        </View>
+          <View style={{ marginVertical: 20, flexShrink: 1 }}>
+            <Text style={styles.postCaption} numberOfLines={5} ellipsizeMode="tail">
+              {item.caption}
+            </Text>
+          </View>
 
-        {!!staticTags.length && (
-          <View style={styles.tagRow}>
-            {staticTags.map((tag) => (
-              <View key={`${item.id}-${tag}`} style={styles.tagChip}>
-                <Text style={styles.tagText}>#{tag}</Text>
-              </View>
-            ))}
-          </View> 
-        )}
-      </Pressable>
-
-      {/* Post Actions */}
-      <View style={styles.postActions}>
-        <Pressable style={styles.postAction} onPress={() => handleLikePress(item)}>
-          <Image
-            style={[styles.actionIcon, { tintColor: item.isLiked ? "#E57373" : colors.text }]}
-            source={require("../assets/images/heart.png")}
-          />
-          <Text style={styles.postActionText}>{item.isLiked ? "Liked" : "Like"}</Text>
+          {!!staticTags.length && (
+            <View style={styles.tagRow}>
+              {staticTags.map((tag) => (
+                <View key={`${item.id}-${tag}`} style={styles.tagChip}>
+                  <Text style={styles.tagText}>#{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </Pressable>
 
-        <View style={styles.postAction}>
-          <Pressable onPress={() => showComments(item)} style={{alignItems: "center"}}>
-            <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/comment.png")} />
-            <Text style={styles.postActionText}>Comment</Text>
+        <View style={styles.postActions}>
+          <Pressable style={styles.postAction} onPress={() => handleLikePress(item)}>
+            <Image
+              style={[styles.actionIcon, { tintColor: item.isLiked ? "#E57373" : colors.text }]}
+              source={require("../assets/images/heart.png")}
+            />
+            <Text style={styles.postActionText}>{item.isLiked ? "Liked" : "Like"}</Text>
+          </Pressable>
+
+          <View style={styles.postAction}>
+            <Pressable onPress={() => showComments(item)} style={{ alignItems: "center" }}>
+              <Image
+                style={[styles.actionIcon, { tintColor: colors.text }]}
+                source={require("../assets/images/comment.png")}
+              />
+              <Text style={styles.postActionText}>Comment</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.postAction}>
+            <Image style={[styles.actionIcon, { tintColor: colors.text }]} source={require("../assets/images/tags.png")} />
+            <Text style={styles.postActionText}>Tags</Text>
+          </View>
+
+          <Pressable style={styles.postAction} onPress={() => handleSavePress(item)}>
+            <Image
+              style={[
+                styles.actionIcon,
+                { tintColor: item.isSaved ? colors.exploreFilterSelected : colors.text },
+              ]}
+              source={require("../assets/images/saved.png")}
+            />
+            <Text style={styles.postActionText}>{item.isSaved ? "Saved" : "Save"}</Text>
           </Pressable>
         </View>
-
-        <View style={styles.postAction}>
-          <Image style={[styles.actionIcon, {tintColor: colors.text}]} source={require("../assets/images/tags.png")} />
-          <Text style={styles.postActionText}>Tags</Text>
-        </View>
-
-        <Pressable style={styles.postAction} onPress={() => handleSavePress(item)}>
-          <Image
-            style={[
-              styles.actionIcon,
-              { tintColor: item.isSaved ? colors.exploreFilterSelected : colors.text },
-            ]}
-            source={require("../assets/images/saved.png")}
-          />
-          <Text style={styles.postActionText}>{item.isSaved ? "Saved" : "Save"}</Text>
-        </Pressable>
       </View>
-    </View>
-  ), [
-    colors.exploreFilterSelected,
-    colors.text,
-    handleLikePress,
-    handleSavePress,
-    imageHeight,
-    router,
-    showComments,
-    staticTags,
-    styles,
-  ]);
+    ),
+    [
+      colors.exploreFilterSelected,
+      colors.text,
+      handleLikePress,
+      handleSavePress,
+      imageHeight,
+      router,
+      showComments,
+      staticTags,
+      styles,
+    ]
+  );
 
   return (
     <>
-      {/* ✅ Disable transition animation for Explore only */}
       <Stack.Screen
         options={{
           headerShown: false,
-          animation: "none", // disables slide-in animation
+          animation: "none",
         }}
       />
 
       <View style={styles.container}>
-        <GestureHandlerRootView>
+        <GestureHandlerRootView style={{ flex: 1 }}>
           <Text style={styles.pageTitle}>Explore</Text>
 
-          {/* Search Bar */}
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search"
-            placeholderTextColor="#666"
-          />
+          <Pressable onPress={() => router.push("/exploreSearch")} style={{ marginHorizontal: 20 }}>
+            <View pointerEvents="none">
+              <TextInput
+                style={styles.searchBar}
+                placeholder="Search username or tags"
+                placeholderTextColor="#666"
+                editable={false}
+              />
+            </View>
+          </Pressable>
 
-          {/* Filter Buttons */}
           <View style={styles.filterContainer}>
             {filters.map((filterOption) => (
               <Pressable
                 key={filterOption}
                 onPress={() => setSelectedFilter(filterOption)}
-                style={[
-                  styles.filterTag,
-                  selectedFilter === filterOption && styles.filterTagSelected,
-                ]}
+                style={[styles.filterTag, selectedFilter === filterOption && styles.filterTagSelected]}
               >
                 <Text
                   style={[
                     styles.filterText,
-                    selectedFilter === filterOption &&
-                      styles.filterTextSelected,
+                    selectedFilter === filterOption && styles.filterTextSelected,
                   ]}
                 >
                   {filterOption}
@@ -585,56 +553,59 @@ export default function ExplorePage() {
             ))}
           </View>
 
-            <FlatList
-              data={posts}
-              renderItem={renderPost}
-              keyExtractor={item => item.id}
-              onEndReached={fetchData}
-              onEndReachedThreshold={0.2}
-              ListEmptyComponent={() => {
-                if (loadingMore.current) {
-                  return <ActivityIndicator size="small" color={colors.text}/>
-                } 
-                else {
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            onEndReached={fetchData}
+            onEndReachedThreshold={0.2}
+            ListEmptyComponent={() => {
+              if (loadingMore.current) return <ActivityIndicator size="small" color={colors.text} />;
+              return (
+                <View style={{ paddingVertical: 40 }}>
+                  <Text style={{ color: colors.settingsText, fontWeight: "bold", textAlign: "center" }}>
+                    No Recent Posts
+                  </Text>
+                </View>
+              );
+            }}
+            ListFooterComponent={() => {
+              if (posts.length > 0) {
+                if (!hasMore.current) {
                   return (
-                    <View style={{paddingVertical: 40}}>
-                      <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No Recent Posts </Text>
+                    <View style={{ paddingBottom: 150 }}>
+                      <Text style={{ color: colors.text }}>No More Data To Load</Text>
                     </View>
-                  )
+                  );
                 }
-              }}
-              ListFooterComponent={() => {
-                if (posts.length > 0) {
-                  if (!hasMore.current) {
-                    return (
-                      <View style={{paddingBottom: 150}}>
-                        <Text style={{ color: colors.text }}> No More Data To Load </Text>
-                      </View>
-                    )
-                  } else {
-                    return (
-                      <View style={{paddingBottom: 150}}>
-                        <ActivityIndicator size="small" color={colors.text} />
-                      </View>
-                    );
-                  }
-                }
-              }}
-              ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+                return (
+                  <View style={{ paddingBottom: 150 }}>
+                    <ActivityIndicator size="small" color={colors.text} />
+                  </View>
+                );
               }
-            />
+              return <View style={{ height: 160 }} />;
+            }}
+            ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          />
         </GestureHandlerRootView>
 
-        {/* FIXME: update the following modal values once explore implementation has been merged */}
-        {/*only render if comments are visible -> gets rid of double error popup for explore page if user is not logged in*/}
-        {( areCommentsVisible ? (<ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
-        ) : null)}
+        {areCommentsVisible ? (
+          <ExploreCommentsModal
+            isVisible={areCommentsVisible}
+            onClose={() => {
+              setAreCommentsVisible(false);
+              currentPost.current = null;
+              creatorID.current = null;
+            }}
+            currentPost={currentPost.current}
+            postCreator={creatorID.current}
+          />
+        ) : null}
 
         <BottomNavButton />
       </View>
     </>
   );
 }
-
