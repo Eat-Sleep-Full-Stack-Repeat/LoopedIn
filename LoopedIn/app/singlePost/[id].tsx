@@ -23,6 +23,13 @@ import { Feather, Entypo } from "@expo/vector-icons";
 import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
+import { useFocusEffect, useRoute } from '@react-navigation/native'; 
+
+type PhotoCard = {
+  pic: string;
+  altText: string;
+  id: string;
+}
 
 type SinglePost = {
   id: string;
@@ -30,7 +37,7 @@ type SinglePost = {
   username: string;
   //title?: string;
   content: string;
-  imageUrls: string[];
+  imageUrls: PhotoCard[];
   profilePic: string;
   datePosted: string;
   tags?: string[] | string;
@@ -46,10 +53,11 @@ export default function SinglePost() {
   const likingRef = useRef(false);
   const savingRef = useRef(false);
   const [tags, setTags] = useState<string[]>([]);
-  const { id, from } = useLocalSearchParams();
+  const { id, editVersion, updatedCaption } = useLocalSearchParams();
   const postID = id as string;
   const [currentUser, setCurrentUser] = useState<number | null>(null);
   const [post, setPostInfo] = useState<SinglePost | null>(null);
+  const route = useRoute();
 
   //for image scrolling/viewing
   const [modalImageUri, setModalImageUri] = useState<string | null>(null);
@@ -71,6 +79,29 @@ export default function SinglePost() {
     }
     getPost();
   }, []);
+
+  //reload upon return from editing
+  // useEffect(() => {
+  //   if (!updatedCaption) return;
+
+  //   setPostInfo(prev =>
+  //     prev ? { ...prev, content: updatedCaption } : prev
+  //   );
+  // }, [updatedCaption, editVersion]);
+
+
+useEffect(() => {
+  if (updatedCaption && post) { setPostInfo({ ...post, content: updatedCaption });}
+  fetchPostInfo();
+}, [route.key, editVersion, updatedCaption]);
+
+
+  //call refresh upon return from editing
+  useFocusEffect(
+  React.useCallback(() => {
+    fetchPostInfo();
+  }, [])
+);
 
   //handle behavior on web and mobile appropriately
   const onImagePress = (uri: string) => {
@@ -114,9 +145,28 @@ export default function SinglePost() {
         username: responseData.postInfo.fld_username,
         profilePic: responseData.postInfo.fld_profile_pic,
         content: responseData.postInfo.fld_caption,
-        datePosted: responseData.postInfo.fld_timestamp,
-        imageUrls: responseData.postPics,
+        datePosted: formatDate(responseData.postInfo.fld_timestamp),
+        imageUrls: Array.isArray(responseData.postPics)
+          ? responseData.postPics
+              .map((pic: any) => {
+                if (Array.isArray(pic)) {
+                  const [url, alt, id] = pic;
+                  if (!url) return null;
+                  return { pic: url, altText: alt ?? "", id: id ?? ""};
+                }
+
+                //backup
+                if (pic?.pic) {
+                  return { pic: pic.pic, altText: pic.altText ?? "", id: pic.id ?? ""};
+                }
+
+                return null;
+              })
+              .filter(Boolean)
+          : [],
       };
+
+      //console.log(mappedPost)
 
       setPostInfo(mappedPost);
       setCurrentUser(responseData.currentUser);
@@ -144,9 +194,9 @@ export default function SinglePost() {
     likingRef.current = true;
     const original = liked;
     setLiked(!original);
+    const token = await Storage.getItem("token");
 
     try {
-      const token = await Storage.getItem("token");
       const res = await fetch(
         `${API_URL}/api/toggle_like?id=${postID}`,
         {
@@ -228,6 +278,14 @@ export default function SinglePost() {
         },
       ]}
     >
+      {/* back arrow for testing */}
+      {/* <View>
+        <Pressable onPress={router.back} hitSlop={10}>
+          <Feather name="arrow-left" size={24} color={colors.text} />
+        </Pressable>
+      </View> */}
+
+      {/* Centered message */}
       <View>
           <Text style={[styles.content, { color: colors.text, fontStyle: "italic" }]}>
             Loading page content...
@@ -240,17 +298,40 @@ export default function SinglePost() {
 
 
   //UI handlers for popups - moved below "no post" handling due to null issues
-  const handleEdit = () => {
+  const handleEdit = async () => {
     setMenuVisible(false);
-    router.push({
-      pathname: "/editpost",
+    router.replace({
+      pathname: "/editpost/[id]",
       params: { id: post.id },
     });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    console.log(`Deleting post ID: ${post.id}`);
     setMenuVisible(false);
-    console.log(`Deleting post ID (NOT IMPLEMENTED YET): ${post.id}`);
+    const token = await Storage.getItem("token");
+
+    try {
+      const response = await fetch(`${API_URL}/api/delete-post`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ PostID: id }),
+      });
+
+      if (!response.ok) {
+        alert("Error while deleting the post. Please try again later.");
+        return;
+      }
+
+    } catch (e) {
+      console.log("Error when deleting post", e);
+    } finally {
+      router.back();
+    }
   };
 
   //begin the REAL UI
@@ -350,17 +431,39 @@ export default function SinglePost() {
               setImageIndex(index);
             }}
           >
-          {post.imageUrls.map((uri, index) => (
+          {/* {post.imageUrls.map((uri, index) => (
             <Pressable key={index} onPress={() => onImagePress(uri)}>
               <Image
                 source={{ uri }}
                 style={{ width: containerWidth, height: containerWidth }}
                 resizeMode="cover"
               />
-            </Pressable>
-          ))}
+            </Pressable> */}
+
+          {/* ))} */}
+
+          {post.imageUrls.map((photo, index) => {
+            if (!photo?.pic) return null;
+
+            return (
+              <Pressable
+                key={`${photo.pic}-${index}`}
+                onPress={() => onImagePress(photo.pic)}
+              >
+                <Image
+                  source={{ uri: photo.pic }}
+                  accessibilityLabel={photo.altText || "Post image"}
+                  accessible
+                  style={{ width: containerWidth, height: containerWidth }}
+                  resizeMode="cover"
+                />
+              </Pressable>
+            );
+          })}
+
           </ScrollView>
         )}
+
         </View>
 
 
