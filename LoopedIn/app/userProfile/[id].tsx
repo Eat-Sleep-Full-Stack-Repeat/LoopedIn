@@ -595,7 +595,7 @@ export default function OtherUserProfile() {
     contactContainer: {
       flexDirection: "row",
       justifyContent: "space-evenly",
-      marginBottom: 30,
+      // marginBottom: 10,
       alignItems: "center",
       marginHorizontal: 20,
     },
@@ -691,7 +691,7 @@ export default function OtherUserProfile() {
               {/* Followers */}
 
               <Pressable
-                style={{ flexDirection: "column", alignItems: "center" }}
+                style={{ flexDirection: "column", alignItems: "center", justifyContent: "flex-start"  }}
                 onPress={() => {
                   if (!userData?.userID) {
                     alert("Still fetching userdata... try again later")
@@ -770,9 +770,9 @@ export default function OtherUserProfile() {
                   {isFollowed ? "Followed" : "Follow"} </Text>
                 )}
             </Pressable>
-            <View style={[styles.followContainer, (isBlockedUser || isBlocked) && styles.isBlockedBtn]}>
+            {/* <View style={[styles.followContainer, (isBlockedUser || isBlocked) && styles.isBlockedBtn]}>
               <Text style={[styles.followText, (isBlockedUser || isBlocked) && styles.isBlockedText]}> Message </Text>
-            </View>
+            </View> */}
           </View>
           ) : (<View></View>)}
         </View>
@@ -802,10 +802,14 @@ export default function OtherUserProfile() {
         ListHeaderComponent={renderHeader}
         renderItem={({ item }) => {
           const thumbSource = getThumbnailSource(item);
-          if (!thumbSource) return null;
+          const id = item.postId;
+
+          if (item == undefined) return null;
 
           return (
-            <Pressable onPress={() => router.back()}>
+            <Pressable onPress={() => router.push({
+            pathname: "/singlePost/[id]",
+            params: { id }})}>
               <Image
                 source={thumbSource}
                 resizeMode="cover"
@@ -813,7 +817,8 @@ export default function OtherUserProfile() {
                   width: cardW,
                   height: cardW * (16 / 9),
                   borderRadius: 20,
-                  marginBottom: 8,
+                  marginVertical: 10,
+                  marginHorizontal: 4,
                 }}
               />
             </Pressable>
@@ -829,8 +834,10 @@ export default function OtherUserProfile() {
           backgroundColor: colors.background,
         }}
         columnWrapperStyle={{
-          justifyContent: "space-between",
-          marginHorizontal: 10,
+          justifyContent: "flex-start",
+          // marginVertical: 10,
+          // paddingHorizontal: 10,
+          // columnGap: 10,  
         }}
       />
 
