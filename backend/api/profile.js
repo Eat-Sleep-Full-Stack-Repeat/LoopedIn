@@ -279,7 +279,7 @@ router.get("/profile/:id", authenticateToken, async (req, res) => {
             LIMIT 1
           ) AS "previewKey"
         FROM posts.tbl_post p
-        WHERE p.fld_creator = $1
+        WHERE p.fld_creator = $1 AND p.fld_is_public='true'
         ORDER BY p.fld_post_pk DESC
       `;
       const user_posts = await pool.query(query, [id]);
