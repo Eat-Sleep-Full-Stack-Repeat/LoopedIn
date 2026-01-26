@@ -557,7 +557,7 @@ export default function ExploreSearch() {
 
                   if (!isUserMode && !hasMorePosts.current && posts.length > 0) {
                     return (
-                      <Text style={{ color: colors.text, textAlign: "center", paddingBottom: 40 }}>
+                      <Text style={{ color: colors.text, textAlign: "center", paddingBottom: 40, paddingTop: 20 }}>
                         No more posts.
                       </Text>
                     );

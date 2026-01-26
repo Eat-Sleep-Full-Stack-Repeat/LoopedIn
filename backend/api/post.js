@@ -691,7 +691,7 @@ router.get("/single-post", authenticateToken, async (req, res) => {
 
   try {
     let query = `
-    SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic,
+    SELECT u.fld_user_pk, u.fld_username, u.fld_profile_pic, p.fld_caption, CAST(p.fld_timestamp AS TIMESTAMPTZ), i.fld_pic_id, i.fld_post_pic, i.fld_alt_text, p.fld_is_public, p.fld_post_pk, i.fld_pic_id,
       CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
       CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
       FROM login.tbl_user AS u INNER JOIN posts.tbl_post AS p
@@ -704,7 +704,8 @@ router.get("/single-post", authenticateToken, async (req, res) => {
         LEFT JOIN posts.tbl_post_saves AS ps
           ON ps.fld_post_fk = p.fld_post_pk
           AND ps.fld_user_fk = $2
-      WHERE p.fld_post_pk = $1`;
+      WHERE p.fld_post_pk = $1
+      ORDER BY i.fld_pic_id`;
 
     const returnFeed = await pool.query(query, [postID, currentUser]);
 
@@ -739,7 +740,8 @@ router.get("/single-post", authenticateToken, async (req, res) => {
         const key = row.fld_post_pic.includes("/") ? row.fld_post_pic : `posts/${row.fld_post_pic}`;
         const folder = key.split("/")[0];
         const fileName = key.split("/").slice(1).join("/");
-        postPics.push(await getSignedFile(folder, fileName));
+        pic = await getSignedFile(folder, fileName);
+        postPics.push([pic, row.fld_alt_text, row.fld_pic_id]);
       }
     }
 
@@ -840,5 +842,106 @@ router.get("/check_if_liked", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Could not check like status" });
   }
 });
+
+
+
+// ----------------------------- EDIT/DELETE POST -----------------------------
+
+router.delete("/delete-post", authenticateToken, async (req, res) => {
+  const user = req.userID;
+  const postToDelete = req.body.PostID;
+
+  try {
+    const query = `
+      DELETE FROM posts.tbl_post
+      WHERE fld_post_pk = $1 AND fld_creator = $2;
+    `;
+
+    await pool.query(query, [postToDelete, user]);
+
+    res.status(200).json({ message: "Successfully deleted the post!" });
+  } catch (e) {
+    console.log("Error - could not delete that post", e);
+    res.status(500).json({ message: "Could not delete the post" });
+  }
+});
+
+
+router.patch("/update", authenticateToken, async (req, res) => {
+  try{
+    const user = req.userID;
+    const postToUpdate = req.body.PostID;
+    const caption = req.body.caption;
+    const isPublic = req.body.isPublic;
+    const pictures = req.body.pictures;
+
+    //check creator status
+    query = `
+      SELECT *
+      FROM posts.tbl_post
+      WHERE fld_post_pk = $1 AND fld_creator = $2;
+      `
+
+      const post = await pool.query(query, [postToUpdate, user]);
+
+      if (post.rowCount == 0) {
+        //do not have permission to edit post
+        console.log("[posts]: No permissions to edit post")
+        res.status(403).json({message: "Forbidden: Do not have permission to edit post"})
+      }
+      else if (caption.length < 0 || caption.length > 1000) {
+        //if caption too big or small (if we just skip the frontend altogether and just send API requests)
+        console.log("[posts]: caption length is too big or small")
+        res.status(403).json({message: "Forbidden: caption length does not fit size requirements"})
+      }
+      else {
+        //else, edit contents of post
+        query = `
+        UPDATE posts.tbl_post
+        SET fld_caption = $1, fld_is_public = $2, fld_edited = TRUE
+        WHERE fld_post_pk = $3 AND fld_creator = $4
+        RETURNING *;
+        `
+
+        //run query
+        const updated_post = await pool.query(query, [caption, isPublic, postToUpdate, user])
+
+        //check if it worked
+        if (updated_post.rowCount == 0) {
+          console.log("[posts]: Error editing post in query - base info")
+          res.status(500).json({message: "Failed to edit post"})
+        }
+
+        //----------------------------
+
+        for (const pic of pictures) {
+          const query2 = `
+            UPDATE posts.tbl_post_pic p
+            SET fld_alt_text = $1
+            FROM posts.tbl_post t
+            WHERE p.fld_pic_id = $2
+              AND p.fld_post_fk = t.fld_post_pk
+              AND t.fld_creator = $3
+            RETURNING p.*;
+          `;
+
+          const altTextUpdate = await pool.query(query2, [pic.altText, pic.id, user]);
+
+            if (altTextUpdate.rowCount === 0) {
+            console.log("[posts]: Failed to update alt text for pic", pic.id);
+            return res.status(500).json({message: "Failed to update one or more image alt texts"});
+          }
+        }
+
+        console.log("[posts]: Successfully updated post!")
+        res.status(200).json(updated_post.rows[0])
+      }
+  }
+  catch(error) {
+    console.log("Error editing post: ", error)
+    res.status(500).json(error)
+  }
+})
+
 
 module.exports = router;

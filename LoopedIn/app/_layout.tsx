@@ -23,7 +23,7 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="signup" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="editforum/[id]" options={{headerShown: false, animation: "none"}}/>
-        <Stack.Screen name="editpost" options={{headerShown: false, animation: "none"}}/>
+        <Stack.Screen name="editpost/[id]" options={{headerShown: false, animation: "none"}}/>
         <Stack.Screen name="myposts" options={{ headerShown: false, animation: "none" }} />
         <Stack.Screen name="savedposts" options={{ headerShown: false, animation: "none" }} />
         <Stack.Screen name="singlePost/[id]" options={{ headerShown: false, animation: "none" }} />
