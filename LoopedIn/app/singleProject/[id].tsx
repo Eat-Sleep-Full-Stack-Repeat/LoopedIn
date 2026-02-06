@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -26,6 +26,12 @@ export default function SingleProject() {
       flexDirection: "row",
       alignItems: "center",
       paddingVertical: 8,
+      justifyContent: "space-between",
+    },
+    headerSide: {
+      width: 32,
+      alignItems: "center",
+      justifyContent: "center",
     },
     backButton: {
       paddingRight: 8,
@@ -35,7 +41,6 @@ export default function SingleProject() {
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      marginRight: 30,
     },
     createButton: {
       paddingLeft: 8,
@@ -107,14 +112,15 @@ export default function SingleProject() {
     },
     notePlaceholder: {
       marginTop: 16,
-      width: 380,
-      height: 180,
+      width: "100%",
+      minHeight: 180,
       borderRadius: 14,
       backgroundColor: "transparent",
       alignItems: "flex-start",
       justifyContent: "flex-start",
       paddingHorizontal: 14,
       paddingVertical: 12,
+      paddingBottom: 16,
       borderWidth: 1,
       borderColor: colors.topBackground,
       alignSelf: "center",
@@ -122,6 +128,10 @@ export default function SingleProject() {
     noteText: {
       color: colors.text,
       fontSize: 14,
+      lineHeight: 20,
+      textAlignVertical: Platform.OS === "android" ? "top" : "auto",
+      flexShrink: 1,
+      width: "100%",
     },
   });
 
@@ -132,15 +142,19 @@ export default function SingleProject() {
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         <View style={styles.headerRow}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={22} color={colors.text} />
-          </Pressable>
+          <View style={styles.headerSide}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={22} color={colors.text} />
+            </Pressable>
+          </View>
           <View style={styles.headerCenter}>
             <Text style={styles.title}>Project Title</Text>
           </View>
-          <Pressable style={styles.createButton}>
-            <Feather name="edit" size={20} color={colors.text} />
-          </Pressable>
+          <View style={styles.headerSide}>
+            <Pressable style={styles.createButton}>
+              <Feather name="edit" size={20} color={colors.text} />
+            </Pressable>
+          </View>
         </View>
         <View style={styles.statusPill}>
           <Text style={styles.statusText}>Not Started</Text>
