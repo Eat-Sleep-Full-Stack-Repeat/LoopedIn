@@ -157,10 +157,10 @@ export default function TrackerFolderView() {
     },
     floatingButton: {
       position: "absolute",
-      right: 20,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      right: 30,
+      width: 65,
+      height: 65,
+      borderRadius: 32,
       backgroundColor: colors.decorativeBackground,
       justifyContent: "center",
       alignItems: "center",
@@ -282,7 +282,7 @@ export default function TrackerFolderView() {
         }}
       />
       <Pressable
-        style={[styles.floatingButton, { bottom: insets.bottom }]}
+        style={[styles.floatingButton, { bottom: insets.bottom + 10}]}
         onPress={() => console.log("Will update to add a project!")}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />
