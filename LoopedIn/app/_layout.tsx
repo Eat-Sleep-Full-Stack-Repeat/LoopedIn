@@ -30,6 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="explore" options={{ headerShown: false, animation: "none" }} />
         <Stack.Screen name="exploreSearch" options={{ headerShown: false, animation: "none" }} />
          <Stack.Screen name="folderscreen" options={{ headerShown: false, animation: "none" }} />
+         <Stack.Screen name="singleProject/[id]" options={{ headerShown: false, animation: "none" }} />
       </Stack>
     </ThemeProvider>
   );
