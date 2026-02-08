@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,18 @@ import {
   Image,
   Pressable,
   TextInput,
+  ImageSourcePropType,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BottomNavButton from "@/components/bottomNavBar";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Colors } from "@/Styles/colors";
+import { useTheme } from "@/context/ThemeContext";
+import API_URL from "@/utils/config";
+import { Storage } from "../utils/storage";
+import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
 
 /* ---------------- types ---------------- */
 type Folder = {
@@ -20,43 +28,226 @@ type Folder = {
   icon: any;
 };
 
+type BackendFolder = {
+  fld_folder_pk: string;
+  fld_f_name: string;
+  fld_craft_type: string;
+  project_cnt: number;
+}
+
+type CraftOption = {
+  id: string;
+  label: string;
+  icon: ImageSourcePropType;
+};
+
+const craftOptions: CraftOption[] = [
+  {
+    id: "C",
+    label: "C",
+    icon: require("@/assets/images/crochet.png"),
+  },
+  {
+    id: "K",
+    label: "K",
+    icon: require("@/assets/images/knit.png"),
+  },
+  {
+    id: "S",
+    label: "S",
+    icon: require("@/assets/images/sewing.png"),
+  },
+  {
+    id: "M",
+    label: "M",
+    icon: require("@/assets/images/misc.png")
+  },
+];
+
+
 export default function FolderScreen() {
   const insets = useSafeAreaInsets();
 
-  /* ---------------- state ---------------- */
-  const [folders, setFolders] = useState<Folder[]>([
-    {
-      id: "1",
-      name: "Crochet",
-      count: 12,
-      icon: require("@/assets/images/crochet.png"),
-    },
-    {
-      id: "2",
-      name: "Knit",
-      count: 6,
-      icon: require("@/assets/images/knit.png"),
-    },
-    {
-      id: "3",
-      name: "Sewing",
-      count: 2,
-      icon: require("@/assets/images/sewing.png"),
-    },
-    {
-      id: "4",
-      name: "Miscellaneous",
-      count: 0,
-      icon: require("@/assets/images/misc.png"),
-    },
-  ]);
+  /* ------------ *.+ Colors +.*------------ */
+  const { currentTheme } = useTheme();
+  const colors = Colors[currentTheme];
 
+  /* ---------------- state ---------------- */
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const folder: Folder[] = useMemo(() => folders, [folders]);
+
+  //api query variables
+  const limit = 10;
+  const lastPostID = useRef<number | null>(null);
+  const hasMore = useRef(true);
+  const loadingMore = useRef<true | false>(false);
+
+  //token-related variables + states
+  const [tokenOkay, setTokenOkay] = useState(false);
+  const alreadyAlerted = useRef(false); //preventing double-alert in dev
+
+  //refresh
+  const [refreshing, setRefreshing] = useState(false);
+
+  //folder ops
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<any>(
     require("@/assets/images/misc.png")
   );
+
+  //folder info things
+  const [noFolders, setNoFolders] = useState(false)
+
+  
+  /* ---------------- functionalities ---------------- */
+  //check token before doing anything
+  const checkTokenOkay = async () => {
+    try{
+      const token = await Storage.getItem("token");
+      if (!token) {
+        throw new Error("no token");
+      }
+      else{
+        setTokenOkay(true);
+      }
+  }
+    catch(e){
+      if (!alreadyAlerted.current) {
+        console.log(e)
+        alreadyAlerted.current = true;
+        alert("Access denied, please log in and try again.");
+        router.replace("/");
+      }
+    }
+  }
+
+  useEffect(() => {
+    checkTokenOkay();
+  }, []);
+
+  //with good token, load up data
+  useEffect(() => {
+    if (!tokenOkay) { return };
+    //fetch data
+    fetchData();
+  }, [tokenOkay]);
+
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setFolders([]);
+    lastPostID.current = null;
+    hasMore.current = true;
+  };
+
+  useEffect(() => {
+    if (!refreshing) return;
+
+    const refreshNewData = async () => {
+      try {
+        await fetchData();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+    refreshNewData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshing]);
+
+
+  //collect data
+  const fetchData = async() => {
+    if (!tokenOkay) { return };
+    const token = await Storage.getItem("token");
+
+    if (loadingMore.current || !hasMore.current) {
+      //if already loading more data or there is no more data in database then return
+      return;
+    }
+
+    loadingMore.current = true;
+
+    try {
+      const includePostID = lastPostID.current
+        ? `&postID=${lastPostID.current}`
+        : "";
+
+
+      const res = await fetch(
+        `${API_URL}/api/folder?limit=${limit}${includePostID}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        setNoFolders(true);
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      const responseData = await res.json();
+
+      // update with the new feed
+      let tempArray: Folder[] = responseData.newFeed.map(
+        (folder: BackendFolder) => ({
+          id: folder.fld_folder_pk,
+          name: folder.fld_f_name,
+          count: folder.project_cnt,
+          icon: craftOptions.find((option) => option.id === folder.fld_craft_type)?.icon,
+        })
+      );
+
+      //double check the returned folders to make sure no duplicates are put into forumData
+      let filteredArray: Folder[] = tempArray.filter(
+        (folder) => !folders.some((checkFolder) => checkFolder.id === folder.id)
+      );
+
+
+      setFolders((prev) => [...prev, ...filteredArray]);
+      hasMore.current = (responseData.hasMore);
+
+      lastPostID.current = Number(tempArray[tempArray.length - 1].id);
+
+    } 
+    catch (e) {
+      console.log("Error when trying to fetch folder data:", e);
+    } 
+    finally {
+      // even if fetching data fails, we will update loading more
+      loadingMore.current = false;
+    }
+
+  }
+
 
   /* ---------------- handlers ---------------- */
   const saveRename = () => {
@@ -103,42 +294,99 @@ export default function FolderScreen() {
     setCreateOpen(false);
   };
 
+  /* ---------------- render component ---------------- */
+  //need component to render folder items one by one
+  const renderFolder = useCallback(
+    ({ item }: { item: Folder }) => (
+      <View style={styles.folderCard}>
+        <Image source={item.icon} style={styles.icon} />
+        <Text style={styles.folderName}>{item.name}</Text>
+        <Text style={styles.count}>{item.count} projects</Text>
+
+        <Pressable
+          onPress={() => {
+            setEditingFolder(item);
+            setFolderName(item.name);
+            setSelectedIcon(item.icon);
+          }}
+        >
+          <Text style={styles.editText}>Edit</Text>
+        </Pressable>
+      </View>
+    ),
+    [
+      router,
+      styles,
+    ]
+  );
+
+
   /* ---------------- render ---------------- */
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>My Folders</Text>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Text style={styles.title}>My Folders</Text>
 
-      {/* search */}
-      <View style={styles.searchBar}>
-        <Feather name="search" size={16} color="#888" />
-        <Text style={{ color: "#888" }}>Search folders</Text>
-      </View>
+        {/* search */}
+        <View style={styles.searchBar}>
+          <Feather name="search" size={16} color="#888" />
+          <Text style={{ color: "#888" }}>Search folders</Text>
+        </View>
 
-      {/* folders */}
-      <FlatList
-        data={folders}
-        numColumns={2}
-        keyExtractor={(item) => item.id}
-        columnWrapperStyle={{ justifyContent: "space-between" }}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 20 }}
-        renderItem={({ item }) => (
-          <View style={styles.folderCard}>
-            <Image source={item.icon} style={styles.icon} />
-            <Text style={styles.folderName}>{item.name}</Text>
-            <Text style={styles.count}>{item.count} projects</Text>
-
-            <Pressable
-              onPress={() => {
-                setEditingFolder(item);
-                setFolderName(item.name);
-                setSelectedIcon(item.icon);
-              }}
-            >
-              <Text style={styles.editText}>Edit</Text>
-            </Pressable>
-          </View>
-        )}
-      />
+        {/* folders */}
+        <FlatList
+          data={folder}
+          numColumns={2}
+          keyExtractor={(item) => item.id}
+          columnWrapperStyle={{ justifyContent: "space-between" }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 20 }}
+          renderItem={renderFolder}
+          onEndReached={fetchData}
+          ListEmptyComponent={() => {
+            if (loadingMore.current) {
+              return <ActivityIndicator size="small" color={colors.text} />;
+            }
+            else if (noFolders) {
+              return (
+                <View style={{paddingVertical: 10}}>
+                  <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center", lineHeight: 24}}> 
+                    Nothing to see here... {"\n"} Create a project folder now! </Text>
+                </View>
+              )
+            }
+            else {
+              return (
+                <View style={{ paddingVertical: 40 }}>
+                  <Text style={{ color: colors.settingsText, fontWeight: "bold", textAlign: "center" }}>
+                    Loading...
+                  </Text>
+                </View>
+              );
+            }
+          }}
+          ListFooterComponent={() => {
+            if (folder.length > 0) {
+              if (!hasMore.current) {
+                return (
+                  <View style={{ paddingBottom: 150 }}>
+                    <Text style={{ color: colors.text }}>No More Folders to Load</Text>
+                  </View>
+                );
+              } 
+              else {
+                return (
+                  <View style={{ paddingBottom: 150 }}>
+                    <ActivityIndicator size="small" color={colors.text} />
+                  </View>
+                );
+              }
+            }
+            return <View style={{ height: 160 }} />;
+          }}
+          ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        />
+      </GestureHandlerRootView>
 
       {/* bottom nav */}
       <BottomNavButton />
