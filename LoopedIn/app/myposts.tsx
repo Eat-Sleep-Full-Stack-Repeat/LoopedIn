@@ -318,9 +318,15 @@ export default function MyPosts() {
                 },
               ]}
             >
+            {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+              <Text style={[styles.tagText, { color: colors.text }]}>
+                🌟{tag.tagName}
+              </Text>
+            ) : (
               <Text style={[styles.tagText, { color: colors.text }]}>
                 #{tag.tagName}
               </Text>
+            )}
             </View>
           ))}
         </View>
@@ -329,7 +335,6 @@ export default function MyPosts() {
   ), [
     colors.text,
     router,
-    styles,
   ]);
 
   const handleRefresh = async() => {
@@ -366,6 +371,126 @@ export default function MyPosts() {
     }
   }, [refreshing])
 
+
+    
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 180,
+    },
+    pageTitle: {
+      fontSize: 28,
+      fontWeight: "700",
+    },
+    postContainer: {
+      borderRadius: 14,
+      padding: 18,
+      marginBottom: 25,
+      borderWidth: 1,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    header: {
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    profileRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    profilePic: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 10,
+    },
+    username: {
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    content: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    date: {
+      fontSize: 12,
+      opacity: 0.7,
+    },
+    postTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginBottom: 8,
+    },
+    tagRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 10,
+    },
+    tagChip: {
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderWidth: 1,
+    },
+    tagText: {
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    floatingButton: {
+      position: "absolute",
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 5,
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+    },
+    menuContainer: {
+      width: 180,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+    },
+    menuOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 8,
+    },
+    menuText: {
+      fontSize: 16,
+    },
+  });
+
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false, animation: "none" }} />
@@ -377,8 +502,13 @@ export default function MyPosts() {
         ]}
       >
         <GestureHandlerRootView style={styles.scrollContent}>
-          <Text style={[styles.pageTitle, { color: colors.text }]}>My Posts</Text>
-          <View style={{ height: 10 }} />
+          <View style={styles.header}>
+            <Pressable onPress={router.back} hitSlop={10}>
+              <Feather name="arrow-left" size={24} color={colors.text} />
+            </Pressable>
+            <Text style={[styles.pageTitle, { color: colors.text }]}>My Posts</Text>
+            <View style={{ height: 10 }} />
+          </View>
 
           <FlatList
             data={posts}
@@ -483,115 +613,3 @@ export default function MyPosts() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 180,
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-    marginTop: 35,
-    marginBottom: 20,
-  },
-  postContainer: {
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 25,
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  profileRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  profilePic: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  username: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  content: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  date: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  postTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  tagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 10,
-  },
-  tagChip: {
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  floatingButton: {
-    position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-  },
-  menuContainer: {
-    width: 180,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-  menuOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 8,
-  },
-  menuText: {
-    fontSize: 16,
-  },
-});

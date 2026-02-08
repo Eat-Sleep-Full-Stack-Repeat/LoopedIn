@@ -1307,8 +1307,7 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
     if (req.query.before === "undefined" || !req.query.before) {
       query = `
       SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
-      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color))
-      FILTER (WHERE t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')), '[]'::jsonb) AS tag_data
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
         ON u.fld_user_pk = f.fld_creator
         INNER JOIN forums.tbl_forum_tag AS ft
@@ -1332,8 +1331,7 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
     else { //if fetched before -> very hienous query
       query = `
       SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
-      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color))
-      FILTER (WHERE t.fld_tag_name NOT IN ('Knit', 'Crochet', 'Misc')), '[]'::jsonb) AS tag_data
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
         ON u.fld_user_pk = f.fld_creator
         INNER JOIN forums.tbl_forum_tag AS ft

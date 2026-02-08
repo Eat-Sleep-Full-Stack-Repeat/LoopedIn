@@ -107,7 +107,7 @@ const secondFile = require('./api/newFeature'); //delete this example upon creat
 const avatarRoutes = require("./api/avatar");
 const forumWork = require('./api/forums.js');
 const postRouter = require("./api/post.js"); 
-
+const trackerRouter = require("./api/tracker");
 
 
 //get ready to use that bad boy ("mount")
@@ -119,6 +119,8 @@ app.use('/api/newFeature', secondFile);
 app.use('/api', avatarRoutes);
 app.use('/api/forum', forumWork);
 app.use("/api", postRouter);
+app.use("/api", trackerRouter);
+
 
 // -------------------- RUNNING SERVER --------------------------- 
 app.listen(port, (error) => {
