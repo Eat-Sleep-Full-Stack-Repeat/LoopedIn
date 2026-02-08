@@ -22,12 +22,11 @@ router.get('/folder', authenticateToken, async(req, res) => {
         //initial fetch
         //we get to use a join besides an inner join, yay
         if (req.query.postID == "undefined" || !req.query.postID) {
-            console.log("first if")
             query = `
             SELECT f.fld_folder_pk, f.fld_f_name, f.fld_craft_type, COUNT(p.fld_folder_fk) AS project_cnt
             FROM folders.tbl_folder AS f LEFT OUTER JOIN tracker.tbl_project AS p
                 ON f.fld_folder_pk = p.fld_folder_fk
-            WHERE f.fld_creator = $1 AND fld_type = 'P'
+            WHERE f.fld_creator = $1 AND fld_type = 'T'
             GROUP BY (f.fld_folder_pk, f.fld_f_name, f.fld_craft_type)
             ORDER BY f.fld_folder_pk DESC
             LIMIT($2 + 1);`
@@ -45,7 +44,7 @@ router.get('/folder', authenticateToken, async(req, res) => {
             SELECT f.fld_folder_pk, f.fld_f_name, f.fld_craft_type, COUNT(p.fld_folder_fk) AS project_cnt
             FROM folders.tbl_folder AS f LEFT OUTER JOIN tracker.tbl_project AS p
                 ON f.fld_folder_pk = p.fld_folder_fk
-            WHERE f.fld_creator = $1 AND fld_type = 'P' AND f.fld_folder_pk < $2
+            WHERE f.fld_creator = $1 AND fld_type = 'T' AND f.fld_folder_pk < $2
             GROUP BY (f.fld_folder_pk, f.fld_f_name, f.fld_craft_type)
             ORDER BY f.fld_folder_pk DESC
             LIMIT($3 + 1);`
