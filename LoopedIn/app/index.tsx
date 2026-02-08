@@ -46,14 +46,6 @@ export default function Index() {
       >
         <Text style={{ color: colors.text }}>Welcome Page</Text>
       </TouchableOpacity>
-
-      {}
-      <TouchableOpacity
-        onPress={() => router.push("/myposts" as never)}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}>My Posts Page</Text>
-      </TouchableOpacity>
       <TouchableOpacity
         onPress={() => router.push("/folderscreen")}
         style={{ marginTop: 20 }}

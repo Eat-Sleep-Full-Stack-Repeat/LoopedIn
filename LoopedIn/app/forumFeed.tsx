@@ -399,12 +399,21 @@ export default function ForumFeed() {
 
   const headerView = () => (
     <View>
-      {/* Search icon section */}
-      <View style={styles.searchBar}>
-        <Pressable style={styles.searchIcon} onPress={searchFunctionality}>
-          <Feather name="search" size={24} color={colors.text} />
-          <Text style={styles.searchText}> Search </Text>
-        </Pressable>
+      <View style={{flexDirection: "row", justifyContent: "space-between"}}>
+        {/* my posts */}
+        <View style={styles.searchBar}>
+          <Pressable style={styles.searchIcon} onPress={() => router.push("/myposts")}>
+            <Feather name="user" size={24} color={colors.text} />
+            <Text style={styles.searchText}> My Posts </Text>
+          </Pressable>
+        </View>
+        {/* Search icon section */}
+        <View style={styles.searchBar}>
+          <Pressable style={styles.searchIcon} onPress={searchFunctionality}>
+            <Feather name="search" size={24} color={colors.text} />
+            <Text style={styles.searchText}> Search </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Forum title */}
