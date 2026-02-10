@@ -273,6 +273,7 @@ export default function SingleProject() {
       color: colors.text,
       fontSize: 16,
       paddingVertical: 4,
+      width: "100%",
     },
     noteBodyInput: {
       color: colors.text,
@@ -280,6 +281,7 @@ export default function SingleProject() {
       lineHeight: 20,
       textAlignVertical: Platform.OS === "android" ? "top" : "auto",
       minHeight: 120,
+      width: "100%",
     },
   });
 
