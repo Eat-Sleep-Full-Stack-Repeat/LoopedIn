@@ -357,12 +357,12 @@ export default function SingleProject() {
 
         <View style={styles.noteHeaderRow}>
           <Text style={styles.dateLabel}>Title</Text>
-          <Text style={styles.countText}>{titleText.length}/100</Text>
+          <Text style={styles.countText}>{titleText.length}/40</Text>
         </View>
         <View style={styles.noteTitleBox}>
           <TextInput
             placeholderTextColor={colors.settingsText}
-            maxLength={100}
+            maxLength={40}
             style={styles.noteTitleInput}
             value={titleText}
             onChangeText={setTitleText}
@@ -430,12 +430,12 @@ export default function SingleProject() {
         </Modal>
         <View style={styles.noteHeaderRow}>
           <Text style={styles.dateLabel}>Note</Text>
-          <Text style={styles.countText}>{noteText.length}/1000</Text>
+          <Text style={styles.countText}>{noteText.length}/5000</Text>
         </View>
         <View style={styles.notePlaceholder}>
           <TextInput
             placeholderTextColor={colors.settingsText}
-            maxLength={1000}
+            maxLength={5000}
             multiline
             style={styles.noteBodyInput}
             value={noteText}
