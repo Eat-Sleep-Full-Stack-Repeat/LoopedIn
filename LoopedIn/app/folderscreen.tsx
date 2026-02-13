@@ -100,7 +100,9 @@ export default function FolderScreen() {
   //folder info things
   const [noFolders, setNoFolders] = useState(false)
 
-  
+  const [searchQuery, setSearchQuery] = useState("")
+  const searchTimer = useRef<NodeJS.Timeout | null>(null)
+
   /* ---------------- functionalities ---------------- */
   //check token before doing anything
   const checkTokenOkay = async () => {
@@ -148,7 +150,11 @@ export default function FolderScreen() {
 
     const refreshNewData = async () => {
       try {
-        await fetchData();
+        if (searchQuery.trim().length > 0) {
+          await fetchSearch(searchQuery.trim());
+        } else {
+          await fetchData();
+        }
       } catch (e) {
         console.log("error when refreshing data", e);
       } finally {
@@ -164,6 +170,9 @@ export default function FolderScreen() {
   //collect data
   const fetchData = async() => {
     if (!tokenOkay) { return };
+
+    if (searchQuery.trim().length > 0) return;
+
     const token = await Storage.getItem("token");
 
     if (loadingMore.current || !hasMore.current) {
@@ -227,15 +236,17 @@ export default function FolderScreen() {
       );
 
       //double check the returned folders to make sure no duplicates are put into forumData
-      let filteredArray: Folder[] = tempArray.filter(
-        (folder) => !folders.some((checkFolder) => checkFolder.id === folder.id)
-      );
+      setFolders((prev) => {
+        const existing = new Set(prev.map((f) => f.id));
+        const next = tempArray.filter((f) => !existing.has(f.id));
+        return [...prev, ...next];
+      });
 
-
-      setFolders((prev) => [...prev, ...filteredArray]);
       hasMore.current = (responseData.hasMore);
 
-      lastPostID.current = Number(tempArray[tempArray.length - 1].id);
+      if (tempArray.length > 0) {
+        lastPostID.current = Number(tempArray[tempArray.length - 1].id);
+      }
 
     } 
     catch (e) {
@@ -247,6 +258,93 @@ export default function FolderScreen() {
     }
 
   }
+
+  const fetchSearch = async (q: string) => {
+    if (!tokenOkay) return;
+
+    const token = await Storage.getItem("token");
+
+    hasMore.current = false;
+    lastPostID.current = null;
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/folder?limit=50&q=${encodeURIComponent(q)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      const data = await res.json();
+
+      let mapped: Folder[] = (data.newFeed || []).map(
+        (folder: BackendFolder) => ({
+          id: folder.fld_folder_pk,
+          name: folder.fld_f_name,
+          count: folder.project_cnt,
+          icon: craftOptions.find((option) => option.id === folder.fld_craft_type)?.icon,
+        })
+      );
+
+      setFolders(mapped);
+      setNoFolders(mapped.length === 0);
+    } catch (e) {
+      console.log("Error when trying to fetch search folder data:", e);
+    }
+  }
+
+  useEffect(() => {
+    if (!tokenOkay) return;
+
+    const q = searchQuery.trim();
+
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+
+    if (!q) {
+      setNoFolders(false);
+      setFolders([]);
+      lastPostID.current = null;
+      hasMore.current = true;
+      loadingMore.current = false;
+
+      setTimeout(() => {
+        fetchData();
+      }, 0);
+
+      return;
+    }
+
+    searchTimer.current = setTimeout(() => {
+      fetchSearch(q);
+    }, 500);
+
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, [searchQuery, tokenOkay]);
 
 
   /* ---------------- handlers ---------------- */
@@ -330,7 +428,21 @@ export default function FolderScreen() {
         {/* search */}
         <View style={styles.searchBar}>
           <Feather name="search" size={16} color="#888" />
-          <Text style={{ color: "#888" }}>Search folders</Text>
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search folders"
+            placeholderTextColor="#888"
+            style={styles.searchInput}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}>
+              <Feather name="x" size={16} color="#888" />
+            </Pressable>
+          )}
         </View>
 
         {/* folders */}
@@ -339,12 +451,23 @@ export default function FolderScreen() {
           numColumns={2}
           keyExtractor={(item) => item.id}
           columnWrapperStyle={{ justifyContent: "space-between" }}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 20, paddingBottom: insets.bottom + 220 }}
           renderItem={renderFolder}
-          onEndReached={fetchData}
+          onEndReached={() => {
+            if (searchQuery.trim().length === 0) fetchData();
+          }}
           ListEmptyComponent={() => {
             if (loadingMore.current) {
               return <ActivityIndicator size="small" color={colors.text} />;
+            }
+            else if (searchQuery.trim().length > 0 && noFolders) {
+              return (
+                <View style={{paddingVertical: 10}}>
+                  <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center", lineHeight: 24}}>
+                    No folders match “{searchQuery.trim()}”
+                  </Text>
+                </View>
+              )
             }
             else if (noFolders) {
               return (
@@ -365,6 +488,9 @@ export default function FolderScreen() {
             }
           }}
           ListFooterComponent={() => {
+            if (searchQuery.trim().length > 0) {
+              return <View style={{ height: 160 }} />;
+            }
             if (folder.length > 0) {
               if (!hasMore.current) {
                 return (
@@ -500,6 +626,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+  },
+  searchInput: {
+    flex: 1,
+    color: "#111",
+    paddingVertical: 0,
   },
   folderCard: {
     width: "47%",
