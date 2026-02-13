@@ -1,10 +1,12 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Entypo, Feather, Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { View, StyleSheet, Text, Pressable, FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Storage } from "../../utils/storage";
+import API_URL from "@/utils/config";
 
 type FolderProject = {
   id: string;
@@ -45,6 +47,7 @@ export default function TrackerFolderView() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams();
 
   // projects is the data used in the infinite scroll
   // TODO: update the initial sampleProjects to be empty
@@ -70,6 +73,9 @@ export default function TrackerFolderView() {
       setFilter((prev) => [...prev, filterName]);
     }
   };
+
+  //fetch project data
+  
 
   const filterStyles = StyleSheet.create({
     default: {

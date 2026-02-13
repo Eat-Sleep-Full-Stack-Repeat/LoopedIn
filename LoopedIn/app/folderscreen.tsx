@@ -299,9 +299,17 @@ export default function FolderScreen() {
   const renderFolder = useCallback(
     ({ item }: { item: Folder }) => (
       <View style={styles.folderCard}>
-        <Image source={item.icon} style={styles.icon} />
-        <Text style={styles.folderName}>{item.name}</Text>
-        <Text style={styles.count}>{item.count} projects</Text>
+        <Pressable 
+          onPress={() => router.push({
+            pathname: "/trackerFolder/[id]",
+            params: {id: item.id}
+          })}
+          style={{alignItems: "center"}}
+        >
+          <Image source={item.icon} style={styles.icon} />
+          <Text style={styles.folderName}>{item.name}</Text>
+          <Text style={styles.count}>{item.count} projects</Text>
+        </Pressable>
 
         <Pressable
           onPress={() => {

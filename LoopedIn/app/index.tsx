@@ -59,13 +59,6 @@ export default function Index() {
         <Text style={{ color: colors.text }}> Single Project View </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => router.push("/trackerFolderView")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}>Tracker - Single Folder View</Text>
-      </TouchableOpacity>
-
       <View
         style={{
           justifyContent: "center",
