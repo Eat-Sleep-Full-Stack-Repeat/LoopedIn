@@ -13,20 +13,37 @@ const authenticateToken = require('../middleware/authenticate');
 router.get('/folder', authenticateToken, async(req, res) => {
     try {
         const curr_user = req.userID.trim()
-        const limit = req.query.limit
+        const limit = Number(req.query.limit) || 10
+        const postID = req.query.postID
+        const q = (req.query.q ?? "").toString().trim()
         let more_posts = true
         let returnFeed
         let query
 
-
-        //initial fetch
-        //we get to use a join besides an inner join, yay
-        if (req.query.postID == "undefined" || !req.query.postID) {
+        if (q.length > 0) {
             query = `
             SELECT f.fld_folder_pk, f.fld_f_name, f.fld_craft_type, COUNT(p.fld_folder_fk) AS project_cnt
             FROM folders.tbl_folder AS f LEFT OUTER JOIN tracker.tbl_project AS p
                 ON f.fld_folder_pk = p.fld_folder_fk
-            WHERE f.fld_creator = $1 AND fld_type = 'T'
+            WHERE f.fld_creator = $1 AND f.fld_type = 'T' AND f.fld_f_name ILIKE $2
+            GROUP BY (f.fld_folder_pk, f.fld_f_name, f.fld_craft_type)
+            ORDER BY f.fld_f_name ASC
+            LIMIT $3;`
+
+            returnFeed = await pool.query(query, [curr_user, `%${q}%`, 50])
+
+            res.status(200).json({hasMore: false, newFeed: returnFeed.rows})
+            return
+        }
+
+        //initial fetch
+        //we get to use a join besides an inner join, yay
+        if (postID == "undefined" || !postID) {
+            query = `
+            SELECT f.fld_folder_pk, f.fld_f_name, f.fld_craft_type, COUNT(p.fld_folder_fk) AS project_cnt
+            FROM folders.tbl_folder AS f LEFT OUTER JOIN tracker.tbl_project AS p
+                ON f.fld_folder_pk = p.fld_folder_fk
+            WHERE f.fld_creator = $1 AND f.fld_type = 'T'
             GROUP BY (f.fld_folder_pk, f.fld_f_name, f.fld_craft_type)
             ORDER BY f.fld_folder_pk ASC
             LIMIT($2 + 1);`
@@ -44,12 +61,12 @@ router.get('/folder', authenticateToken, async(req, res) => {
             SELECT f.fld_folder_pk, f.fld_f_name, f.fld_craft_type, COUNT(p.fld_folder_fk) AS project_cnt
             FROM folders.tbl_folder AS f LEFT OUTER JOIN tracker.tbl_project AS p
                 ON f.fld_folder_pk = p.fld_folder_fk
-            WHERE f.fld_creator = $1 AND fld_type = 'T' AND f.fld_folder_pk > $2
+            WHERE f.fld_creator = $1 AND f.fld_type = 'T' AND f.fld_folder_pk < $2
             GROUP BY (f.fld_folder_pk, f.fld_f_name, f.fld_craft_type)
             ORDER BY f.fld_folder_pk ASC
             LIMIT($3 + 1);`
 
-            returnFeed = await pool.query(query, [curr_user, req.query.postID, limit])
+            returnFeed = await pool.query(query, [curr_user, postID, limit])
         }
 
         //we need more posts?
