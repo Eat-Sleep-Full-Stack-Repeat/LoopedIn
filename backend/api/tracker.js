@@ -61,7 +61,7 @@ router.get('/folder', authenticateToken, async(req, res) => {
             SELECT f.fld_folder_pk, f.fld_f_name, f.fld_craft_type, COUNT(p.fld_folder_fk) AS project_cnt
             FROM folders.tbl_folder AS f LEFT OUTER JOIN tracker.tbl_project AS p
                 ON f.fld_folder_pk = p.fld_folder_fk
-            WHERE f.fld_creator = $1 AND f.fld_type = 'T' AND f.fld_folder_pk < $2
+            WHERE f.fld_creator = $1 AND f.fld_type = 'T' AND f.fld_folder_pk > $2
             GROUP BY (f.fld_folder_pk, f.fld_f_name, f.fld_craft_type)
             ORDER BY f.fld_folder_pk ASC
             LIMIT($3 + 1);`
@@ -85,20 +85,56 @@ router.get('/folder', authenticateToken, async(req, res) => {
 
 })
 
+//endpoint to load folder data (folder name as of right now) onto folder-specific page
+//made this to avoid refetching folder data upon every filter render
+//also gives us the opportunity to load more folder-related data upon mount if needed
+router.get("/folder/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params
+        const curr_user = req.userID.trim()
+        let query
+
+        query = `
+        SELECT fld_f_name
+        FROM folders.tbl_folder
+        WHERE fld_creator = $1 AND fld_folder_pk = $2;`
+
+        const folderData = await pool.query(query, [curr_user, id])
+
+        //either the folder isn't yours or doesn't exist
+        //will not specify both cases
+        if (folderData.rowCount === 0) {
+            console.log("[tracker]: invalid folder.")
+            res.status(404).json({message: "Folder does not exist."})
+            return
+        }
+
+        console.log("[tracker]: successfully fetched folder-specific data")
+        res.status(200).json({folderName: folderData.rows[0].fld_f_name})
+
+    }
+    catch (error) {
+        console.log("[tracker]: Server error fetching folder-specific data:", error)
+        res.status(500).json(error)
+    }
+})
+
 
 //------------------------ PROJECT ENDPOINTS -------------------------------
 //folder-specific project loadup
-router.get("/folder/[id]/project", authenticateToken, async (req, res)=> {
+router.get("/folder/:id/project", authenticateToken, async (req, res)=> {
     try {
         const { id } = req.params
         const curr_user = req.userID.trim()
         const statusFilter = req.query.status
         let query
 
+        console.log("status: ", statusFilter)
+
         //limit status filter size before querying for input validation purposes
         if (statusFilter.length < 1 || statusFilter.length > 3) {
             console.log("[tracker]: Malformed status filter")
-            res.status(403).json({message: "Bad Status Filter"})
+            res.status(400).json({message: "Bad Status Filter"})
             return;
         }
 
@@ -113,7 +149,7 @@ router.get("/folder/[id]/project", authenticateToken, async (req, res)=> {
         SELECT p.fld_project_pk, p.fld_p_name, fld_status
         FROM tracker.tbl_project AS p INNER JOIN folders.tbl_folder AS f
             ON f.fld_folder_pk = p.fld_folder_fk
-        WHERE p.fld_creator = $1 AND f.fld_folder_pk = $2 AND fld_status IN ($3)
+        WHERE p.fld_creator = $1 AND f.fld_folder_pk = $2 AND fld_status = ANY($3)
         ORDER BY p.fld_project_pk ASC;`
 
         const projects = await pool.query(query, [curr_user, id, '{' + statusFilter.join(',') + '}'])
@@ -125,11 +161,11 @@ router.get("/folder/[id]/project", authenticateToken, async (req, res)=> {
         }
 
         console.log("[tracker]: fetched projects sucessfully")
-        res.status(200).json({projects: projects.rows[0]})
+        res.status(200).json({projects: projects.rows})
 
     }
     catch(error) {
-        console.log("[tracker]: Server error fetching projects")
+        console.log("[tracker]: Server error fetching projects:", error)
         res.status(500).json(error)
     }
 })

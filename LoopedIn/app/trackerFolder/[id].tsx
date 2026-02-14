@@ -1,47 +1,24 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { Entypo, Feather, Ionicons } from "@expo/vector-icons";
+import { Entypo, Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { View, StyleSheet, Text, Pressable, FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { useState, useRef, useEffect } from "react";
+import { View, StyleSheet, Text, Pressable, FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
+import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
+
+type Folder = {
+  id: string;
+  name: string;
+}
 
 type FolderProject = {
   id: string;
   title: string;
-  isStarted: boolean;
-  isFinished: boolean;
+  status: string;
 };
-
-const sampleProjects: FolderProject[] = [
-  {
-    id: "1",
-    title: "Shrek",
-    isStarted: true,
-    isFinished: false,
-  },
-  {
-    id: "2",
-    title: "Cat",
-    isStarted: false,
-    isFinished: false,
-  },
-  {
-    id: "3",
-    title: "Bunny",
-    isStarted: true,
-    isFinished: true,
-  },
-  {
-    id: "4",
-    title:
-      "A really long title to test how this will look if the project name is really long for no apparent reason",
-    isStarted: false, //should this even be possible? Started = true but the user finished it?
-    isFinished: true,
-  },
-];
 
 export default function TrackerFolderView() {
   const { currentTheme } = useTheme();
@@ -51,11 +28,82 @@ export default function TrackerFolderView() {
 
   // projects is the data used in the infinite scroll
   // TODO: update the initial sampleProjects to be empty
-  const [projects, setProjects] = useState<FolderProject[]>(sampleProjects);
+  const [projects, setProjects] = useState<FolderProject[]>();
+  const [folder, setFolder] = useState<Folder>();
 
   // used to apply the filters for which projects to display
   // available filters: "Not Started", "In Progress", "Completed" -> cannot have all 3 (that is equal to no filter)
   const [filter, setFilter] = useState<string[]>([]);
+  //for api usage only so we don't mess with the filter state
+  let filterArray;
+
+  //token-related variables + states
+  const [tokenOkay, setTokenOkay] = useState(false);
+  const alreadyAlerted = useRef(false); //preventing double-alert in dev
+  const [loading, setLoading] = useState(false);
+  const [folderLoading, setFolderLoading] = useState(false);
+
+  //refresh
+  const [refreshing, setRefreshing] = useState(false);
+
+
+  /* ---------------- functionalities ---------------- */
+  //check token before doing anything
+  const checkTokenOkay = async () => {
+    try{
+      const token = await Storage.getItem("token");
+      if (!token) {
+        throw new Error("no token");
+      }
+      else{
+        setTokenOkay(true);
+      }
+  }
+    catch(e){
+      if (!alreadyAlerted.current) {
+        console.log(e)
+        alreadyAlerted.current = true;
+        alert("Access denied, please log in and try again.");
+        router.replace("/");
+      }
+    }
+  }
+
+  useEffect(() => {
+    checkTokenOkay();
+  }, []);
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setProjects([]);
+  };
+
+  //with good token, load up data
+  useEffect(() => {
+    if (!tokenOkay) { return };
+    //fetch data
+    fetchFolder()
+    fetchData();
+  }, [tokenOkay]);
+
+    useEffect(() => {
+      if (!refreshing) return;
+  
+      const refreshNewData = async () => {
+        try {
+          await fetchData();
+        } catch (e) {
+          console.log("error when refreshing data", e);
+        } finally {
+          setRefreshing(false);
+        }
+      };
+  
+      refreshNewData();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refreshing]);
+
 
   // Function declarations:
 
@@ -74,8 +122,178 @@ export default function TrackerFolderView() {
     }
   };
 
+  //fetch folder-specific data on mount only -> can add things to dependency array to change this behavior
+  //did this so we don't have to rerender folder data upon filter change
+  useEffect(() => {
+    if (!id) { return };
+    fetchFolder();
+
+  }, [id])
+
+  useEffect(() => {
+    fetchData();
+
+  }, [filter])
+
+  //folder fetch handler
+  const fetchFolder = async () => {
+    if (!tokenOkay) { return };
+    if (folderLoading) { return };
+
+    setFolderLoading(true);
+    const token = await Storage.getItem("token");
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/folder/${id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        router.back();
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.back();
+        return;
+      }
+
+      const responseData = await res.json();
+
+      setFolder({
+        id: Array.isArray(id) ? id[0] : id, //because it thinks id is an array
+        name: responseData.folderName
+      })
+    }
+    catch(error) {
+      console.log("Error when trying to fetch project data:", error)
+    }
+    finally {
+      setFolderLoading(false);
+    }
+  }
+
+
+
   //fetch project data
-  
+  const fetchData = async () => {
+    if (!tokenOkay) { return };
+    if (loading || folderLoading) { return };
+
+    setLoading(true);
+
+    const token = await Storage.getItem("token");
+
+    filterArray = filter
+
+    //if we have no filters, we fetch everything -> similar to if we have all 3 filters applied
+    //will treat those conditions the exact same because regardless, we always need to fetch
+    if (filterArray.length === 0) {
+      filterArray = ["Not Started", "In Progress", "Completed"]
+    }
+
+    try {
+      let status = ``;
+
+      for (let i = 0; i < filterArray.length; i++) {
+        let tempElement = filterArray[i].replace(/"/g, '');
+        if (i == 0) {
+          status = `status[]=${tempElement}`
+        }
+        else {
+          status = status + `&status[]=${tempElement}`
+        }
+      }
+
+    const res = await fetch(
+      `${API_URL}/api/folder/${id}/project?${status}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      }
+    );
+
+    if (res.status == 403) {
+      if (!alreadyAlerted.current) {
+        alreadyAlerted.current = true;
+        alert("Access denied, please log in and try again.");
+      }
+      router.replace("/login");
+      return;
+    }
+
+    //if for some reason, didn't set up the status filter correctly
+    else if (res.status == 400) {
+      if (!alreadyAlerted.current) {
+        alreadyAlerted.current = true;
+        alert("Something went wrong when filtering... please try again later.");
+      }
+      router.back();
+      return;
+    }
+
+    else if (res.status == 404) {
+      setProjects([])
+      return;
+    }
+
+    else if (!res.ok) {
+      if (!alreadyAlerted.current) {
+        alreadyAlerted.current = true;
+        alert("Whoops! Something went wrong... please try again later.");
+      }
+      router.back();
+      return;
+    }
+
+    const responseData = await res.json();
+
+    const format_projects = responseData.projects.map((row: any) => ({
+      id: row.fld_project_pk,
+      title: row.fld_p_name,
+      status: row.fld_status,
+    }))
+
+    setProjects(format_projects);
+
+    }
+    catch(error) {
+      console.log("Error when trying to fetch project data:", error)
+    }
+    finally {
+      setLoading(false);
+    }
+  }
+
 
   const filterStyles = StyleSheet.create({
     default: {
@@ -190,8 +408,7 @@ export default function TrackerFolderView() {
 
       {/*Folder Name title*/}
       <View style={styles.folderName}>
-        {/* TODO: Update the folder name from backend here */}
-        <Text style={styles.titleText}>Folder Name</Text>
+        <Text style={styles.titleText}>{folder?.name}</Text>
       </View>
 
       {/* Filter options -> not started, in progress, completed */}
@@ -239,54 +456,73 @@ export default function TrackerFolderView() {
         </Pressable>
       </View>
 
-      {/* Project info (Assuming an infinite scroll here?) */}
-      <FlatList
-        data={projects}
-        renderItem={({ item }) => (
-          <View style={styles.projectContainer}>
-            <View
-              style={{ justifyContent: "space-between", flexDirection: "row" }}
-            >
+      {/*refresh only where the projects live at */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        {/* Project info (Assuming an infinite scroll here?) */}
+        <FlatList
+          data={projects}
+          renderItem={({ item }) => (
+            <View style={styles.projectContainer}>
               <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  flex: 1,
-                  paddingRight: 12,
-                }}
+                style={{ justifyContent: "space-between", flexDirection: "row" }}
               >
-                <Text style={{ color: colors.text, flexShrink: 1 }}>
-                  {item.title}
-                </Text>
                 <View
-                  style={[
-                    styles.statusDot,
-                    item.isFinished
-                      ? filterStyles.green
-                      : item.isStarted
-                      ? filterStyles.yellow
-                      : filterStyles.red,
-                  ]}
-                />
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    flex: 1,
+                    paddingRight: 12,
+                  }}
+                >
+                  <Text style={{ color: colors.text, flexShrink: 1 }}>
+                    {item.title}
+                  </Text>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      item.status == "Completed"
+                        ? filterStyles.green
+                        : item.status == "In Progress"
+                        ? filterStyles.yellow
+                        : filterStyles.red,
+                    ]}
+                  />
+                </View>
+                <Pressable>
+                      <Entypo
+                        name="dots-three-vertical"
+                        size={20}
+                        color={colors.text}
+                      />
+                    </Pressable>
               </View>
-              <Pressable>
-                    <Entypo
-                      name="dots-three-vertical"
-                      size={20}
-                      color={colors.text}
-                    />
-                  </Pressable>
             </View>
-          </View>
-        )}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
-        contentContainerStyle={{
-          paddingTop: 16,
-          paddingHorizontal: 30,
-          flexGrow: 1,
-        }}
-      />
+          )}
+          keyExtractor={(item) => item.id}
+          ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
+          contentContainerStyle={{
+            paddingTop: 16,
+            paddingHorizontal: 30,
+            flexGrow: 1,
+          }}
+          ListEmptyComponent={() => {
+            if (loading) {
+              return <ActivityIndicator size="small" color={colors.text}/>
+            }
+            else if (projects?.length === 0) {
+              return (
+                <View style={{paddingVertical: 10}}>
+                  <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No projects here... </Text>
+                </View>
+              )
+            }
+          }}
+          ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>}
+        />
+      </GestureHandlerRootView>
+
       <Pressable
         style={[styles.floatingButton, { bottom: insets.bottom + 10}]}
         onPress={() => console.log("Will update to add a project!")}
