@@ -397,9 +397,17 @@ export default function FolderScreen() {
   const renderFolder = useCallback(
     ({ item }: { item: Folder }) => (
       <View style={styles.folderCard}>
-        <Image source={item.icon} style={styles.icon} />
-        <Text style={styles.folderName}>{item.name}</Text>
-        <Text style={styles.count}>{item.count} projects</Text>
+        <Pressable 
+          onPress={() => router.push({
+            pathname: "/trackerFolder/[id]",
+            params: {id: item.id}
+          })}
+          style={{alignItems: "center"}}
+        >
+          <Image source={item.icon} style={styles.icon} />
+          <Text style={styles.folderName}>{item.name}</Text>
+          <Text style={styles.count}>{item.count} projects</Text>
+        </Pressable>
 
         <Pressable
           onPress={() => {
@@ -457,10 +465,7 @@ export default function FolderScreen() {
             if (searchQuery.trim().length === 0) fetchData();
           }}
           ListEmptyComponent={() => {
-            if (loadingMore.current) {
-              return <ActivityIndicator size="small" color={colors.text} />;
-            }
-            else if (searchQuery.trim().length > 0 && noFolders) {
+            if (searchQuery.trim().length > 0 && noFolders) {
               return (
                 <View style={{paddingVertical: 10}}>
                   <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center", lineHeight: 24}}>
@@ -476,15 +481,6 @@ export default function FolderScreen() {
                     Nothing to see here... {"\n"} Create a project folder now! </Text>
                 </View>
               )
-            }
-            else {
-              return (
-                <View style={{ paddingVertical: 40 }}>
-                  <Text style={{ color: colors.settingsText, fontWeight: "bold", textAlign: "center" }}>
-                    Loading...
-                  </Text>
-                </View>
-              );
             }
           }}
           ListFooterComponent={() => {
