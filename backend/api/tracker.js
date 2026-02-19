@@ -173,6 +173,51 @@ router.delete("/folder_delete", authenticateToken, async (req, res) => {
   }
 });
 
+//renaming the folder
+router.patch("/folder_rename", authenticateToken, async(req, res) => {
+  try {
+    const currentUser = req.userID;
+      /* 
+          Front-end Body: 
+              folderID,
+              folderName,
+              craftType
+      */
+      const sentData = req.body;
+      const { folderID, folderName, craftType } = sentData;
+
+      if (folderName.length > 20){
+        console.log("Folder name is too long");
+        return res.status(403).json({message: "Folder name too long"});
+      }
+  
+      //fetch the folder to change
+      let query;
+      query = `SELECT * FROM folders.tbl_folder
+      WHERE fld_creator = $1 AND fld_folder_pk = $2;`;
+  
+      const checkFolderExists = await pool.query(query, [currentUser, folderID])
+  
+      if (checkFolderExists.rowCount === 0){
+        console.log("That folder does not exist");
+        res.status(404).json({message: "Folder not found"})
+        return
+      } 
+  
+     //update folder name
+     query = `UPDATE folders.tbl_folder
+     SET fld_f_name = $1, fld_craft_type = $4
+     WHERE fld_creator = $2 AND fld_folder_pk = $3;`;
+  
+     await pool.query(query, [folderName, currentUser, folderID, craftType]);
+  
+     return res.status(200).json({message: "Updated folder name"})
+  } catch (e) {
+    console.log("Error when updating folder name: ", e);
+    return res.status(500).json(e)
+  }
+})
+
 //------------------------ PROJECT ENDPOINTS -------------------------------
 //folder-specific project loadup
 router.get("/folder/:id/project", authenticateToken, async (req, res) => {
