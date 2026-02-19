@@ -363,13 +363,54 @@ export default function FolderScreen() {
     setFolderName("");
   };
 
-  const deleteFolder = () => {
+  const deleteFolder = async() => {
+    console.log("Going to try to delete the folder!")
     if (!editingFolder) return;
 
     if (editingFolder.count > 0) {
       alert("You can only delete empty folders.");
       return;
     }
+
+    const token = await Storage.getItem("token");
+
+    try{
+      const response = await fetch(`${API_URL}/api/folder_delete`,
+          {
+            method: "DELETE",
+            headers : {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              folderID: editingFolder.id,
+              folderName: editingFolder.name,
+            })
+          }
+        )
+
+        if (response.status === 403) {
+          alert("Cannot delete: This folder has projects.")
+          return
+        }
+        
+        else if (response.status === 404) {
+          alert("Cannot delete: folder does not exist")
+          return
+        }
+
+        else if (!response.ok) {
+          alert("Server error occured. Please try again later.")
+          router.back()
+          return
+        }
+    } catch (error) {
+      console.log("Front-end error log when deleting a folder:", error);
+      alert("Could not delete folder");
+      return;
+    }
+
 
     setFolders((prev) => prev.filter((f) => f.id !== editingFolder.id));
     setEditingFolder(null);
