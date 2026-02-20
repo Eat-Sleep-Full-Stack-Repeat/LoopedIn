@@ -348,8 +348,15 @@ export default function FolderScreen() {
 
 
   /* ---------------- handlers ---------------- */
-  const saveRename = () => {
+  const saveRename = async() => {
     if (!editingFolder || !folderName.trim()) return;
+
+    if (folderName.length > 20){
+      alert("Folder name is too long (must be 20 characters or less)");
+      return;
+    }
+
+    await renameFolder();
 
     setFolders((prev) =>
       prev.map((f) =>
@@ -363,7 +370,7 @@ export default function FolderScreen() {
     setFolderName("");
   };
 
-  const deleteFolder = () => {
+  const deleteFolder = async() => {
     if (!editingFolder) return;
 
     if (editingFolder.count > 0) {
@@ -371,9 +378,106 @@ export default function FolderScreen() {
       return;
     }
 
+    const token = await Storage.getItem("token");
+
+    try{
+      const response = await fetch(`${API_URL}/api/folder_delete`,
+          {
+            method: "DELETE",
+            headers : {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              folderID: editingFolder.id,
+              folderName: editingFolder.name,
+            })
+          }
+        )
+
+        if (response.status === 403) {
+          alert("Cannot delete: This folder has projects.")
+          return
+        }
+        
+        else if (response.status === 404) {
+          alert("Cannot delete: folder does not exist")
+          return
+        }
+
+        else if (!response.ok) {
+          alert("Server error occured. Please try again later.")
+          router.back()
+          return
+        }
+    } catch (error) {
+      console.log("Front-end error log when deleting a folder:", error);
+      alert("Could not delete folder");
+      return;
+    }
+
+
     setFolders((prev) => prev.filter((f) => f.id !== editingFolder.id));
     setEditingFolder(null);
+
+    alert("Forum post successfully deleted!")
   };
+
+  const renameFolder = async() => {
+    //check token
+    const token = await Storage.getItem("token");
+
+    //login check to reduce unnecessary fetches
+    if (!token) {
+      alert("Hold on there... you need to login first!")
+      router.replace("/login")
+      return
+    }
+
+    if (!editingFolder) return;
+
+    //Figure out which craft to update the folder to
+    const newCraftType = craftOptions.find(option => option.icon === selectedIcon)
+    const paramCraftType = newCraftType?.id;
+
+    try {
+      const response = await fetch(`${API_URL}/api/folder_rename`,
+        {
+          method: "PATCH",
+          headers : {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            folderID: editingFolder?.id,
+            folderName: folderName,
+            craftType: paramCraftType,
+          }),
+          credentials: "include",
+        }
+      )
+
+      if (response.status === 404) {
+        alert("Folder does not exist.")
+        return
+      }
+
+      else if (!response.ok) {
+        alert("Server error occured. Please try again later.")
+        router.back()
+        return
+      }
+
+      alert("Forum post successfully saved!")
+
+    }
+    catch(error) {
+      alert("Server error. Please try again later.")
+      console.log("Error editing post:", error)
+
+    }
+  }
 
   const createFolder = () => {
     if (!folderName.trim()) return;
