@@ -28,7 +28,7 @@ export default function TrackerFolderView() {
 
   // projects is the data used in the infinite scroll
   // TODO: update the initial sampleProjects to be empty
-  const [projects, setProjects] = useState<FolderProject[]>();
+  const [projects, setProjects] = useState<FolderProject[]>([]);
   const [folder, setFolder] = useState<Folder>();
 
   // used to apply the filters for which projects to display
@@ -462,43 +462,45 @@ export default function TrackerFolderView() {
         <FlatList
           data={projects}
           renderItem={({ item }) => (
-            <View style={styles.projectContainer}>
-              <View
-                style={{ justifyContent: "space-between", flexDirection: "row" }}
-              >
+            <Pressable onPress={() => router.push(`/singleProject/${item.id}`)}>
+              <View style={styles.projectContainer}>
                 <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "flex-start",
-                    flex: 1,
-                    paddingRight: 12,
-                  }}
+                  style={{ justifyContent: "space-between", flexDirection: "row" }}
                 >
-                  <Text style={{ color: colors.text, flexShrink: 1 }}>
-                    {item.title}
-                  </Text>
                   <View
-                    style={[
-                      styles.statusDot,
-                      item.status == "Completed"
-                        ? filterStyles.green
-                        : item.status == "In Progress"
-                        ? filterStyles.yellow
-                        : filterStyles.red,
-                    ]}
-                  />
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "flex-start",
+                      flex: 1,
+                      paddingRight: 12,
+                    }}
+                  >
+                    <Text style={{ color: colors.text, flexShrink: 1 }}>
+                      {item.title}
+                    </Text>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        item.status == "Completed"
+                          ? filterStyles.green
+                          : item.status == "In Progress"
+                          ? filterStyles.yellow
+                          : filterStyles.red,
+                      ]}
+                    />
+                  </View>
+                  <Pressable>
+                    <Entypo
+                      name="dots-three-vertical"
+                      size={20}
+                      color={colors.text}
+                    />
+                  </Pressable>
                 </View>
-                <Pressable>
-                      <Entypo
-                        name="dots-three-vertical"
-                        size={20}
-                        color={colors.text}
-                      />
-                    </Pressable>
               </View>
-            </View>
+            </Pressable>
           )}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
           contentContainerStyle={{
             paddingTop: 16,
