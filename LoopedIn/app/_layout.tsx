@@ -33,6 +33,7 @@ export default function RootLayout() {
         <Stack.Screen name="trackerFolder/[id]" options={{ headerShown: false, animation: "none" }} />
         <Stack.Screen name="singleProject/[id]" options={{ headerShown: false, animation: "none" }} />
         <Stack.Screen name="newproject" options={{ headerShown: false, animation: "none" }} />
+        <Stack.Screen name="inventoryfolder" options={{ headerShown: false, animation: "none" }} />
       </Stack>
     </ThemeProvider>
   );
