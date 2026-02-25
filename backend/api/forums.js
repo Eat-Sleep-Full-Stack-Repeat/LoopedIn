@@ -54,7 +54,8 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
     ) {
       // loads the initial batch of data (no timestamp to check, just the most recent posts)
       query = `
-      SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
+      SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ), ff.fld_post_pk,
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u 
       INNER JOIN forums.tbl_forum_post AS ff 
           ON u.fld_user_pk = ff.fld_creator
@@ -63,6 +64,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
       WHERE tt.fld_tag_name = ANY($2) AND u.fld_user_pk <> $3
+      GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
       ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
       LIMIT ($1 + 1);
         `;
@@ -75,7 +77,8 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
     } else {
       // loads more data after the initial batch (uses timestamp of last returned post to get more -> ensures working with same set of data)
       query = `
-      SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
+      SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ), ff.fld_post_pk,
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u 
       INNER JOIN forums.tbl_forum_post AS ff 
           ON u.fld_user_pk = ff.fld_creator
@@ -84,6 +87,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
       WHERE (ff.fld_timestamp, ff.fld_post_pk) < ($1, $2) AND tt.fld_tag_name = ANY($4) AND u.fld_user_pk <> $5
+      GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
       ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
       LIMIT ($3 + 1);
         `;
