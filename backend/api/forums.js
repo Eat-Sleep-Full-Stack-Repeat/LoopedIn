@@ -583,10 +583,26 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
       }
     }
 
+    //fetching tags
+    query = `
+      SELECT tt.fld_tags_pk as tagID, tt.fld_tag_name as tagName, tt.fld_tag_color as tagColor
+      FROM forums.tbl_forum_post AS ff
+          INNER JOIN forums.tbl_forum_tag AS tr
+            ON ff.fld_post_pk = tr.fld_post
+            INNER JOIN tags.tbl_tags AS tt
+              ON tr.fld_tag = tt.fld_tags_pk
+      WHERE ff.fld_post_pk = $1;`
+
+    const tags = await pool.query(query, [postID])
+
+    console.log(tags.rows)
+
+
     res.status(200).json({
       postInfo: returnedPostInfo.rows[0],
       currentUser: req.userID,
-      currentUserInfo: userInformation.rows
+      currentUserInfo: userInformation.rows,
+      tags: tags.rows
     })
     //send post data back
   } catch (e) {

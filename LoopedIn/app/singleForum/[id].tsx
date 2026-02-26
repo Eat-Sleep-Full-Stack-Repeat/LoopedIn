@@ -73,6 +73,18 @@ type userInfo = {
   profilepic: string | null;
 };
 
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
+
+type BackendTags = {
+  tagid: string;
+  tagname: string;
+  tagcolor: string;
+}
+
 // hide the reply action on comments at or beyond this depth
 const MAX_REPLY_DEPTH = 4;
 
@@ -98,6 +110,7 @@ export default function ForumPostDetail() {
   const comments: Comment[] = useMemo(() => passedComments, [passedComments]);
   const [post, setPostInfo] = useState<Post | null>(null);
   const [currentUser, setCurrentUser] = useState<number | null>(null);
+  const [tagData, setTagData] = useState<Tag[]>([]);
 
   //infinite scroll variables
   const loadingMore = useRef<true | false>(false);
@@ -196,6 +209,18 @@ export default function ForumPostDetail() {
       setCurrentUser(responseData.currentUser);
       setPostInfo(responseData.postInfo);
       currentUserInfo.current = responseData.currentUserInfo[0];
+
+      //structure and set the tag data
+      let tempTagData: Tag[] = responseData.tags.map(
+        (tag: BackendTags) => ({
+          tagID: tag.tagid,
+          tagName: tag.tagname,
+          tagColor: tag.tagcolor,
+        })
+      )
+
+      setTagData(tempTagData);
+
     } catch (e) {
       console.log("Error when fetching post data", e);
     }
@@ -717,9 +742,6 @@ export default function ForumPostDetail() {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  // static tags UI-only
-  const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
-
   const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
 
@@ -799,7 +821,6 @@ export default function ForumPostDetail() {
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderWidth: 1,
-      borderColor: colors.decorativeBackground,
       backgroundColor: "transparent",
       marginRight: 8,
       marginBottom: 8,
@@ -961,11 +982,19 @@ export default function ForumPostDetail() {
 
         <Text style={styles.postBody}>{post.content}</Text>
 
-        {!!staticTags.length && (
+        {!!tagData.length && (
           <View style={styles.tagRow}>
-            {staticTags.map((tag) => (
-              <View key={`${post.id}-${tag}`} style={styles.tagChip}>
-                <Text style={styles.tagText}>#{tag}</Text>
+            {tagData.map((tag) => (
+              <View key={`${post.id}-${tag.tagID}`} style={[styles.tagChip, {borderColor: tag.tagColor}]}>
+                {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                  <Text style={[styles.tagText, { color: colors.text }]}>
+                    🌟{tag.tagName}
+                  </Text>
+                ) : (
+                  <Text style={[styles.tagText, { color: colors.text }]}>
+                    #{tag.tagName}
+                  </Text>
+                )}
               </View>
             ))}
           </View>
