@@ -31,6 +31,12 @@ Ideas for backend implementation:
 - Display all other posts based on when they were posted
 */
 
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
+
 type ForumPost = {
   id: string;
   title: string;
@@ -40,7 +46,14 @@ type ForumPost = {
   postImages: Image;
   datePosted: string;
   userID: string;
+  tag_data: Tag[];
 };
+
+type BackendTags = {
+  tagID: string;
+  tagName: string;
+  tagColor: string;
+}
 
 type BackendPost = {
   fld_post_pk: string;
@@ -50,7 +63,8 @@ type BackendPost = {
   fld_body: string;
   fld_pic: Image;
   fld_timestamp: string;
-  fld_user_pk: string
+  fld_user_pk: string;
+  tag_data: BackendTags[] | [];
 };
 
 export default function ForumFeed() {
@@ -234,14 +248,23 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          tag_data: post.tag_data.map(
+            (tag: BackendTags) => ({
+              tagID: tag.tagID,
+              tagName: tag.tagName,
+              tagColor: tag.tagColor,
+            })
+          )
         })
       );
+
+      console.log("fetched")
+
 
       //double check the returned posts to make sure no duplicates are put into forumData
       let filteredArray: ForumPost[] = tempArray.filter(
         (post) => !forumData.some((checkPost) => checkPost.id === post.id)
       );
-
 
       setForumData((prev) => [...prev, ...filteredArray]);
       hasMore.current = (responseData.hasMore);
@@ -300,6 +323,13 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          tag_data: post.tag_data.map(
+            (tag: BackendTags) => ({
+              tagID: tag.tagID,
+              tagName: tag.tagName,
+              tagColor: tag.tagColor,
+            })
+          )
         })
       );
 

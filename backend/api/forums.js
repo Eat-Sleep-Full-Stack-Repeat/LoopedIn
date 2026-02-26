@@ -55,7 +55,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
       // loads the initial batch of data (no timestamp to check, just the most recent posts)
       query = `
       SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ), ff.fld_post_pk,
-      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)), '[]'::jsonb) AS tag_data
+      COALESCE(t.tags, '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u 
       INNER JOIN forums.tbl_forum_post AS ff 
           ON u.fld_user_pk = ff.fld_creator
@@ -63,8 +63,15 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
             ON ff.fld_post_pk = tr.fld_post
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
+      LEFT JOIN LATERAL (
+        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+            FROM forums.tbl_forum_tag AS tr
+              INNER JOIN tags.tbl_tags AS tt
+                ON tr.fld_tag = tt.fld_tags_pk
+        WHERE tr.fld_post = ff.fld_post_pk
+      ) t ON TRUE
       WHERE tt.fld_tag_name = ANY($2) AND u.fld_user_pk <> $3
-      GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+      GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk, t.tags
       ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
       LIMIT ($1 + 1);
         `;
@@ -78,7 +85,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
       // loads more data after the initial batch (uses timestamp of last returned post to get more -> ensures working with same set of data)
       query = `
       SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ), ff.fld_post_pk,
-      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)), '[]'::jsonb) AS tag_data
+      COALESCE(t.tags, '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u 
       INNER JOIN forums.tbl_forum_post AS ff 
           ON u.fld_user_pk = ff.fld_creator
@@ -86,8 +93,15 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
             ON ff.fld_post_pk = tr.fld_post
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
+      LEFT JOIN LATERAL (
+        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+            FROM forums.tbl_forum_tag AS tr
+              INNER JOIN tags.tbl_tags AS tt
+                ON tr.fld_tag = tt.fld_tags_pk
+        WHERE tr.fld_post = ff.fld_post_pk
+      ) t ON TRUE
       WHERE (ff.fld_timestamp, ff.fld_post_pk) < ($1, $2) AND tt.fld_tag_name = ANY($4) AND u.fld_user_pk <> $5
-      GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk
+      GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk, t.tags
       ORDER BY ff.fld_timestamp DESC, ff.fld_post_pk DESC
       LIMIT ($3 + 1);
         `;
@@ -118,6 +132,7 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
       }
     }
     // return the posts and whether there is more data to fetch
+
     res.status(200).json({
       hasMore: morePosts,
       newFeed: returnedFeed.rows.slice(0, limit),
@@ -142,7 +157,8 @@ router.get("/get-saved-forums", authenticateToken, async (req, res) => {
 
     // need to check if there was a timestamp passed from the frontend (used to sort feed and keep consistent)
     query = `
-    SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk
+    SELECT u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, CAST(ff.fld_timestamp AS TIMESTAMPTZ) , ff.fld_post_pk,
+    COALESCE(t.tags, '[]'::jsonb) AS tag_data
     FROM login.tbl_user AS u 
     INNER JOIN forums.tbl_forum_post AS ff 
         ON u.fld_user_pk = ff.fld_creator
@@ -152,7 +168,15 @@ router.get("/get-saved-forums", authenticateToken, async (req, res) => {
             ON tr.fld_tag = tt.fld_tags_pk
             INNER JOIN forums.tbl_save_forum AS sf
               ON ff.fld_post_pk = sf.fld_post_fk
+    LEFT JOIN LATERAL (
+      SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+          FROM forums.tbl_forum_tag AS tr
+            INNER JOIN tags.tbl_tags AS tt
+              ON tr.fld_tag = tt.fld_tags_pk
+      WHERE tr.fld_post = ff.fld_post_pk
+    ) t ON TRUE
     WHERE tt.fld_tag_name = ANY($2) AND sf.fld_user_fk = $3 AND u.fld_user_pk <> $3
+    GROUP BY u.fld_username, u.fld_user_pk, u.fld_profile_pic, ff.fld_header, ff.fld_body, ff.fld_pic, ff.fld_timestamp, ff.fld_post_pk, sf.fld_time_saved, sf.fld_post_fk, t.tags
     ORDER BY sf.fld_time_saved DESC, sf.fld_post_fk DESC
     LIMIT $1;
     `;
