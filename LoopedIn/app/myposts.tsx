@@ -297,14 +297,20 @@ export default function MyPosts() {
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.postTitle, { color: colors.text }]}>
-        {item.header}
-      </Text>
-      <Text style={[styles.content, { color: colors.text }]}
-            numberOfLines={2}
-            ellipsizeMode="tail">
-        {item.body}
-      </Text>
+      <Pressable onPress={() => router.push({
+          pathname: "/singleForum/[id]",
+          params: {id: item.id}
+      })}>
+        <Text style={[styles.postTitle, { color: colors.text }]}>
+          {item.header}
+        </Text>
+        <Text style={[styles.content, { color: colors.text }]}
+              numberOfLines={2}
+              ellipsizeMode="tail">
+          {item.body}
+        </Text>
+      </Pressable>
+
         {!!item.tag_data.length && (
         <View style={styles.tagRow}>
           {item.tag_data.slice(0, 5).map((tag) => (

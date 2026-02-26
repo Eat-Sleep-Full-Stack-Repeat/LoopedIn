@@ -5,6 +5,13 @@ import { FontAwesome } from "@expo/vector-icons";
 import { useState } from "react";
 import { router } from "expo-router";
 
+
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
+
 type ForumPost = {
   id: string;
   title: string;
@@ -13,6 +20,8 @@ type ForumPost = {
   datePosted: string;
   profilePic: string | null;
   userID: string;
+  is_saved_post_render: boolean;
+  tag_data: Tag[];
 };
 
 type ForumPostViewProps = {
@@ -25,12 +34,19 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const {width} = useWindowDimensions();
 
   let avatarSize;
-  const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
+
+  //flex 0 for forum posts (varying sizes because doesn't matter)
+  //flex 1 for saved post horizontal scroll b/c otherwise, it looks odd if they have diff sizes
+  let forumSize = 0;
 
   if (width >= 768) {
     avatarSize = 120;
   } else {
     avatarSize = 100;
+  }
+
+  if (postInfo.is_saved_post_render) {
+    forumSize = 1;
   }
 
   const forumPressed = () => {
@@ -59,6 +75,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       backgroundColor: colors.topBackground,
       borderRadius: 15,
       width: width - 40,
+      flex: forumSize,
     },
     forumTitle: {
       fontSize: 14,
@@ -104,7 +121,6 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderWidth: 1,
-      borderColor: colors.decorativeBackground,
       backgroundColor: colors.topBackground,
     },
     tagText: {
@@ -167,11 +183,19 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
             {postInfo.content}
           </Text>
         </View>
-        {!!staticTags.length && (
+        {postInfo.tag_data && !!postInfo.tag_data.length && (
           <View style={styles.tagRow}>
-            {staticTags.map((tag) => (
-              <View key={`${postInfo.id}-${tag}`} style={styles.tagChip}>
-                <Text style={styles.tagText}>#{tag}</Text>
+            {postInfo.tag_data.map((tag) => (
+              <View key={`${postInfo.id}-${tag.tagID}`} style={[styles.tagChip, {borderColor: tag.tagColor}]}>
+                {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                  <Text style={styles.tagText}>
+                    🌟{tag.tagName}
+                  </Text>
+                ) : (
+                  <Text style={styles.tagText}>
+                    #{tag.tagName}
+                  </Text>
+                )}
               </View>
             ))}
           </View>

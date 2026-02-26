@@ -31,6 +31,12 @@ Ideas for backend implementation:
 - Display all other posts based on when they were posted
 */
 
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
+
 type ForumPost = {
   id: string;
   title: string;
@@ -40,7 +46,15 @@ type ForumPost = {
   postImages: Image;
   datePosted: string;
   userID: string;
+  is_saved_post_render: boolean; //for display purposes -> ensure every saved post on horizontal scroll is same size
+  tag_data: Tag[];
 };
+
+type BackendTags = {
+  tagID: string;
+  tagName: string;
+  tagColor: string;
+}
 
 type BackendPost = {
   fld_post_pk: string;
@@ -50,7 +64,9 @@ type BackendPost = {
   fld_body: string;
   fld_pic: Image;
   fld_timestamp: string;
-  fld_user_pk: string
+  fld_user_pk: string;
+  is_saved_post_render: boolean;
+  tag_data: BackendTags[] | [];
 };
 
 export default function ForumFeed() {
@@ -234,6 +250,14 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          is_saved_post_render: false,
+          tag_data: post.tag_data.map(
+            (tag: BackendTags) => ({
+              tagID: tag.tagID,
+              tagName: tag.tagName,
+              tagColor: tag.tagColor,
+            })
+          )
         })
       );
 
@@ -241,7 +265,6 @@ export default function ForumFeed() {
       let filteredArray: ForumPost[] = tempArray.filter(
         (post) => !forumData.some((checkPost) => checkPost.id === post.id)
       );
-
 
       setForumData((prev) => [...prev, ...filteredArray]);
       hasMore.current = (responseData.hasMore);
@@ -300,6 +323,14 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          is_saved_post_render: true,
+          tag_data: post.tag_data.map(
+            (tag: BackendTags) => ({
+              tagID: tag.tagID,
+              tagName: tag.tagName,
+              tagColor: tag.tagColor,
+            })
+          )
         })
       );
 

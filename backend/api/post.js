@@ -233,6 +233,9 @@ router.post("/post", authenticateToken, upload.array("photos", 5), async (req, r
   }
 });
 
+
+
+//get posts
 router.get("/post", authenticateToken, async (req, res) => {
   try {
     const curr_user = (req.userID || "").trim();
@@ -261,7 +264,8 @@ router.get("/post", authenticateToken, async (req, res) => {
           i.fld_pic_id,
           i.fld_post_pic,
           CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
-          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
+          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved,
+          COALESCE(tag.tags, '[]'::jsonb) AS tag_data
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
@@ -273,9 +277,28 @@ router.get("/post", authenticateToken, async (req, res) => {
           LEFT JOIN posts.tbl_post_saves AS ps
             ON ps.fld_post_fk = p.fld_post_pk
             AND ps.fld_user_fk = $2
+          LEFT JOIN LATERAL (
+            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tags
+                FROM posts.tbl_post_tag AS tp
+                  INNER JOIN tags.tbl_tags AS t
+                    ON tp.fld_tag = t.fld_tags_pk
+            WHERE tp.fld_post = p.fld_post_pk
+            ) tag ON TRUE
         WHERE p.fld_is_public = true
           AND t.fld_tag_name = ANY($1)
           AND u.fld_user_pk <> $2
+        GROUP BY 
+          u.fld_user_pk,
+          p.fld_post_pk,
+          u.fld_username,
+          u.fld_profile_pic,
+          p.fld_caption,
+          p.fld_timestamp,
+          i.fld_pic_id,
+          i.fld_post_pic,
+          pl.fld_user_fk,
+          ps.fld_user_fk,
+          tag.tags
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
         LIMIT ($3 + 1);
       `;
@@ -292,7 +315,8 @@ router.get("/post", authenticateToken, async (req, res) => {
           i.fld_pic_id,
           i.fld_post_pic,
           CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
-          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved
+          CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved,
+          COALESCE(tag.tags, '[]'::jsonb) AS tag_data
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
@@ -304,10 +328,29 @@ router.get("/post", authenticateToken, async (req, res) => {
           LEFT JOIN posts.tbl_post_saves AS ps
             ON ps.fld_post_fk = p.fld_post_pk
             AND ps.fld_user_fk = $4
+          LEFT JOIN LATERAL (
+            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tags
+                FROM posts.tbl_post_tag AS tp
+                  INNER JOIN tags.tbl_tags AS t
+                    ON tp.fld_tag = t.fld_tags_pk
+            WHERE tp.fld_post = p.fld_post_pk
+            ) tag ON TRUE
         WHERE p.fld_is_public = true
           AND (p.fld_timestamp, p.fld_post_pk) < ($1::timestamptz, $2)
           AND t.fld_tag_name = ANY($3)
           AND u.fld_user_pk <> $4
+        GROUP BY
+          u.fld_user_pk,
+          p.fld_post_pk,
+          u.fld_username,
+          u.fld_profile_pic,
+          p.fld_caption,
+          p.fld_timestamp,
+          i.fld_pic_id,
+          i.fld_post_pic,
+          pl.fld_user_fk,
+          ps.fld_user_fk,
+          tag.tags
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
         LIMIT ($5 + 1);
       `;
@@ -710,18 +753,13 @@ router.get("/single-post", authenticateToken, async (req, res) => {
     const returnFeed = await pool.query(query, [postID, currentUser]);
 
     let query2 = `
-      SELECT t.fld_tag_name
+      SELECT t.fld_tags_pk as tagID, t.fld_tag_name as tagName, t.fld_tag_color as tagColor
       FROM posts.tbl_post AS p
       INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
       INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
       WHERE p.fld_post_pk = $1
     `;
-    const returnFeed2 = await pool.query(query2, [postID]);
-
-    let tags = [];
-    for (let i = 0; i < returnFeed2.rowCount; i++) {
-      tags.push(returnFeed2.rows[i].fld_tag_name);
-    }
+    const tags = await pool.query(query2, [postID]);
 
     if (returnFeed.rowCount > 0) {
       const row = returnFeed.rows[0];
@@ -745,7 +783,7 @@ router.get("/single-post", authenticateToken, async (req, res) => {
       }
     }
 
-    res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags });
+    res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags: tags.rows });
   } catch (error) {
     console.log("Error fetching posts: ", error);
     res.status(500).json(error);
