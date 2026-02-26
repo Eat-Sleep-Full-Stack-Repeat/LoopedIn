@@ -38,6 +38,7 @@ type ForumPost = {
   postImages: Image;
   datePosted: string;
   userID: string;
+  is_saved_post_render: boolean;
   tag_data: Tag[];
 };
 
@@ -188,6 +189,7 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          is_saved_post_render: false,
           tag_data: post.tag_data.map(
             (tag: BackendTags) => ({
               tagID: tag.tagID,

@@ -40,8 +40,19 @@ type SinglePost = {
   imageUrls: PhotoCard[];
   profilePic: string;
   datePosted: string;
-  tags?: string[] | string;
 };
+
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
+
+type BackendTags = {
+  tagid: string;
+  tagname: string;
+  tagcolor: string;
+}
 
 export default function SinglePost() {
   const { currentTheme } = useTheme();
@@ -52,11 +63,11 @@ export default function SinglePost() {
   const [saved, setSaved] = useState(false);
   const likingRef = useRef(false);
   const savingRef = useRef(false);
-  const [tags, setTags] = useState<string[]>([]);
   const { id, editVersion, updatedCaption } = useLocalSearchParams();
   const postID = id as string;
   const [currentUser, setCurrentUser] = useState<number | null>(null);
   const [post, setPostInfo] = useState<SinglePost | null>(null);
+  const [tagData, setTagData] = useState<Tag[]>([]);
   const route = useRoute();
 
   //for image scrolling/viewing
@@ -170,7 +181,16 @@ useEffect(() => {
 
       setPostInfo(mappedPost);
       setCurrentUser(responseData.currentUser);
-      setTags(responseData.tags);
+
+      //structure and set the tag data
+      let tempTagData: Tag[] = responseData.tags.map(
+        (tag: BackendTags) => ({
+          tagID: tag.tagid,
+          tagName: tag.tagname,
+          tagColor: tag.tagcolor,
+        })
+      )
+      setTagData(tempTagData);
       setLiked(!!responseData.postInfo?.fld_is_liked);
       setSaved(!!responseData.postInfo?.fld_is_saved);
     } catch (e) {
@@ -481,22 +501,28 @@ useEffect(() => {
           </Text>
 
           {/* tag work */}
-          {!!tags?.length && (
+          {!!tagData?.length && (
             <View style={styles.tagRow}>
-              {tags.slice(0, 5).map((tag) => (
+              {tagData.slice(0, 5).map((tag) => (
                 <View
-                  key={`${post.id}-${tag}`}
+                  key={`${post.id}-${tag.tagID}`}
                   style={[
                     styles.tagChip,
                     {
                       backgroundColor: "transparent",
-                      borderColor: colors.decorativeBackground,
+                      borderColor: tag.tagColor,
                     },
                   ]}
                 >
-                  <Text style={[styles.tagText, { color: colors.text }]}>
-                    #{tag}
-                  </Text>
+                  {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                    <Text style={[styles.tagText, { color: colors.text }]}>
+                      🌟{tag.tagName}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.tagText, { color: colors.text }]}>
+                      #{tag.tagName}
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>

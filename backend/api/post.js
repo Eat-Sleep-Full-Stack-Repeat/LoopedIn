@@ -737,18 +737,13 @@ router.get("/single-post", authenticateToken, async (req, res) => {
     const returnFeed = await pool.query(query, [postID, currentUser]);
 
     let query2 = `
-      SELECT t.fld_tag_name
+      SELECT t.fld_tags_pk as tagID, t.fld_tag_name as tagName, t.fld_tag_color as tagColor
       FROM posts.tbl_post AS p
       INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
       INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
       WHERE p.fld_post_pk = $1
     `;
-    const returnFeed2 = await pool.query(query2, [postID]);
-
-    let tags = [];
-    for (let i = 0; i < returnFeed2.rowCount; i++) {
-      tags.push(returnFeed2.rows[i].fld_tag_name);
-    }
+    const tags = await pool.query(query2, [postID]);
 
     if (returnFeed.rowCount > 0) {
       const row = returnFeed.rows[0];
@@ -772,7 +767,7 @@ router.get("/single-post", authenticateToken, async (req, res) => {
       }
     }
 
-    res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags });
+    res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags: tags.rows });
   } catch (error) {
     console.log("Error fetching posts: ", error);
     res.status(500).json(error);
