@@ -23,6 +23,11 @@ import { Storage } from "../utils/storage";
 import { router } from "expo-router";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
 
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
 
 type ForumPost = {
   id: string;
@@ -33,7 +38,14 @@ type ForumPost = {
   postImages: Image;
   datePosted: string;
   userID: string;
+  tag_data: Tag[];
 };
+
+type BackendTags = {
+  tagID: string;
+  tagName: string;
+  tagColor: string;
+}
 
 type BackendPost = {
   fld_post_pk: string;
@@ -43,7 +55,8 @@ type BackendPost = {
   fld_body: string;
   fld_pic: Image;
   fld_timestamp: string;
-  fld_user_pk: string
+  fld_user_pk: string;
+  tag_data: BackendTags[] | [];
 };
 
 export default function ForumFeed() {
@@ -175,6 +188,13 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          tag_data: post.tag_data.map(
+            (tag: BackendTags) => ({
+              tagID: tag.tagID,
+              tagName: tag.tagName,
+              tagColor: tag.tagColor,
+            })
+          )
         })
       );
 
@@ -189,7 +209,7 @@ export default function ForumFeed() {
       lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
       lastPostID.current = Number(tempArray[tempArray.length - 1].id);
     } catch (e) {
-      console.log("Error when trying to fetch forum data:", e);
+      console.log("Error when trying to fetch saved forum data:", e);
     } finally {
       // even if fetching data fails, we will update loading more
       loadingMore.current = false;
@@ -349,7 +369,7 @@ export default function ForumFeed() {
         </Pressable>
         <FlatList
             data={forumData}
-          renderItem={({ item }) => (
+            renderItem={({ item }) => (
             <View style={{ alignItems: "center", marginHorizontal: 20 }}>
               <ForumPostView postInfo={item} />
             </View>

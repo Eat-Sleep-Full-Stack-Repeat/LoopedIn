@@ -20,6 +20,7 @@ type ForumPost = {
   datePosted: string;
   profilePic: string | null;
   userID: string;
+  is_saved_post_render: boolean;
   tag_data: Tag[];
 };
 
@@ -34,10 +35,18 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
 
   let avatarSize;
 
+  //flex 0 for forum posts (varying sizes because doesn't matter)
+  //flex 1 for saved post horizontal scroll b/c otherwise, it looks odd if they have diff sizes
+  let forumSize = 0;
+
   if (width >= 768) {
     avatarSize = 120;
   } else {
     avatarSize = 100;
+  }
+
+  if (postInfo.is_saved_post_render) {
+    forumSize = 1;
   }
 
   const forumPressed = () => {
@@ -66,6 +75,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       backgroundColor: colors.topBackground,
       borderRadius: 15,
       width: width - 40,
+      flex: forumSize,
     },
     forumTitle: {
       fontSize: 14,

@@ -46,6 +46,7 @@ type ForumPost = {
   postImages: Image;
   datePosted: string;
   userID: string;
+  is_saved_post_render: boolean; //for display purposes -> ensure every saved post on horizontal scroll is same size
   tag_data: Tag[];
 };
 
@@ -64,6 +65,7 @@ type BackendPost = {
   fld_pic: Image;
   fld_timestamp: string;
   fld_user_pk: string;
+  is_saved_post_render: boolean;
   tag_data: BackendTags[] | [];
 };
 
@@ -248,6 +250,7 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          is_saved_post_render: false,
           tag_data: post.tag_data.map(
             (tag: BackendTags) => ({
               tagID: tag.tagID,
@@ -257,9 +260,6 @@ export default function ForumFeed() {
           )
         })
       );
-
-      console.log("fetched")
-
 
       //double check the returned posts to make sure no duplicates are put into forumData
       let filteredArray: ForumPost[] = tempArray.filter(
@@ -323,6 +323,7 @@ export default function ForumFeed() {
           content: post.fld_body,
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
+          is_saved_post_render: true,
           tag_data: post.tag_data.map(
             (tag: BackendTags) => ({
               tagID: tag.tagID,
