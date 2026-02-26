@@ -142,10 +142,7 @@ useEffect(() => {
 
       if (res.status == 404) {
         alert("Could not find that post");
-        router.replace({
-          pathname: "/userProfile/[id]",
-          params: { postID, tab: from },
-        });
+        router.back()
       }
 
       const responseData = await res.json();

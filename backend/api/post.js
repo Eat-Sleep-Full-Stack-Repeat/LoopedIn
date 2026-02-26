@@ -265,7 +265,7 @@ router.get("/post", authenticateToken, async (req, res) => {
           i.fld_post_pic,
           CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
           CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved,
-          COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)), '[]'::jsonb) AS tag_data
+          COALESCE(tag.tags, '[]'::jsonb) AS tag_data
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
@@ -277,6 +277,13 @@ router.get("/post", authenticateToken, async (req, res) => {
           LEFT JOIN posts.tbl_post_saves AS ps
             ON ps.fld_post_fk = p.fld_post_pk
             AND ps.fld_user_fk = $2
+          LEFT JOIN LATERAL (
+            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tags
+                FROM posts.tbl_post_tag AS tp
+                  INNER JOIN tags.tbl_tags AS t
+                    ON tp.fld_tag = t.fld_tags_pk
+            WHERE tp.fld_post = p.fld_post_pk
+            ) tag ON TRUE
         WHERE p.fld_is_public = true
           AND t.fld_tag_name = ANY($1)
           AND u.fld_user_pk <> $2
@@ -290,7 +297,8 @@ router.get("/post", authenticateToken, async (req, res) => {
           i.fld_pic_id,
           i.fld_post_pic,
           pl.fld_user_fk,
-          ps.fld_user_fk
+          ps.fld_user_fk,
+          tag.tags
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
         LIMIT ($3 + 1);
       `;
@@ -308,7 +316,7 @@ router.get("/post", authenticateToken, async (req, res) => {
           i.fld_post_pic,
           CASE WHEN pl.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_liked,
           CASE WHEN ps.fld_user_fk IS NULL THEN false ELSE true END AS fld_is_saved,
-          COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)), '[]'::jsonb) AS tag_data
+          COALESCE(tag.tags, '[]'::jsonb) AS tag_data
         FROM login.tbl_user AS u
           INNER JOIN posts.tbl_post AS p ON u.fld_user_pk = p.fld_creator
           INNER JOIN posts.tbl_post_pic AS i ON i.fld_post_fk = p.fld_post_pk
@@ -320,6 +328,13 @@ router.get("/post", authenticateToken, async (req, res) => {
           LEFT JOIN posts.tbl_post_saves AS ps
             ON ps.fld_post_fk = p.fld_post_pk
             AND ps.fld_user_fk = $4
+          LEFT JOIN LATERAL (
+            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tags
+                FROM posts.tbl_post_tag AS tp
+                  INNER JOIN tags.tbl_tags AS t
+                    ON tp.fld_tag = t.fld_tags_pk
+            WHERE tp.fld_post = p.fld_post_pk
+            ) tag ON TRUE
         WHERE p.fld_is_public = true
           AND (p.fld_timestamp, p.fld_post_pk) < ($1::timestamptz, $2)
           AND t.fld_tag_name = ANY($3)
@@ -334,7 +349,8 @@ router.get("/post", authenticateToken, async (req, res) => {
           i.fld_pic_id,
           i.fld_post_pic,
           pl.fld_user_fk,
-          ps.fld_user_fk
+          ps.fld_user_fk,
+          tag.tags
         ORDER BY p.fld_post_pk DESC, p.fld_timestamp DESC, i.fld_pic_id ASC
         LIMIT ($5 + 1);
       `;

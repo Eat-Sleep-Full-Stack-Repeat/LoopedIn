@@ -595,9 +595,6 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
 
     const tags = await pool.query(query, [postID])
 
-    console.log(tags.rows)
-
-
     res.status(200).json({
       postInfo: returnedPostInfo.rows[0],
       currentUser: req.userID,

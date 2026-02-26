@@ -21,6 +21,12 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
 
+type Tag = {
+  tagID: string;
+  tagColor: string;
+  tagName: string;
+}
+
 type Post = {
   id: string;
   username: string;
@@ -32,6 +38,7 @@ type Post = {
   datePosted: string;
   isLiked: boolean;
   isSaved: boolean;
+  tag_data: Tag[];
 };
 
 type BackendPost = {
@@ -45,14 +52,20 @@ type BackendPost = {
   fld_user_pk: string;
   fld_is_liked: boolean;
   fld_is_saved: boolean;
+  tag_data: BackendTags[] | [];
 };
+
+type BackendTags = {
+  tagID: string;
+  tagName: string;
+  tagColor: string;
+}
 
 export default function ExplorePage() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const [selectedFilter, setSelectedFilter] = useState("All");
   const filters = ["All", "Crochet", "Knit", "Misc"];
-  const staticTags = ["cozy", "crochet", "blanket", "money", "daily"];
   const insets = useSafeAreaInsets();
   const [areCommentsVisible, setAreCommentsVisible] = useState(false);
   const router = useRouter();
@@ -262,6 +275,13 @@ export default function ExplorePage() {
         datePosted: post.fld_timestamp,
         isLiked: !!post.fld_is_liked,
         isSaved: !!post.fld_is_saved,
+        tag_data: post.tag_data.map(
+          (tag: BackendTags) => ({
+            tagID: tag.tagID,
+            tagName: tag.tagName,
+            tagColor: tag.tagColor,
+          })
+         )
       }));
 
       setPostData((prev) => [...prev, ...tempPostData]);
@@ -398,7 +418,6 @@ export default function ExplorePage() {
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderWidth: 1,
-      borderColor: colors.decorativeBackground,
       backgroundColor: "transparent",
       marginRight: 8,
       marginBottom: 8,
@@ -449,11 +468,19 @@ export default function ExplorePage() {
             </Text>
           </View>
 
-          {!!staticTags.length && (
+          {!!item.tag_data.length && (
             <View style={styles.tagRow}>
-              {staticTags.map((tag) => (
-                <View key={`${item.id}-${tag}`} style={styles.tagChip}>
-                  <Text style={styles.tagText}>#{tag}</Text>
+              {item.tag_data.map((tag) => (
+                <View key={`${item.id}-${tag.tagID}`} style={[styles.tagChip, {borderColor: tag.tagColor}]}>
+                  {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                    <Text style={[styles.tagText, { color: colors.text }]}>
+                      🌟{tag.tagName}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.tagText, { color: colors.text }]}>
+                      #{tag.tagName}
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -505,7 +532,6 @@ export default function ExplorePage() {
       imageHeight,
       router,
       showComments,
-      staticTags,
       styles,
     ]
   );
