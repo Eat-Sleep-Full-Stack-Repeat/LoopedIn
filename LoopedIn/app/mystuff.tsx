@@ -7,12 +7,13 @@ import {
   TextInput,
   Modal,
   Alert,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import { Feather } from "@expo/vector-icons";
 
 type Folder = {
   id: string;
@@ -149,17 +150,24 @@ export default function MyStuffScreen() {
             />
           </Pressable>
 
-          <Feather
-            name={folder.name === "Inventory" ? "archive" : "shopping-cart"}
-            size={36}
-            color={colors.text}
+          {/* ✅ REPLACED ICON WITH IMAGE */}
+          <Image
+            source={
+              folder.name === "Inventory"
+                ? require("@/assets/images/inventory.png")
+                : require("@/assets/images/wishlist.png")
+            }
+            style={styles.folderIcon}
           />
 
           <Text style={[styles.cardText, { color: colors.text }]}>
             {folder.name}
           </Text>
+
           <Text style={[styles.countText, { color: colors.settingsText }]}>
-            {folder.count} projects
+            {folder.count}{" "}
+            {folder.name.toLowerCase()}{" "}
+            {folder.count === 1 ? "item" : "items"}
           </Text>
         </View>
       ))}
@@ -214,7 +222,7 @@ export default function MyStuffScreen() {
             </View>
 
             <Pressable onPress={deleteFolder}>
-              <Text style={[styles.deleteText]}>
+              <Text style={styles.deleteText}>
                 Delete Folder
               </Text>
             </Pressable>
@@ -237,7 +245,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 20,
-    marginTop: 10,
+    marginTop: 30,
   },
   searchBar: {
     borderRadius: 14,
@@ -266,6 +274,13 @@ const styles = StyleSheet.create({
     position: "relative",
     borderWidth: 1,
   },
+  folderIcon: {
+  width: 80,
+  height: 80,
+  resizeMode: "contain",
+  marginBottom: 6,
+},
+
   menuButton: {
     position: "absolute",
     top: 15,
