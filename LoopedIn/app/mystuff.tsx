@@ -150,7 +150,7 @@ export default function MyStuffScreen() {
             />
           </Pressable>
 
-          {/* ✅ REPLACED ICON WITH IMAGE */}
+          {}
           <Image
             source={
               folder.name === "Inventory"
@@ -341,3 +341,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
