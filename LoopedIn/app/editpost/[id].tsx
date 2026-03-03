@@ -178,7 +178,7 @@ const fetchData = async () => {
               })
               .filter(Boolean)
           : [],
-        craftType: responseData.tags.find(tag => CRAFT_TYPES.includes(tag)),
+        craftType: responseData.tags[0].tagname,
         visibility: responseData.postInfo.fld_is_public
       };
 
