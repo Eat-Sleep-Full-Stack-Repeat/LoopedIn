@@ -73,6 +73,15 @@ export default function Index() {
         <Text style={{ color: colors.text }}> New Project </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        onPress={() => router.push("/mystuff")}
+        style={{ marginTop: 20 }}
+      >
+        <Text style={{ color: colors.text }}> My Stuff </Text>
+      </TouchableOpacity>
+
+
+
       <View
         style={{
           justifyContent: "center",
