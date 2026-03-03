@@ -758,9 +758,20 @@ router.get("/single-post", authenticateToken, async (req, res) => {
       INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
       INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
       WHERE p.fld_post_pk = $1
+      ORDER BY fld_post ASC, fld_tag ASC;
     `;
     const tags = await pool.query(query2, [postID]);
 
+    // //determine craftType from top tag
+    // const firstTag = tagsRows?.[0]?.tagname?.trim().toLowerCase();
+    // const craftMap = {
+    //   knit: "Knit",
+    //   crochet: "Crochet",
+    //   misc: "Misc",
+    // };
+    // const craftType = craftMap[firstTag] ?? Misc; //misc as backup if needed
+
+    //handle pics
     if (returnFeed.rowCount > 0) {
       const row = returnFeed.rows[0];
       if (row.fld_profile_pic) {
@@ -783,7 +794,8 @@ router.get("/single-post", authenticateToken, async (req, res) => {
       }
     }
 
-    res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags: tags.rows });
+    console.log(tags.rows);
+    res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags: tags.rows, });
   } catch (error) {
     console.log("Error fetching posts: ", error);
     res.status(500).json(error);
