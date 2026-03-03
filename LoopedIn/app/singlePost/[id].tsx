@@ -368,7 +368,9 @@ useEffect(() => {
         <Pressable onPress={router.back} hitSlop={10}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>More About This Post</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          More About This Post
+        </Text>
         {/* spacer so title stays centered */}
         <View style={{ width: 24 }} />
       </View>
@@ -391,27 +393,38 @@ useEffect(() => {
         >
           {/* Profile row */}
           <View style={styles.profileRow}>
-            <Pressable style={{flexDirection: "row", justifyContent: "center"}} onPress={() => router.push({
+            <Pressable
+              style={{ flexDirection: "row", justifyContent: "center" }}
+              onPress={() =>
+                router.push({
                   pathname: "/userProfile/[id]",
-                  params: { id: post.creatorID }})}>
-            <View>
-            <Image
-              source={
-                post.profilePic
-                  ? { uri: post.profilePic }
-                  : require("@/assets/images/icons8-cat-profile-50.png")
+                  params: { id: post.creatorID },
+                })
               }
-              style={styles.profilePic}
-            />
-            </View>
-            <View>
-              <Text style={[styles.username, { color: colors.text, paddingTop:2, }]}>
-                {post.username}
-              </Text>
-              <Text style={[styles.date, { color: colors.text }]}>
-                {new Date(post.datePosted).toDateString()}
-              </Text>
-            </View>
+            >
+              <View>
+                <Image
+                  source={
+                    post.profilePic
+                      ? { uri: post.profilePic }
+                      : require("@/assets/images/icons8-cat-profile-50.png")
+                  }
+                  style={styles.profilePic}
+                />
+              </View>
+              <View>
+                <Text
+                  style={[
+                    styles.username,
+                    { color: colors.text, paddingTop: 2 },
+                  ]}
+                >
+                  {post.username}
+                </Text>
+                <Text style={[styles.date, { color: colors.text }]}>
+                  {new Date(post.datePosted).toDateString()}
+                </Text>
+              </View>
             </Pressable>
 
             <View style={{ flex: 1 }} />
@@ -434,21 +447,23 @@ useEffect(() => {
             }}
           >
             {containerWidth > 0 && (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            snapToInterval={containerWidth}
-            snapToAlignment="center"
-            style={{ flexGrow: 0, borderRadius: 16 }}
-            onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-              const offsetX = event.nativeEvent.contentOffset.x;
-              const index = Math.round(offsetX / containerWidth);
-              setImageIndex(index);
-            }}
-          >
-          {/* {post.imageUrls.map((uri, index) => (
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                decelerationRate="fast"
+                snapToInterval={containerWidth}
+                snapToAlignment="center"
+                style={{ flexGrow: 0, borderRadius: 16 }}
+                onMomentumScrollEnd={(
+                  event: NativeSyntheticEvent<NativeScrollEvent>
+                ) => {
+                  const offsetX = event.nativeEvent.contentOffset.x;
+                  const index = Math.round(offsetX / containerWidth);
+                  setImageIndex(index);
+                }}
+              >
+                {/* {post.imageUrls.map((uri, index) => (
             <Pressable key={index} onPress={() => onImagePress(uri)}>
               <Image
                 source={{ uri }}
@@ -457,40 +472,39 @@ useEffect(() => {
               />
             </Pressable> */}
 
-          {/* ))} */}
+                {/* ))} */}
 
-          {post.imageUrls.map((photo, index) => {
-            if (!photo?.pic) return null;
+                {post.imageUrls.map((photo, index) => {
+                  if (!photo?.pic) return null;
 
-            return (
-              <Pressable
-                key={`${photo.pic}-${index}`}
-                onPress={() => onImagePress(photo.pic)}
-              >
-                <Image
-                  source={{ uri: photo.pic }}
-                  accessibilityLabel={photo.altText || "Post image"}
-                  accessible
-                  style={{ width: containerWidth, height: containerWidth }}
-                  resizeMode="cover"
-                />
-              </Pressable>
-            );
-          })}
-
-          </ScrollView>
-        )}
-
-        </View>
-
-
-          {/* image count numbers */}
-          <View style={{paddingVertical:5}}>
-            <Text style={[styles.imageCountText, { color: colors.text,}]}>
-              {imageIndex+1} / {post.imageUrls.length}
-            </Text>
+                  return (
+                    <Pressable
+                      key={`${photo.pic}-${index}`}
+                      onPress={() => onImagePress(photo.pic)}
+                    >
+                      <Image
+                        source={{ uri: photo.pic }}
+                        accessibilityLabel={photo.altText || "Post image"}
+                        accessible
+                        style={{
+                          width: containerWidth,
+                          height: containerWidth,
+                        }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
 
+          {/* image count numbers */}
+          <View style={{ paddingVertical: 5 }}>
+            <Text style={[styles.imageCountText, { color: colors.text }]}>
+              {imageIndex + 1} / {post.imageUrls.length}
+            </Text>
+          </View>
 
           {/* Caption / content */}
           <Text style={[styles.content, { color: colors.text }]}>
@@ -511,7 +525,9 @@ useEffect(() => {
                     },
                   ]}
                 >
-                  {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                  {tag.tagName === "Knit" ||
+                  tag.tagName === "Crochet" ||
+                  tag.tagName === "Misc" ? (
                     <Text style={[styles.tagText, { color: colors.text }]}>
                       🌟{tag.tagName}
                     </Text>
@@ -527,10 +543,7 @@ useEffect(() => {
 
           {/* Action row (like / comment / save) */}
           <View style={styles.actionsRow}>
-            <Pressable
-              style={styles.actionButton}
-              onPress={handleLikePress}
-            >
+            <Pressable style={styles.actionButton} onPress={handleLikePress}>
               <Feather
                 name="heart"
                 size={24}
@@ -548,108 +561,114 @@ useEffect(() => {
               </Text>
             </Pressable> */}
 
-            <Pressable onPress={() => showComments(post)} style={styles.actionButton}>
+            <Pressable
+              onPress={() => showComments(post)}
+              style={styles.actionButton}
+            >
               <Feather name="message-circle" size={24} color={colors.text} />
-              <Text style={[styles.actionText, { color: colors.text }]}>Comment</Text>
+              <Text style={[styles.actionText, { color: colors.text }]}>
+                Comment
+              </Text>
             </Pressable>
 
             <View style={{ flex: 1 }} />
 
-            <Pressable
-              style={styles.actionButton}
-              onPress={handleSavePress}
-            >
+            <Pressable style={styles.actionButton} onPress={handleSavePress}>
               <Feather
                 name="bookmark"
                 size={24}
-                color={
-                  saved ? colors.exploreFilterSelected : colors.text
-                }
+                color={saved ? colors.exploreFilterSelected : colors.text}
               />
               <Text style={[styles.actionText, { color: colors.text }]}>
                 {saved ? "Saved" : "Save"}
               </Text>
             </Pressable>
           </View>
-
         </View>
-
       </ScrollView>
 
-    {/* modal for clicking into images */}
-    {modalImageUri && Platform.OS !== "web" && (
-      <Modal
-        visible
-        transparent
-        onRequestClose={() => setModalImageUri(null)}
-      >
-        <View style={{ flex: 1, backgroundColor: "black" }}>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            maximumZoomScale={3}
-            minimumZoomScale={1}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            pinchGestureEnabled={Platform.OS === "ios"}
-          >
-            <Pressable
-              onPress={() => setModalImageUri(null)}
-              style={{ width: "100%", height: "100%" }}
+      {/* modal for clicking into images */}
+      {modalImageUri && Platform.OS !== "web" && (
+        <Modal
+          visible
+          transparent
+          onRequestClose={() => setModalImageUri(null)}
+        >
+          <View style={{ flex: 1, backgroundColor: "black" }}>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              maximumZoomScale={3}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              pinchGestureEnabled={Platform.OS === "ios"}
             >
-              <Image
-                source={{ uri: modalImageUri }}
-                style={{
-                  width: Dimensions.get("window").width,
-                  height: Dimensions.get("window").height,
-                }}
-                resizeMode="contain"
-              />
-            </Pressable>
-          </ScrollView>
-        </View>
-      </Modal>
-    )}
+              <Pressable
+                onPress={() => setModalImageUri(null)}
+                style={{ width: "100%", height: "100%" }}
+              >
+                <Image
+                  source={{ uri: modalImageUri }}
+                  style={{
+                    width: Dimensions.get("window").width,
+                    height: Dimensions.get("window").height,
+                  }}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
 
       {/* modal for triple-dot pop-up */}
-        <Modal
-          transparent
-          visible={menuVisible}
-          animationType="fade"
-          onRequestClose={() => setMenuVisible(false)}
+      <Modal
+        transparent
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setMenuVisible(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPressOut={() => setMenuVisible(false)}
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
           >
-            <View
-              style={[
-                styles.menuContainer,
-                { backgroundColor: colors.exploreCardBackground },
-              ]}
-            >
-          {thisIsMyPost ? (
-            <>
-            {/* if this is my post, then display edit/delete options */}
-              <TouchableOpacity onPress={handleEdit} style={styles.menuOption}>
-                <Feather name="edit" size={18} color={colors.text} />
-                <Text style={[styles.menuText, { color: colors.text }]}>Edit</Text>
-              </TouchableOpacity>
+            {thisIsMyPost ? (
+              <>
+                {/* if this is my post, then display edit/delete options */}
+                <TouchableOpacity
+                  onPress={handleEdit}
+                  style={styles.menuOption}
+                >
+                  <Feather name="edit" size={18} color={colors.text} />
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleDelete} style={styles.menuOption}>
-                <Feather name="trash-2" size={18} color={colors.warning} />
-                <Text style={[styles.menuText, { color: colors.warning }]}>
-                  Delete
-                </Text>
-              </TouchableOpacity>
-            </>
-            // else, display report option
+                <TouchableOpacity
+                  onPress={handleDelete}
+                  style={styles.menuOption}
+                >
+                  <Feather name="trash-2" size={18} color={colors.warning} />
+                  <Text style={[styles.menuText, { color: colors.warning }]}>
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </>
             ) : (
+              // else, display report option
               <TouchableOpacity
                 onPress={() => {
                   setMenuVisible(false);
@@ -663,12 +682,21 @@ useEffect(() => {
                 </Text>
               </TouchableOpacity>
             )}
-            </View>
-          </TouchableOpacity>
-        </Modal>
-          <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
-        <BottomNavButton />
-      </SafeAreaView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+      <ExploreCommentsModal
+        isVisible={areCommentsVisible}
+        onClose={() => {
+          setAreCommentsVisible(false);
+          currentPost.current = null;
+          creatorID.current = null;
+        }}
+        currentPost={currentPost.current}
+        postCreator={creatorID.current}
+      ></ExploreCommentsModal>
+      {/* <BottomNavButton /> */}
+    </SafeAreaView>
   );
 }
 

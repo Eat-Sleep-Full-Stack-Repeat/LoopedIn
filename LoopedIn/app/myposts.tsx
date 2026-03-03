@@ -512,46 +512,67 @@ export default function MyPosts() {
             <Pressable onPress={router.back} hitSlop={10}>
               <Feather name="arrow-left" size={24} color={colors.text} />
             </Pressable>
-            <Text style={[styles.pageTitle, { color: colors.text }]}>My Posts</Text>
+            <Text style={[styles.pageTitle, { color: colors.text }]}>
+              My Posts
+            </Text>
             <View style={{ height: 10 }} />
           </View>
 
           <FlatList
             data={posts}
             renderItem={renderPost}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             onEndReached={fetchData}
             onEndReachedThreshold={0.2}
             ListEmptyComponent={() => {
               if (loadingMore.current) {
-                return <ActivityIndicator size="small" color={colors.text}/>
-              }
-              else if (noPosts) {
+                return <ActivityIndicator size="small" color={colors.text} />;
+              } else if (noPosts) {
                 return (
-                  <View style={{paddingVertical: 10}}>
-                    <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No posts to see here... create a forum post now! </Text>
+                  <View style={{ paddingVertical: 10 }}>
+                    <Text
+                      style={{
+                        color: colors.settingsText,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                      }}
+                    >
+                      {" "}
+                      No posts to see here... create a forum post now!{" "}
+                    </Text>
                   </View>
-                )
-              } 
-              else {
+                );
+              } else {
                 return (
-                  <View style={{paddingVertical: 10}}>
-                    <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> Loading... </Text>
+                  <View style={{ paddingVertical: 10 }}>
+                    <Text
+                      style={{
+                        color: colors.settingsText,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                      }}
+                    >
+                      {" "}
+                      Loading...{" "}
+                    </Text>
                   </View>
-                )
+                );
               }
             }}
             ListFooterComponent={() => {
               if (posts.length > 0) {
                 if (!hasMore.current) {
                   return (
-                    <View style={{paddingBottom: 150}}>
-                      <Text style={{ color: colors.text }}> No More Posts </Text>
+                    <View style={{ paddingBottom: 150 }}>
+                      <Text style={{ color: colors.text }}>
+                        {" "}
+                        No More Posts{" "}
+                      </Text>
                     </View>
-                  )
+                  );
                 } else {
                   return (
-                    <View style={{paddingBottom: 150}}>
+                    <View style={{ paddingBottom: 150 }}>
                       <ActivityIndicator size="small" color={colors.text} />
                     </View>
                   );
@@ -560,12 +581,13 @@ export default function MyPosts() {
             }}
             ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
             }
           />
         </GestureHandlerRootView>
-
-
 
         {/* Floating + button */}
         <Pressable
@@ -581,7 +603,7 @@ export default function MyPosts() {
           <Feather name="plus" size={28} color={colors.decorativeText} />
         </Pressable>
 
-        <BottomNavButton />
+        {/* <BottomNavButton /> */}
 
         {/* Edit/Delete popup */}
         <Modal
@@ -603,10 +625,15 @@ export default function MyPosts() {
             >
               <TouchableOpacity onPress={handleEdit} style={styles.menuOption}>
                 <Feather name="edit" size={18} color={colors.text} />
-                <Text style={[styles.menuText, { color: colors.text }]}>Edit</Text>
+                <Text style={[styles.menuText, { color: colors.text }]}>
+                  Edit
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleDelete} style={styles.menuOption}>
+              <TouchableOpacity
+                onPress={handleDelete}
+                style={styles.menuOption}
+              >
                 <Feather name="trash-2" size={18} color={colors.warning} />
                 <Text style={[styles.menuText, { color: colors.warning }]}>
                   Delete

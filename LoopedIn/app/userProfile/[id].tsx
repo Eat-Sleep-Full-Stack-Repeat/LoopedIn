@@ -807,9 +807,14 @@ export default function OtherUserProfile() {
           if (item == undefined) return null;
 
           return (
-            <Pressable onPress={() => router.push({
-            pathname: "/singlePost/[id]",
-            params: { id }})}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/singlePost/[id]",
+                  params: { id },
+                })
+              }
+            >
               <Image
                 source={thumbSource}
                 resizeMode="cover"
@@ -824,10 +829,12 @@ export default function OtherUserProfile() {
             </Pressable>
           );
         }}
-
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh}
-          progressViewOffset={insets.top + 10}/>
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            progressViewOffset={insets.top + 10}
+          />
         }
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
@@ -837,11 +844,11 @@ export default function OtherUserProfile() {
           justifyContent: "flex-start",
           // marginVertical: 10,
           // paddingHorizontal: 10,
-          // columnGap: 10,  
+          // columnGap: 10,
         }}
       />
 
-      <BottomNavButton />
+      {/* <BottomNavButton /> */}
 
       <Modal
         transparent
@@ -860,15 +867,20 @@ export default function OtherUserProfile() {
             ]}
           >
             {/*very good icon usage here*/}
-            <TouchableOpacity disabled={isBlocking} onPress={handleBlock} style={styles.menuOption}>
+            <TouchableOpacity
+              disabled={isBlocking}
+              onPress={handleBlock}
+              style={styles.menuOption}
+            >
               {isBlockedUser ? (
                 <Feather name="smile" size={18} color={colors.text} />
               ) : (
                 <Feather name="frown" size={18} color={colors.text} />
               )}
-              <Text style={[styles.menuText, { color: colors.text }]}>{isBlockedUser ? "Unblock" : "Block"}</Text>
+              <Text style={[styles.menuText, { color: colors.text }]}>
+                {isBlockedUser ? "Unblock" : "Block"}
+              </Text>
             </TouchableOpacity>
-
           </View>
         </TouchableOpacity>
       </Modal>

@@ -31,7 +31,9 @@ export default function Index() {
         backgroundColor: colors.background,
       }}
     >
-      <Text style={{ color: colors.text }}>This will be the welcome screen!</Text>
+      <Text style={{ color: colors.text }}>
+        This will be the welcome screen!
+      </Text>
 
       <TouchableOpacity
         onPress={() => router.push("/login")}
@@ -87,10 +89,9 @@ export default function Index() {
           value={isEnabled}
           style={{ justifyContent: "center" }}
         />
-        
       </View>
 
-      <BottomNavButton />
+      {/* <BottomNavButton /> */}
     </GestureHandlerRootView>
   );
 }
