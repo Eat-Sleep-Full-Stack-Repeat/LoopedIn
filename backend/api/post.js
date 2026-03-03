@@ -794,7 +794,7 @@ router.get("/single-post", authenticateToken, async (req, res) => {
       }
     }
 
-    console.log(tags.rows);
+    //console.log(tags.rows);
     res.status(200).json({ postInfo: returnFeed.rows[0], postPics, currentUser, tags: tags.rows, });
   } catch (error) {
     console.log("Error fetching posts: ", error);
