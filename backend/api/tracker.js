@@ -120,8 +120,54 @@ router.get("/folder/:id", authenticateToken, async (req, res) => {
   }
 });
 
-//folder conditional deletion
 
+//create new tracker folder
+router.post("/new-t-folder", authenticateToken, async (req, res) => {
+  try{
+    const curr_user = req.userID.trim();
+    const newName = req.body.name;
+    const craftType = req.body.type;
+
+    const query = `
+        INSERT INTO folders.tbl_folder(fld_f_name, fld_creator, fld_craft_type, fld_type)
+        VALUES ($1, $2, $3, 'T');
+    `;
+    await pool.query(query, [newName, curr_user, craftType]);
+
+    //check to confirm it was added
+    const query2= `
+        SELECT fld_folder_pk, fld_f_name, fld_craft_type
+        FROM folders.tbl_folder
+        WHERE fld_f_name = $1 AND fld_creator = $2 AND fld_craft_type = $3 AND fld_type = 'T';
+    `;
+    const returnFeed =  await pool.query(query2, [newName, curr_user, craftType]);
+
+    //either the folder isn't yours or doesn't exist... or it is a duplicate??? (should already be protected but double-check)
+    //will not specify both cases
+    if (returnFeed.rowCount === 0) {
+      console.log("[tracker]: error during folder creation.");
+      res.status(404).json({ message: "Folder does not exist." });
+      return;
+    }
+    else if (returnFeed.rowCount > 1){
+      console.log("[tracker]: error during folder creation.");
+      res.status(404).json({ message: "Error during folder upload. Perhaps a duplicate name?" });
+      return;
+    }
+
+    //else, the folder was successfully created!
+    //return the new id
+    res.status(200).json({fID: returnFeed.rows[0].fld_folder_pk, fName: returnFeed.rows[0].fld_f_name, fType: returnFeed.rows[0].fld_craft_type});
+    return;
+
+  } catch (error){
+    console.log("[Tracker]: Server error when making folder:", error);
+    res.status(500).json(error);
+  }
+});
+
+
+//folder conditional deletion
 router.delete("/folder_delete", authenticateToken, async (req, res) => {
   try {
     //Get params from front-end (Folder ID, name)

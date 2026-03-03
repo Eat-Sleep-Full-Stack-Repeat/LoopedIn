@@ -95,6 +95,7 @@ export default function FolderScreen() {
 
   //refresh
   const [refreshing, setRefreshing] = useState(false);
+  const [createOrSaving, setCreateOrSaving] = useState(false);
 
   //folder ops
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
@@ -316,6 +317,7 @@ export default function FolderScreen() {
     }
   };
 
+
   useEffect(() => {
     if (!tokenOkay) return;
 
@@ -466,22 +468,95 @@ export default function FolderScreen() {
     }
   };
 
-  const createFolder = () => {
+  const createFolder = async () => {
     if (!folderName.trim()) return;
+    if (createOrSaving) return;
+    try{
+      setCreateOrSaving(true);
+      const trimmed = folderName.trim();
+      if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
+        return;
+      }
+      else if(trimmed.length > 20){
+        alert("Name is too long! Please try again with a folder name of 20 characters or less.");
+        return;
+      }
 
-    setFolders((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: folderName,
+      //check for duplicate
+      const alreadyExists = folders.find(
+        (folder) => folder.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (alreadyExists) {
+        alert("Folder name taken. Please try again with a new name!");
+        return;
+      }
+
+      //deduce craft type (single char)
+      const selectedCraft = craftOptions.find(
+        (option) => option.icon === selectedIcon
+      );
+      const craftType = selectedCraft?.id ?? "M"; //misc default if needed
+
+      //if no duplicate
+      const token = await Storage.getItem("token");
+      const res = await fetch(
+        `${API_URL}/api/new-t-folder`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name: trimmed,
+            type: craftType,
+          })
+        }
+      );
+
+      if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Endpoint does not exist. Please try again later.`);
+        }
+        router.back();
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.back();
+        return;
+      }
+
+      const data = await res.json();
+
+      const mappedFolder: Folder = {
+        id: data.fID,
+        name: data.fName,
         count: 0,
         icon: selectedIcon,
-      },
-    ]);
+      };
 
-    setFolderName("");
-    setCreateOpen(false);
-  };
+      setFolders((prev) => [
+        ...prev,
+        mappedFolder,
+      ]);
+      
+      setFolderName("");
+      setCreateOpen(false);
+      setRefreshing(true);
+    } catch (e) {
+      console.log("Encountered an error:", e);
+    }
+    finally{
+      setCreateOrSaving(false);
+    }
+    };
 
   /* ---------------- render component ---------------- */
   //need component to render folder items one by one
@@ -575,17 +650,9 @@ export default function FolderScreen() {
               );
             } else if (noFolders) {
               return (
-                <View style={{ paddingVertical: 10 }}>
-                  <Text
-                    style={{
-                      color: colors.settingsText,
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      lineHeight: 24,
-                    }}
-                  >
-                    Nothing to see here... {"\n"} Create a project folder now!{" "}
-                  </Text>
+                <View style={{paddingVertical: 10}}>
+                  <Text style={{color: colors.settingsText, textAlign: "center", lineHeight: 24}}> 
+                    Nothing to see here... {"\n"} Create a project folder now! </Text>
                 </View>
               );
             }
@@ -693,9 +760,10 @@ export default function FolderScreen() {
               <Pressable
                 style={styles.createBtn}
                 onPress={editingFolder ? saveRename : createFolder}
+                disabled={createOrSaving}
               >
                 <Text style={{ color: "#fff" }}>
-                  {editingFolder ? "Save" : "Create →"}
+                  {createOrSaving ? "Please Wait..." : (editingFolder ? "Save" : "Create →")}
                 </Text>
               </Pressable>
             </View>
