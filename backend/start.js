@@ -108,7 +108,7 @@ const avatarRoutes = require("./api/avatar");
 const forumWork = require('./api/forums.js');
 const postRouter = require("./api/post.js"); 
 const trackerRouter = require("./api/tracker");
-
+const inventoryRouter = require("./api/inventory");
 
 //get ready to use that bad boy ("mount")
 app.use('/api/login', loginProcess);
@@ -120,6 +120,7 @@ app.use('/api', avatarRoutes);
 app.use('/api/forum', forumWork);
 app.use("/api", postRouter);
 app.use("/api", trackerRouter);
+app.use("/api", inventoryRouter);
 
 
 // -------------------- RUNNING SERVER --------------------------- 
