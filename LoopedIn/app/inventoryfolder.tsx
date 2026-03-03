@@ -231,7 +231,9 @@ export default function SingleFolderScreen() {
                 styles.categoryTabText,
                 {
                   color:
-                    selectedCategory === "All" ? colors.decorativeText : colors.text,
+                    selectedCategory === "All"
+                      ? colors.decorativeText
+                      : colors.text,
                 },
               ]}
             >
@@ -293,7 +295,9 @@ export default function SingleFolderScreen() {
                   <Text
                     style={[
                       styles.categoryTabText,
-                      { color: isSelected ? colors.decorativeText : colors.text },
+                      {
+                        color: isSelected ? colors.decorativeText : colors.text,
+                      },
                     ]}
                   >
                     {category}
@@ -391,7 +395,10 @@ export default function SingleFolderScreen() {
               onChangeText={setNewItemName}
               placeholder="Item name"
               placeholderTextColor={colors.settingsText}
-              style={[styles.addItemInput, { borderColor: colors.topBackground, color: colors.text }]}
+              style={[
+                styles.addItemInput,
+                { borderColor: colors.topBackground, color: colors.text },
+              ]}
               autoCorrect={false}
               autoCapitalize="words"
               returnKeyType="done"
@@ -405,7 +412,10 @@ export default function SingleFolderScreen() {
             />
           ) : null
         }
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 20 },
+        ]}
         renderItem={({ item, index }) => (
           <View
             style={[
@@ -439,7 +449,9 @@ export default function SingleFolderScreen() {
                       {
                         borderColor: colors.exploreBorder,
                         backgroundColor:
-                          index % 2 === 0 ? colors.boxBackground : colors.topBackground,
+                          index % 2 === 0
+                            ? colors.boxBackground
+                            : colors.topBackground,
                         color: colors.text,
                       },
                     ]}
@@ -454,7 +466,10 @@ export default function SingleFolderScreen() {
                     autoFocus
                   />
                 ) : (
-                  <Text style={[styles.itemName, { color: colors.text }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.itemName, { color: colors.text }]}
+                    numberOfLines={1}
+                  >
                     {item.name}
                   </Text>
                 )}

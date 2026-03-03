@@ -18,7 +18,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -710,7 +709,6 @@ export default function ExplorePage() {
           />
         ) : null}
 
-        {/* <BottomNavButton /> */}
       </View>
     </>
   );

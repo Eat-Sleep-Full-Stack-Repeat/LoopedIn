@@ -21,7 +21,6 @@ import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import BottomNavButton from "@/components/bottomNavBar";
 import ExploreCommentsModal from "@/components/exploreComments";
 
 type SearchType = "user" | "tag";
@@ -157,10 +156,13 @@ export default function ExploreSearch() {
         let qs = `limit=${limit}`;
 
         if (searchType === "user") {
-          if (lastUserName.current) qs += `&u_before_name=${encodeURIComponent(lastUserName.current)}`;
-          if (lastUserID.current) qs += `&u_before_id=${encodeURIComponent(lastUserID.current)}`;
+          if (lastUserName.current)
+            qs += `&u_before_name=${encodeURIComponent(lastUserName.current)}`;
+          if (lastUserID.current)
+            qs += `&u_before_id=${encodeURIComponent(lastUserID.current)}`;
         } else {
-          if (lastPostTime.current) qs += `&before=${encodeURIComponent(lastPostTime.current)}`;
+          if (lastPostTime.current)
+            qs += `&before=${encodeURIComponent(lastPostTime.current)}`;
           if (lastPostID.current) qs += `&postID=${lastPostID.current}`;
         }
 
@@ -177,14 +179,18 @@ export default function ExploreSearch() {
         const data = await res.json();
 
         if (searchType === "user") {
-          const newUsers: UserResult[] = Array.isArray(data.users) ? data.users : [];
+          const newUsers: UserResult[] = Array.isArray(data.users)
+            ? data.users
+            : [];
 
           setPosts([]);
           setTagsByPost({});
 
           setUsers((prev) => {
             const combined = fresh ? newUsers : [...prev, ...newUsers];
-            return Array.from(new Map(combined.map((u) => [u.userID, u])).values());
+            return Array.from(
+              new Map(combined.map((u) => [u.userID, u])).values()
+            );
           });
 
           hasMoreUsers.current = !!data.hasMore;
@@ -200,19 +206,21 @@ export default function ExploreSearch() {
         // tag search
         setUsers([]);
 
-        const newPosts: Post[] = (data.newFeed || []).map((row: BackendPostRow) => ({
-          id: String(row.fld_post_pk),
-          userID: String(row.fld_user_pk),
-          username: row.fld_username,
-          profilePic: row.fld_profile_pic,
-          postImage: row.fld_post_pic,
-          postImageID: String(row.fld_pic_id),
-          caption: row.fld_caption,
-          datePosted: row.fld_timestamp,
+        const newPosts: Post[] = (data.newFeed || []).map(
+          (row: BackendPostRow) => ({
+            id: String(row.fld_post_pk),
+            userID: String(row.fld_user_pk),
+            username: row.fld_username,
+            profilePic: row.fld_profile_pic,
+            postImage: row.fld_post_pic,
+            postImageID: String(row.fld_pic_id),
+            caption: row.fld_caption,
+            datePosted: row.fld_timestamp,
 
-          isLiked: !!row.fld_is_liked,
-          isSaved: !!row.fld_is_saved,
-        }));
+            isLiked: !!row.fld_is_liked,
+            isSaved: !!row.fld_is_saved,
+          })
+        );
 
         setPosts((prev) => {
           const combined = fresh ? newPosts : [...prev, ...newPosts];
@@ -220,7 +228,9 @@ export default function ExploreSearch() {
         });
 
         if (data.tagsByPost) {
-          setTagsByPost((prev) => (fresh ? data.tagsByPost : { ...prev, ...data.tagsByPost }));
+          setTagsByPost((prev) =>
+            fresh ? data.tagsByPost : { ...prev, ...data.tagsByPost }
+          );
         }
 
         hasMorePosts.current = !!data.hasMore;
@@ -254,11 +264,15 @@ export default function ExploreSearch() {
   };
 
   const updateLikeInState = useCallback((postId: string, isLiked: boolean) => {
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, isLiked } : p)));
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, isLiked } : p))
+    );
   }, []);
 
   const updateSaveInState = useCallback((postId: string, isSaved: boolean) => {
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, isSaved } : p)));
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, isSaved } : p))
+    );
   }, []);
 
   const handleLikePress = useCallback(
@@ -358,7 +372,9 @@ export default function ExploreSearch() {
       <Image
         style={styles(colors, isTablet).userAvatar}
         source={
-          item.profilePic ? { uri: item.profilePic } : require("@/assets/images/icons8-cat-profile-100.png")
+          item.profilePic
+            ? { uri: item.profilePic }
+            : require("@/assets/images/icons8-cat-profile-100.png")
         }
       />
       <Text style={styles(colors, isTablet).userName}>{item.username}</Text>
@@ -381,7 +397,9 @@ export default function ExploreSearch() {
           <Image
             style={styles(colors, isTablet).profilePic}
             source={
-              item.profilePic ? { uri: item.profilePic } : require("@/assets/images/icons8-cat-profile-100.png")
+              item.profilePic
+                ? { uri: item.profilePic }
+                : require("@/assets/images/icons8-cat-profile-100.png")
             }
           />
           <Text style={styles(colors, isTablet).username}>{item.username}</Text>
@@ -395,7 +413,10 @@ export default function ExploreSearch() {
             })
           }
         >
-          <Image style={styles(colors, isTablet).postImage} source={{ uri: item.postImage }} />
+          <Image
+            style={styles(colors, isTablet).postImage}
+            source={{ uri: item.postImage }}
+          />
           <Text style={styles(colors, isTablet).caption} numberOfLines={4}>
             {item.caption}
           </Text>
@@ -403,8 +424,16 @@ export default function ExploreSearch() {
           {!!tags.length && (
             <View style={styles(colors, isTablet).tagRow}>
               {tags.slice(0, 18).map((t) => (
-                <View key={`${item.id}-${t.name}`} style={[styles(colors, isTablet).tagChip, { borderColor: t.color }]}>
-                  <Text style={styles(colors, isTablet).tagText}>#{t.name}</Text>
+                <View
+                  key={`${item.id}-${t.name}`}
+                  style={[
+                    styles(colors, isTablet).tagChip,
+                    { borderColor: t.color },
+                  ]}
+                >
+                  <Text style={styles(colors, isTablet).tagText}>
+                    #{t.name}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -413,7 +442,10 @@ export default function ExploreSearch() {
 
         {/* ✅ ACTION ROW ADDED (Like / Comment / Tags / Save) */}
         <View style={styles(colors, isTablet).postActions}>
-          <Pressable style={styles(colors, isTablet).postAction} onPress={() => handleLikePress(item)}>
+          <Pressable
+            style={styles(colors, isTablet).postAction}
+            onPress={() => handleLikePress(item)}
+          >
             <Image
               style={[
                 styles(colors, isTablet).actionIcon,
@@ -421,16 +453,26 @@ export default function ExploreSearch() {
               ]}
               source={require("../assets/images/heart.png")}
             />
-            <Text style={styles(colors, isTablet).postActionText}>{item.isLiked ? "Liked" : "Like"}</Text>
+            <Text style={styles(colors, isTablet).postActionText}>
+              {item.isLiked ? "Liked" : "Like"}
+            </Text>
           </Pressable>
 
           <View style={styles(colors, isTablet).postAction}>
-            <Pressable onPress={() => showComments(item)} style={{ alignItems: "center" }}>
+            <Pressable
+              onPress={() => showComments(item)}
+              style={{ alignItems: "center" }}
+            >
               <Image
-                style={[styles(colors, isTablet).actionIcon, { tintColor: colors.text }]}
+                style={[
+                  styles(colors, isTablet).actionIcon,
+                  { tintColor: colors.text },
+                ]}
                 source={require("../assets/images/comment.png")}
               />
-              <Text style={styles(colors, isTablet).postActionText}>Comment</Text>
+              <Text style={styles(colors, isTablet).postActionText}>
+                Comment
+              </Text>
             </Pressable>
           </View>
 
@@ -441,21 +483,33 @@ export default function ExploreSearch() {
             }}
           >
             <Image
-              style={[styles(colors, isTablet).actionIcon, { tintColor: colors.text }]}
+              style={[
+                styles(colors, isTablet).actionIcon,
+                { tintColor: colors.text },
+              ]}
               source={require("../assets/images/tags.png")}
             />
             <Text style={styles(colors, isTablet).postActionText}>Tags</Text>
           </Pressable>
 
-          <Pressable style={styles(colors, isTablet).postAction} onPress={() => handleSavePress(item)}>
+          <Pressable
+            style={styles(colors, isTablet).postAction}
+            onPress={() => handleSavePress(item)}
+          >
             <Image
               style={[
                 styles(colors, isTablet).actionIcon,
-                { tintColor: item.isSaved ? colors.exploreFilterSelected : colors.text },
+                {
+                  tintColor: item.isSaved
+                    ? colors.exploreFilterSelected
+                    : colors.text,
+                },
               ]}
               source={require("../assets/images/saved.png")}
             />
-            <Text style={styles(colors, isTablet).postActionText}>{item.isSaved ? "Saved" : "Save"}</Text>
+            <Text style={styles(colors, isTablet).postActionText}>
+              {item.isSaved ? "Saved" : "Save"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -477,12 +531,24 @@ export default function ExploreSearch() {
 
       <View style={{ flex: 1, backgroundColor: colors.exploreBackground }}>
         <KeyboardAvoidingView
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.topBackground }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: colors.topBackground },
+          ]}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View style={[styles(colors, isTablet).container, { paddingTop: insets.top + 18 }]}>
+          <View
+            style={[
+              styles(colors, isTablet).container,
+              { paddingTop: insets.top + 18 },
+            ]}
+          >
             <View style={styles(colors, isTablet).header}>
-              <Pressable onPress={goBack} style={styles(colors, isTablet).backBtn} hitSlop={10}>
+              <Pressable
+                onPress={goBack}
+                style={styles(colors, isTablet).backBtn}
+                hitSlop={10}
+              >
                 <Feather name="arrow-left" size={26} color={colors.text} />
               </Pressable>
               <Text style={styles(colors, isTablet).headerText}>Search</Text>
@@ -492,15 +558,25 @@ export default function ExploreSearch() {
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder={isUserMode ? "Search username..." : "Search tag..."}
+                placeholder={
+                  isUserMode ? "Search username..." : "Search tag..."
+                }
                 placeholderTextColor={colors.text + "99"}
                 style={styles(colors, isTablet).searchInput}
                 returnKeyType="search"
                 onSubmitEditing={() => runSearch(true)}
                 autoFocus
               />
-              <Pressable onPress={() => runSearch(true)} style={styles(colors, isTablet).iconBtn} hitSlop={10}>
-                <Feather name="search" size={22} color={colors.decorativeText} />
+              <Pressable
+                onPress={() => runSearch(true)}
+                style={styles(colors, isTablet).iconBtn}
+                hitSlop={10}
+              >
+                <Feather
+                  name="search"
+                  size={22}
+                  color={colors.decorativeText}
+                />
               </Pressable>
             </View>
 
@@ -513,10 +589,19 @@ export default function ExploreSearch() {
                     onPress={() => setSearchType(t)}
                     style={[
                       styles(colors, isTablet).filterBtn,
-                      { backgroundColor: active ? colors.decorativeBackground : colors.boxBackground },
+                      {
+                        backgroundColor: active
+                          ? colors.decorativeBackground
+                          : colors.boxBackground,
+                      },
                     ]}
                   >
-                    <Text style={{ color: active ? colors.decorativeText : colors.text, fontWeight: "700" }}>
+                    <Text
+                      style={{
+                        color: active ? colors.decorativeText : colors.text,
+                        fontWeight: "700",
+                      }}
+                    >
                       {t === "user" ? "User Name" : "Tag"}
                     </Text>
                   </Pressable>
@@ -525,39 +610,75 @@ export default function ExploreSearch() {
             </View>
 
             {!query.trim() ? (
-              <Text style={{ color: colors.text, textAlign: "center", marginTop: 18 }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  textAlign: "center",
+                  marginTop: 18,
+                }}
+              >
                 Enter a search term and select a filter.
               </Text>
             ) : (
               <FlatList
                 data={listData}
-                keyExtractor={(item: any, idx) => (isUserMode ? `${item.userID}-${idx}` : `${item.id}-${idx}`)}
-                renderItem={({ item }: any) => (isUserMode ? renderUser({ item }) : renderPost({ item }))}
+                keyExtractor={(item: any, idx) =>
+                  isUserMode ? `${item.userID}-${idx}` : `${item.id}-${idx}`
+                }
+                renderItem={({ item }: any) =>
+                  isUserMode ? renderUser({ item }) : renderPost({ item })
+                }
                 onEndReached={() => {
                   if (query.trim() && !loadingMore.current) runSearch(false);
                 }}
                 onEndReachedThreshold={0.6}
                 ListEmptyComponent={() => (
-                  <Text style={{ color: colors.text, textAlign: "center", marginTop: 18 }}>
+                  <Text
+                    style={{
+                      color: colors.text,
+                      textAlign: "center",
+                      marginTop: 18,
+                    }}
+                  >
                     No results found.
                   </Text>
                 )}
                 ListFooterComponent={() => {
                   if (!query.trim()) return null;
 
-                  if (loading) return <ActivityIndicator size="small" color={colors.text} />;
+                  if (loading)
+                    return (
+                      <ActivityIndicator size="small" color={colors.text} />
+                    );
 
                   if (isUserMode && !hasMoreUsers.current && users.length > 0) {
                     return (
-                      <Text style={{ color: colors.text, textAlign: "center", paddingBottom: 40 }}>
+                      <Text
+                        style={{
+                          color: colors.text,
+                          textAlign: "center",
+                          paddingBottom: 40,
+                        }}
+                      >
                         No more users.
                       </Text>
                     );
                   }
 
-                  if (!isUserMode && !hasMorePosts.current && posts.length > 0) {
+                  if (
+                    !isUserMode &&
+                    !hasMorePosts.current &&
+                    posts.length > 0
+                  ) {
                     return (
-                      <Text style={{ color: colors.text, textAlign: "center", paddingBottom: 40, paddingTop: 20 }}>
+                      <Text
+                        style={{
+                          color: colors.text,
+                          textAlign: "center",
+                          paddingBottom: 40,
+                          paddingTop: 20,
+                        }}
+                      >
                         No more posts.
                       </Text>
                     );
@@ -583,8 +704,6 @@ export default function ExploreSearch() {
             postCreator={creatorID.current}
           />
         ) : null}
-
-        <BottomNavButton />
       </View>
     </>
   );

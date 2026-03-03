@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -33,9 +27,7 @@ export default function MyStuffScreen() {
         { backgroundColor: colors.background, paddingTop: insets.top + 20 },
       ]}
     >
-      <Text style={[styles.title, { color: colors.text }]}>
-        My Stuff
-      </Text>
+      <Text style={[styles.title, { color: colors.text }]}>My Stuff</Text>
 
       {/* Folder Cards */}
       {folders.map((folder) => (
@@ -63,14 +55,11 @@ export default function MyStuffScreen() {
           </Text>
 
           <Text style={[styles.countText, { color: colors.settingsText }]}>
-            {folder.count}{" "}
-            {folder.name.toLowerCase()}{" "}
+            {folder.count} {folder.name.toLowerCase()}{" "}
             {folder.count === 1 ? "item" : "items"}
           </Text>
         </View>
       ))}
-
-      <BottomNavButton />
     </View>
   );
 }

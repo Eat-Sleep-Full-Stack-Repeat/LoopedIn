@@ -62,10 +62,7 @@ export default function RootLayout() {
           name="exploreSearch"
           options={{ headerShown: false, animation: "none" }}
         />
-        <Stack.Screen
-          name="folderscreen"
-          options={{ headerShown: false, animation: "none" }}
-        />
+
         <Stack.Screen
           name="trackerFolder/[id]"
           options={{ headerShown: false, animation: "none" }}
@@ -82,7 +79,6 @@ export default function RootLayout() {
           name="inventoryfolder"
           options={{ headerShown: false, animation: "none" }}
         />
-        <Stack.Screen name="mystuff" options={{ headerShown: false, animation: "none" }} />
       </Stack>
     </ThemeProvider>
   );

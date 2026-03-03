@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -11,14 +17,16 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import BottomNavButton from "@/components/bottomNavBar";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import API_URL from "@/utils/config";
-import { Storage } from "../utils/storage";
-import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
+import { Storage } from "../../utils/storage";
+import {
+  GestureHandlerRootView,
+  RefreshControl,
+} from "react-native-gesture-handler";
 
 /* ---------------- types ---------------- */
 type Folder = {
@@ -33,7 +41,7 @@ type BackendFolder = {
   fld_f_name: string;
   fld_craft_type: string;
   project_cnt: number;
-}
+};
 
 type CraftOption = {
   id: string;
@@ -60,10 +68,9 @@ const craftOptions: CraftOption[] = [
   {
     id: "M",
     label: "M",
-    icon: require("@/assets/images/misc.png")
+    icon: require("@/assets/images/misc.png"),
   },
 ];
-
 
 export default function FolderScreen() {
   const insets = useSafeAreaInsets();
@@ -98,32 +105,30 @@ export default function FolderScreen() {
   );
 
   //folder info things
-  const [noFolders, setNoFolders] = useState(false)
+  const [noFolders, setNoFolders] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState("")
-  const searchTimer = useRef<NodeJS.Timeout | null>(null)
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchTimer = useRef<NodeJS.Timeout | null>(null);
 
   /* ---------------- functionalities ---------------- */
   //check token before doing anything
   const checkTokenOkay = async () => {
-    try{
+    try {
       const token = await Storage.getItem("token");
       if (!token) {
         throw new Error("no token");
-      }
-      else{
+      } else {
         setTokenOkay(true);
       }
-  }
-    catch(e){
+    } catch (e) {
       if (!alreadyAlerted.current) {
-        console.log(e)
+        console.log(e);
         alreadyAlerted.current = true;
         alert("Access denied, please log in and try again.");
         router.replace("/");
       }
     }
-  }
+  };
 
   useEffect(() => {
     checkTokenOkay();
@@ -131,11 +136,12 @@ export default function FolderScreen() {
 
   //with good token, load up data
   useEffect(() => {
-    if (!tokenOkay) { return };
+    if (!tokenOkay) {
+      return;
+    }
     //fetch data
     fetchData();
   }, [tokenOkay]);
-
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -166,10 +172,11 @@ export default function FolderScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshing]);
 
-
   //collect data
-  const fetchData = async() => {
-    if (!tokenOkay) { return };
+  const fetchData = async () => {
+    if (!tokenOkay) {
+      return;
+    }
 
     if (searchQuery.trim().length > 0) return;
 
@@ -186,7 +193,6 @@ export default function FolderScreen() {
       const includePostID = lastPostID.current
         ? `&postID=${lastPostID.current}`
         : "";
-
 
       const res = await fetch(
         `${API_URL}/api/folder?limit=${limit}${includePostID}`,
@@ -207,14 +213,10 @@ export default function FolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         setNoFolders(true);
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -231,7 +233,9 @@ export default function FolderScreen() {
           id: folder.fld_folder_pk,
           name: folder.fld_f_name,
           count: folder.project_cnt,
-          icon: craftOptions.find((option) => option.id === folder.fld_craft_type)?.icon,
+          icon: craftOptions.find(
+            (option) => option.id === folder.fld_craft_type
+          )?.icon,
         })
       );
 
@@ -242,22 +246,18 @@ export default function FolderScreen() {
         return [...prev, ...next];
       });
 
-      hasMore.current = (responseData.hasMore);
+      hasMore.current = responseData.hasMore;
 
       if (tempArray.length > 0) {
         lastPostID.current = Number(tempArray[tempArray.length - 1].id);
       }
-
-    } 
-    catch (e) {
+    } catch (e) {
       console.log("Error when trying to fetch folder data:", e);
-    } 
-    finally {
+    } finally {
       // even if fetching data fails, we will update loading more
       loadingMore.current = false;
     }
-
-  }
+  };
 
   const fetchSearch = async (q: string) => {
     if (!tokenOkay) return;
@@ -287,9 +287,7 @@ export default function FolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -305,7 +303,9 @@ export default function FolderScreen() {
           id: folder.fld_folder_pk,
           name: folder.fld_f_name,
           count: folder.project_cnt,
-          icon: craftOptions.find((option) => option.id === folder.fld_craft_type)?.icon,
+          icon: craftOptions.find(
+            (option) => option.id === folder.fld_craft_type
+          )?.icon,
         })
       );
 
@@ -314,7 +314,7 @@ export default function FolderScreen() {
     } catch (e) {
       console.log("Error when trying to fetch search folder data:", e);
     }
-  }
+  };
 
   useEffect(() => {
     if (!tokenOkay) return;
@@ -346,12 +346,11 @@ export default function FolderScreen() {
     };
   }, [searchQuery, tokenOkay]);
 
-
   /* ---------------- handlers ---------------- */
-  const saveRename = async() => {
+  const saveRename = async () => {
     if (!editingFolder || !folderName.trim()) return;
 
-    if (folderName.length > 20){
+    if (folderName.length > 20) {
       alert("Folder name is too long (must be 20 characters or less)");
       return;
     }
@@ -370,7 +369,7 @@ export default function FolderScreen() {
     setFolderName("");
   };
 
-  const deleteFolder = async() => {
+  const deleteFolder = async () => {
     if (!editingFolder) return;
 
     if (editingFolder.count > 0) {
@@ -380,104 +379,92 @@ export default function FolderScreen() {
 
     const token = await Storage.getItem("token");
 
-    try{
-      const response = await fetch(`${API_URL}/api/folder_delete`,
-          {
-            method: "DELETE",
-            headers : {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              folderID: editingFolder.id,
-              folderName: editingFolder.name,
-            })
-          }
-        )
+    try {
+      const response = await fetch(`${API_URL}/api/folder_delete`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          folderID: editingFolder.id,
+          folderName: editingFolder.name,
+        }),
+      });
 
-        if (response.status === 403) {
-          alert("Cannot delete: This folder has projects.")
-          return
-        }
-        
-        else if (response.status === 404) {
-          alert("Cannot delete: folder does not exist")
-          return
-        }
-
-        else if (!response.ok) {
-          alert("Server error occured. Please try again later.")
-          router.back()
-          return
-        }
+      if (response.status === 403) {
+        alert("Cannot delete: This folder has projects.");
+        return;
+      } else if (response.status === 404) {
+        alert("Cannot delete: folder does not exist");
+        return;
+      } else if (!response.ok) {
+        alert("Server error occured. Please try again later.");
+        router.back();
+        return;
+      }
     } catch (error) {
       console.log("Front-end error log when deleting a folder:", error);
       alert("Could not delete folder");
       return;
     }
 
-
     setFolders((prev) => prev.filter((f) => f.id !== editingFolder.id));
     setEditingFolder(null);
 
-    alert("Forum post successfully deleted!")
+    alert("Forum post successfully deleted!");
   };
 
-  const renameFolder = async() => {
+  const renameFolder = async () => {
     //check token
     const token = await Storage.getItem("token");
 
     //login check to reduce unnecessary fetches
     if (!token) {
-      alert("Hold on there... you need to login first!")
-      router.replace("/login")
-      return
+      alert("Hold on there... you need to login first!");
+      router.replace("/login");
+      return;
     }
 
     if (!editingFolder) return;
 
     //Figure out which craft to update the folder to
-    const newCraftType = craftOptions.find(option => option.icon === selectedIcon)
+    const newCraftType = craftOptions.find(
+      (option) => option.icon === selectedIcon
+    );
     const paramCraftType = newCraftType?.id;
 
     try {
-      const response = await fetch(`${API_URL}/api/folder_rename`,
-        {
-          method: "PATCH",
-          headers : {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            folderID: editingFolder?.id,
-            folderName: folderName,
-            craftType: paramCraftType,
-          }),
-          credentials: "include",
-        }
-      )
+      const response = await fetch(`${API_URL}/api/folder_rename`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          folderID: editingFolder?.id,
+          folderName: folderName,
+          craftType: paramCraftType,
+        }),
+        credentials: "include",
+      });
 
       if (response.status === 404) {
-        alert("Folder does not exist.")
-        return
+        alert("Folder does not exist.");
+        return;
+      } else if (!response.ok) {
+        alert("Server error occured. Please try again later.");
+        router.back();
+        return;
       }
 
-      else if (!response.ok) {
-        alert("Server error occured. Please try again later.")
-        router.back()
-        return
-      }
-
-      alert("Forum post successfully saved!")
-
+      alert("Forum post successfully saved!");
+    } catch (error) {
+      alert("Server error. Please try again later.");
+      console.log("Error editing post:", error);
     }
-    catch(error) {
-      alert("Server error. Please try again later.")
-      console.log("Error editing post:", error)
-
-    }
-  }
+  };
 
   const createFolder = () => {
     if (!folderName.trim()) return;
@@ -501,12 +488,14 @@ export default function FolderScreen() {
   const renderFolder = useCallback(
     ({ item }: { item: Folder }) => (
       <View style={styles.folderCard}>
-        <Pressable 
-          onPress={() => router.push({
-            pathname: "/trackerFolder/[id]",
-            params: {id: item.id}
-          })}
-          style={{alignItems: "center"}}
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/trackerFolder/[id]",
+              params: { id: item.id },
+            })
+          }
+          style={{ alignItems: "center" }}
         >
           <Image source={item.icon} style={styles.icon} />
           <Text style={styles.folderName}>{item.name}</Text>
@@ -524,12 +513,8 @@ export default function FolderScreen() {
         </Pressable>
       </View>
     ),
-    [
-      router,
-      styles,
-    ]
+    [router, styles]
   );
-
 
   /* ---------------- render ---------------- */
   return (
@@ -563,7 +548,11 @@ export default function FolderScreen() {
           numColumns={2}
           keyExtractor={(item) => item.id}
           columnWrapperStyle={{ justifyContent: "space-between" }}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 20, paddingBottom: insets.bottom + 220 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            gap: 20,
+            paddingBottom: insets.bottom + 220,
+          }}
           renderItem={renderFolder}
           onEndReached={() => {
             if (searchQuery.trim().length === 0) fetchData();
@@ -571,20 +560,34 @@ export default function FolderScreen() {
           ListEmptyComponent={() => {
             if (searchQuery.trim().length > 0 && noFolders) {
               return (
-                <View style={{paddingVertical: 10}}>
-                  <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center", lineHeight: 24}}>
+                <View style={{ paddingVertical: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                      lineHeight: 24,
+                    }}
+                  >
                     No folders match “{searchQuery.trim()}”
                   </Text>
                 </View>
-              )
-            }
-            else if (noFolders) {
+              );
+            } else if (noFolders) {
               return (
-                <View style={{paddingVertical: 10}}>
-                  <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center", lineHeight: 24}}> 
-                    Nothing to see here... {"\n"} Create a project folder now! </Text>
+                <View style={{ paddingVertical: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                      lineHeight: 24,
+                    }}
+                  >
+                    Nothing to see here... {"\n"} Create a project folder now!{" "}
+                  </Text>
                 </View>
-              )
+              );
             }
           }}
           ListFooterComponent={() => {
@@ -595,11 +598,12 @@ export default function FolderScreen() {
               if (!hasMore.current) {
                 return (
                   <View style={{ paddingBottom: 150 }}>
-                    <Text style={{ color: colors.text }}>No More Folders to Load</Text>
+                    <Text style={{ color: colors.text }}>
+                      No More Folders to Load
+                    </Text>
                   </View>
                 );
-              } 
-              else {
+              } else {
                 return (
                   <View style={{ paddingBottom: 150 }}>
                     <ActivityIndicator size="small" color={colors.text} />
@@ -610,16 +614,15 @@ export default function FolderScreen() {
             return <View style={{ height: 160 }} />;
           }}
           ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
         />
       </GestureHandlerRootView>
 
-      {/* bottom nav */}
-      <BottomNavButton />
-
       {/* FAB */}
       <Pressable
-        style={[styles.fab, { bottom: insets.bottom + 100 }]}
+        style={[styles.fab, { bottom: insets.bottom }]}
         onPress={() => {
           setCreateOpen(true);
           setSelectedIcon(require("@/assets/images/misc.png"));
@@ -650,9 +653,15 @@ export default function FolderScreen() {
 
             <View style={styles.iconRow}>
               {[
-                { label: "Crochet", icon: require("@/assets/images/crochet.png") },
+                {
+                  label: "Crochet",
+                  icon: require("@/assets/images/crochet.png"),
+                },
                 { label: "Knit", icon: require("@/assets/images/knit.png") },
-                { label: "Sewing", icon: require("@/assets/images/sewing.png") },
+                {
+                  label: "Sewing",
+                  icon: require("@/assets/images/sewing.png"),
+                },
                 { label: "Misc.", icon: require("@/assets/images/misc.png") },
               ].map((item) => (
                 <Pressable

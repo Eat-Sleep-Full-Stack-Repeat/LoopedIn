@@ -18,18 +18,17 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
-import BottomNavButton from "@/components/bottomNavBar";
 import { Feather, Entypo } from "@expo/vector-icons";
 import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
-import { useFocusEffect, useRoute } from '@react-navigation/native'; 
+import { useFocusEffect, useRoute } from "@react-navigation/native";
 
 type PhotoCard = {
   pic: string;
   altText: string;
   id: string;
-}
+};
 
 type SinglePost = {
   id: string;
@@ -46,13 +45,13 @@ type Tag = {
   tagID: string;
   tagColor: string;
   tagName: string;
-}
+};
 
 type BackendTags = {
   tagid: string;
   tagname: string;
   tagcolor: string;
-}
+};
 
 export default function SinglePost() {
   const { currentTheme } = useTheme();
@@ -85,9 +84,9 @@ export default function SinglePost() {
 
   //actually call the refresh
   useEffect(() => {
-    const getPost = async() => {
+    const getPost = async () => {
       await fetchPostInfo();
-    }
+    };
     getPost();
   }, []);
 
@@ -100,19 +99,19 @@ export default function SinglePost() {
   //   );
   // }, [updatedCaption, editVersion]);
 
-
-useEffect(() => {
-  if (updatedCaption && post) { setPostInfo({ ...post, content: updatedCaption });}
-  fetchPostInfo();
-}, [route.key, editVersion, updatedCaption]);
-
+  useEffect(() => {
+    if (updatedCaption && post) {
+      setPostInfo({ ...post, content: updatedCaption });
+    }
+    fetchPostInfo();
+  }, [route.key, editVersion, updatedCaption]);
 
   //call refresh upon return from editing
   useFocusEffect(
-  React.useCallback(() => {
-    fetchPostInfo();
-  }, [])
-);
+    React.useCallback(() => {
+      fetchPostInfo();
+    }, [])
+  );
 
   //handle behavior on web and mobile appropriately
   const onImagePress = (uri: string) => {
@@ -128,21 +127,18 @@ useEffect(() => {
     console.log("token okay");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/single-post?id=${postID}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/single-post?id=${postID}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 404) {
         alert("Could not find that post");
-        router.back()
+        router.back();
       }
 
       const responseData = await res.json();
@@ -160,12 +156,16 @@ useEffect(() => {
                 if (Array.isArray(pic)) {
                   const [url, alt, id] = pic;
                   if (!url) return null;
-                  return { pic: url, altText: alt ?? "", id: id ?? ""};
+                  return { pic: url, altText: alt ?? "", id: id ?? "" };
                 }
 
                 //backup
                 if (pic?.pic) {
-                  return { pic: pic.pic, altText: pic.altText ?? "", id: pic.id ?? ""};
+                  return {
+                    pic: pic.pic,
+                    altText: pic.altText ?? "",
+                    id: pic.id ?? "",
+                  };
                 }
 
                 return null;
@@ -180,20 +180,18 @@ useEffect(() => {
       setCurrentUser(responseData.currentUser);
 
       //structure and set the tag data
-      let tempTagData: Tag[] = responseData.tags.map(
-        (tag: BackendTags) => ({
-          tagID: tag.tagid,
-          tagName: tag.tagname,
-          tagColor: tag.tagcolor,
-        })
-      )
+      let tempTagData: Tag[] = responseData.tags.map((tag: BackendTags) => ({
+        tagID: tag.tagid,
+        tagName: tag.tagname,
+        tagColor: tag.tagcolor,
+      }));
       setTagData(tempTagData);
       setLiked(!!responseData.postInfo?.fld_is_liked);
       setSaved(!!responseData.postInfo?.fld_is_saved);
     } catch (e) {
       console.log("Error when fetching post data", e);
     }
-  }
+  };
 
   //clean up weird timestamp format (consistent w forums)
   const formatDate = (isoString: string) => {
@@ -204,7 +202,7 @@ useEffect(() => {
     currentPost.current = Number(item.id);
     creatorID.current = Number(item.creatorID);
     setAreCommentsVisible(true);
-  }
+  };
 
   const handleLikePress = async () => {
     if (likingRef.current) return;
@@ -214,17 +212,14 @@ useEffect(() => {
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/toggle_like?id=${postID}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/toggle_like?id=${postID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (!res.ok) {
         setLiked(original);
@@ -252,17 +247,14 @@ useEffect(() => {
 
     try {
       const token = await Storage.getItem("token");
-      const res = await fetch(
-        `${API_URL}/api/toggle_save?id=${postID}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/toggle_save?id=${postID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (!res.ok) {
         setSaved(original);
@@ -284,35 +276,38 @@ useEffect(() => {
 
   // adding this to get rid of typeErrors and in case the post information can not be fetched
   if (!post) {
-    return(
-    <SafeAreaView
-      style={[
-        styles.container,
-        {
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: colors.exploreBackground, // match Explore
-        },
-      ]}
-    >
-      {/* back arrow for testing */}
-      {/* <View>
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: colors.exploreBackground, // match Explore
+          },
+        ]}
+      >
+        {/* back arrow for testing */}
+        {/* <View>
         <Pressable onPress={router.back} hitSlop={10}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </Pressable>
       </View> */}
 
-      {/* Centered message */}
-      <View>
-          <Text style={[styles.content, { color: colors.text, fontStyle: "italic" }]}>
+        {/* Centered message */}
+        <View>
+          <Text
+            style={[
+              styles.content,
+              { color: colors.text, fontStyle: "italic" },
+            ]}
+          >
             Loading page content...
           </Text>
-      </View>
-
+        </View>
       </SafeAreaView>
-    )
+    );
   }
-
 
   //UI handlers for popups - moved below "no post" handling due to null issues
   const handleEdit = async () => {
@@ -343,7 +338,6 @@ useEffect(() => {
         alert("Error while deleting the post. Please try again later.");
         return;
       }
-
     } catch (e) {
       console.log("Error when deleting post", e);
     } finally {
@@ -695,7 +689,6 @@ useEffect(() => {
         currentPost={currentPost.current}
         postCreator={creatorID.current}
       ></ExploreCommentsModal>
-      {/* <BottomNavButton /> */}
     </SafeAreaView>
   );
 }

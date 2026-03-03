@@ -1,5 +1,4 @@
 import { Colors } from "@/Styles/colors";
-import BottomNavButton from "@/components/bottomNavBar";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -80,8 +79,6 @@ export default function Index() {
         <Text style={{ color: colors.text }}> My Stuff </Text>
       </TouchableOpacity>
 
-
-
       <View
         style={{
           justifyContent: "center",
@@ -99,8 +96,6 @@ export default function Index() {
           style={{ justifyContent: "center" }}
         />
       </View>
-
-      {/* <BottomNavButton /> */}
     </GestureHandlerRootView>
   );
 }

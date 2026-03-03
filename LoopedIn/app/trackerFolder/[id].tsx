@@ -400,9 +400,9 @@ export default function TrackerFolderView() {
     <View style={styles.container}>
       {/* Back Button + Search Bar Icon */}
       <View style={styles.headerBox}>
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Feather name="arrow-left" size={22} color={colors.text} />
-            </Pressable>
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={22} color={colors.text} />
+        </Pressable>
         <Feather name="search" size={24} color={colors.text} />
       </View>
 
@@ -465,7 +465,10 @@ export default function TrackerFolderView() {
             <Pressable onPress={() => router.push(`/singleProject/${item.id}`)}>
               <View style={styles.projectContainer}>
                 <View
-                  style={{ justifyContent: "space-between", flexDirection: "row" }}
+                  style={{
+                    justifyContent: "space-between",
+                    flexDirection: "row",
+                  }}
                 >
                   <View
                     style={{
@@ -509,24 +512,33 @@ export default function TrackerFolderView() {
           }}
           ListEmptyComponent={() => {
             if (loading) {
-              return <ActivityIndicator size="small" color={colors.text}/>
-            }
-            else if (projects?.length === 0) {
+              return <ActivityIndicator size="small" color={colors.text} />;
+            } else if (projects?.length === 0) {
               return (
-                <View style={{paddingVertical: 10}}>
-                  <Text style={{color: colors.settingsText, fontWeight: "bold", textAlign: "center"}}> No projects here... </Text>
+                <View style={{ paddingVertical: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {" "}
+                    No projects here...{" "}
+                  </Text>
                 </View>
-              )
+              );
             }
           }}
           ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>}
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
         />
       </GestureHandlerRootView>
 
       <Pressable
-        style={[styles.floatingButton, { bottom: insets.bottom + 10}]}
+        style={[styles.floatingButton, { bottom: insets.bottom + 10 }]}
         onPress={() => console.log("Will update to add a project!")}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />

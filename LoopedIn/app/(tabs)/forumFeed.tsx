@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import BottomNavButton from "@/components/bottomNavBar";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 // FIXME remove the following import once backend is set up
@@ -418,7 +417,7 @@ export default function ForumFeed() {
     floatingButton: {
       position: "absolute",
       right: 20,
-      bottom: insets.bottom + 90,
+      bottom: insets.bottom,
       width: 56,
       height: 56,
       borderRadius: 28,
@@ -626,8 +625,6 @@ export default function ForumFeed() {
           onClose={() => setSearchOpen(false)}
           forumData={forumData}
         />
-
-        {/* <BottomNavButton /> */}
       </View>
     </GestureHandlerRootView>
   );

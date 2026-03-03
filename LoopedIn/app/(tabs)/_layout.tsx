@@ -24,9 +24,9 @@ type IconProps = {
 const icons: Record<string, IconProps> = {
   userProfile: { name: "account", size: ICONSIZE + 2 },
   forumFeed: { name: "forum", size: ICONSIZE },
-  myStuff: { name: "bag-personal", size: ICONSIZE },
+  mystuff: { name: "bag-personal", size: ICONSIZE },
   explore: { name: "home", size: ICONSIZE + 3 },
-  tracker: { name: "notebook", size: ICONSIZE },
+  folderscreen: { name: "notebook", size: ICONSIZE },
   index: { name: "cake", size: ICONSIZE },
 };
 
@@ -119,6 +119,15 @@ export default function TabLayout() {
         options={{ title: "Profile", tabBarAccessibilityLabel: "Profile page" }}
       />
 
+      {/* Link to the tracker screen */}
+      <Tabs.Screen
+        name="folderscreen"
+        options={{
+          title: "Tracker",
+          tabBarAccessibilityLabel: "Project tracker page",
+        }}
+      />
+
       {/* Link to the explore screen */}
       <Tabs.Screen
         name="explore"
@@ -132,6 +141,12 @@ export default function TabLayout() {
           title: "Forum",
           tabBarAccessibilityLabel: "Forum Feed page",
         }}
+      />
+
+      {/* Link to the mystuff screen (inventory + wishlist) */}
+      <Tabs.Screen
+        name="mystuff"
+        options={{ headerShown: false, animation: "none" }}
       />
     </Tabs>
   );

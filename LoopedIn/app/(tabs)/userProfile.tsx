@@ -15,7 +15,6 @@ import {
   useWindowDimensions,
   TouchableOpacity,
 } from "react-native";
-import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
@@ -690,7 +689,6 @@ export default function UserProfile() {
           <ActivityIndicator />
           <Text style={{ marginTop: 8, color: colors.text }}>Preparing…</Text>
         </View>
-        {/* <BottomNavButton /> */}
       </View>
     );
   }
@@ -716,7 +714,6 @@ export default function UserProfile() {
             <Text style={s.primaryBtnText}>Go to Log In</Text>
           </TouchableOpacity>
         </View>
-        {/* <BottomNavButton /> */}
       </View>
     );
   }
@@ -729,7 +726,6 @@ export default function UserProfile() {
           <ActivityIndicator />
           <Text style={{ marginTop: 8, color: colors.text }}>Loading…</Text>
         </View>
-        {/* <BottomNavButton /> */}
       </View>
     );
   }
@@ -745,7 +741,6 @@ export default function UserProfile() {
             <Text style={{ color: colors.link, marginTop: 8 }}>Go Home</Text>
           </Pressable>
         </View>
-        {/* <BottomNavButton /> */}
       </View>
     );
   }
@@ -819,7 +814,7 @@ export default function UserProfile() {
           alignSelf: "center",
           width: "100%",
           maxWidth: CONTENT_MAX,
-          paddingBottom: insets.bottom + 100,
+          paddingBottom: insets.bottom,
           paddingTop: 10,
           backgroundColor: colors.background,
         }}
@@ -828,13 +823,11 @@ export default function UserProfile() {
       />
 
       <Pressable
-        style={[s.floatingButton, { bottom: insets.bottom + 90 }]}
+        style={[s.floatingButton, { bottom: insets.bottom }]}
         onPress={handleCreatePost}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />
       </Pressable>
-
-      {/* <BottomNavButton /> */}
 
       <SettingsOverlay
         visible={settingsOpen}
