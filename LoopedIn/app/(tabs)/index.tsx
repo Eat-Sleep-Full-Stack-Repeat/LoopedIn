@@ -48,12 +48,6 @@ export default function Index() {
         <Text style={{ color: colors.text }}>Welcome Page</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => router.push("/folderscreen")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}> My Folders </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
         onPress={() => router.push("/inventoryfolder")}
         style={{ marginTop: 20 }}
       >
@@ -70,13 +64,6 @@ export default function Index() {
         style={{ marginTop: 20 }}
       >
         <Text style={{ color: colors.text }}> New Project </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => router.push("/mystuff")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}> My Stuff </Text>
       </TouchableOpacity>
 
       <View
