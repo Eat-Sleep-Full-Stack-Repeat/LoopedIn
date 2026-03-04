@@ -17,8 +17,10 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import BottomNavButton from "@/components/bottomNavBar";
-import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
+import {
+  useSafeAreaInsets,
+  SafeAreaView,
+} from "react-native-safe-area-context";
 // FIXME: delete the following line when backend set up
 import craftIcons from "@/components/craftIcons";
 import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
@@ -28,7 +30,6 @@ import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
 import { Feather, Entypo } from "@expo/vector-icons";
 import { jwtDecode } from "jwt-decode";
-
 
 type User = {
   userID: string;
@@ -44,7 +45,6 @@ type User = {
 interface Payload {
   userID: string;
 }
-
 
 function getThumbnailSource(item: any): any | null {
   if (!item) return null;
@@ -86,8 +86,6 @@ function getThumbnailSource(item: any): any | null {
   return item;
 }
 
-
-
 export default function OtherUserProfile() {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
@@ -96,7 +94,8 @@ export default function OtherUserProfile() {
 
   const isTablet = width >= 768;
   const CONTENT_MAX = isTablet ? 720 : width;
-  const NUM_COLUMNS = width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
+  const NUM_COLUMNS =
+    width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
   const AVATAR = isTablet ? 120 : 100;
 
   const { currentTheme } = useTheme();
@@ -107,59 +106,56 @@ export default function OtherUserProfile() {
   const [currentPosts, setPosts] = useState<any[]>([]);
 
   //if you are following user
-  const [isFollowed, setIsFollowed] = useState(false)
+  const [isFollowed, setIsFollowed] = useState(false);
 
   //if user is following you
-  const [isUserFollowing, setIsUserFollowing] = useState(false)
+  const [isUserFollowing, setIsUserFollowing] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentUser, setCurrentUser] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string>("");
   const [menuVisible, setMenuVisible] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   //blocking/unblocking loading state
-  const [isBlocking, setIsBlocking] = useState(false)
-  
+  const [isBlocking, setIsBlocking] = useState(false);
+
   //tracking if the other user blocked current user
-  const [isBlocked, setIsBlocked] = useState(false)
+  const [isBlocked, setIsBlocked] = useState(false);
 
   //tracking if current user blocked other user
-  const [isBlockedUser, setIsBlockedUser] = useState(false)
+  const [isBlockedUser, setIsBlockedUser] = useState(false);
 
   //get rid of header
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
   }, [navigation]);
 
-
   //call helper function to load user profile
   const fetchUser = async () => {
     if (!id) {
-      return
+      return;
     }
 
     const token = await Storage.getItem("token");
 
     if (!token) {
-      alert("Token does not exist")
-      router.replace("/")
-      return
+      alert("Token does not exist");
+      router.replace("/");
+      return;
     }
 
-    const decoded = jwtDecode<Payload>(token)
-    setCurrentUser(decoded.userID)
+    const decoded = jwtDecode<Payload>(token);
+    setCurrentUser(decoded.userID);
 
     try {
-      const response = await fetch(`${API_URL}/api/profile/${id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${API_URL}/api/profile/${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (!response.ok) {
         alert("Error fetching this profile. Try again later.");
@@ -181,125 +177,123 @@ export default function OtherUserProfile() {
       };
 
       setOtherUser(new_user);
-      setPosts(data.posts ?? [])
-
-    }
-    catch(error) {
+      setPosts(data.posts ?? []);
+    } catch (error) {
       console.log("Error while fetching other user", (error as Error).message);
       alert("Server error, please try again later.");
     }
-  }
+  };
 
   useEffect(() => {
     fetchUser();
-  }, [reloadToken])
+  }, [reloadToken]);
 
   const onRefresh = useCallback(async () => {
-    setIsRefreshing(true)
-    await fetchUser()
-    setIsRefreshing(false)
-  }, [reloadToken])
+    setIsRefreshing(true);
+    await fetchUser();
+    setIsRefreshing(false);
+  }, [reloadToken]);
 
   useEffect(() => {
     if (otherUser?.userID) {
-      fetchFollow()
-      fetchBlock()
+      fetchFollow();
+      fetchBlock();
     }
-
-  }, [otherUser])
-
+  }, [otherUser]);
 
   const fetchFollow = async () => {
-    const otherUserID = otherUser?.userID
+    const otherUserID = otherUser?.userID;
 
     if (otherUserID === null) {
-      console.log("otheruserID is null")
-      return
+      console.log("otheruserID is null");
+      return;
     }
 
-    const token = await Storage.getItem("token")
+    const token = await Storage.getItem("token");
     try {
-      const response = await fetch(`${API_URL}/api/follow/check-if-follow/${otherUserID}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      })
+      const response = await fetch(
+        `${API_URL}/api/follow/check-if-follow/${otherUserID}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
-        alert("Failed to load follow status")
-        return
+        alert("Failed to load follow status");
+        return;
       }
 
-      const responseData = await response.json()
+      const responseData = await response.json();
 
-      setIsFollowed(responseData.followStatus)
-      setIsUserFollowing(responseData.userFollowingStatus)
-
+      setIsFollowed(responseData.followStatus);
+      setIsUserFollowing(responseData.userFollowingStatus);
+    } catch (error) {
+      console.log("Error checking follow status:", error);
     }
-    catch(error) {
-      console.log("Error checking follow status:", error)
-    }
-  }
+  };
 
   //for fetching blocked status
   const fetchBlock = async () => {
-    const otherUserID = otherUser?.userID
+    const otherUserID = otherUser?.userID;
 
     if (otherUserID === null) {
-      console.log("otheruserID is null")
-      return
+      console.log("otheruserID is null");
+      return;
     }
 
-    const token = await Storage.getItem("token")
+    const token = await Storage.getItem("token");
 
     try {
-      const response = await fetch(`${API_URL}/api/block/check-if-block/${otherUserID}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${API_URL}/api/block/check-if-block/${otherUserID}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
-        alert("Failed to recieve block status")
-        return
+        alert("Failed to recieve block status");
+        return;
       }
 
-      const responseData = await response.json()
+      const responseData = await response.json();
 
       //don't mix these up lol
-      setIsBlocked(responseData.ifBlocked)
-      setIsBlockedUser(responseData.ifUserBlocked)
-
+      setIsBlocked(responseData.ifBlocked);
+      setIsBlockedUser(responseData.ifUserBlocked);
+    } catch (error) {
+      console.log("Error checking block status:", error);
     }
-    catch(error) {
-      console.log("Error checking block status:", error)
-    }
-  }
+  };
 
   const handleFollowPress = async () => {
     //so we prevent spam clicking
     if (isLoading) {
-      return
+      return;
     }
 
-    const otherUserID = otherUser?.userID
+    const otherUserID = otherUser?.userID;
 
     if (otherUserID === null) {
-      console.log("otheruserID is null")
-      return
+      console.log("otheruserID is null");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
-    const original = isFollowed
+    const original = isFollowed;
     const originalFollowers = Number(otherUser?.followers ?? 0);
-    setIsFollowed(!original)
+    setIsFollowed(!original);
 
     //unfollow route
     if (isFollowed) {
@@ -313,56 +307,63 @@ export default function OtherUserProfile() {
             Authorization: `Bearer ${token}`,
           },
           credentials: "include",
-          body: JSON.stringify({ followingID: otherUserID}),
+          body: JSON.stringify({ followingID: otherUserID }),
         });
 
         if (!response.ok) {
-          setIsFollowed(original)
-          alert("Something went wrong when unfollowing this person. Try again later.")
-          return
+          setIsFollowed(original);
+          alert(
+            "Something went wrong when unfollowing this person. Try again later."
+          );
+          return;
         }
-      }
-      catch(error) {
-        console.log("Failed to unfollow user:", error)
-      }
-      finally {
+      } catch (error) {
+        console.log("Failed to unfollow user:", error);
+      } finally {
         //success: state change yay
-        setOtherUser(prev => prev ? { ...prev, followers: originalFollowers + (original ? -1 : 1) } : prev);
-        setIsLoading(false)
+        setOtherUser((prev) =>
+          prev
+            ? { ...prev, followers: originalFollowers + (original ? -1 : 1) }
+            : prev
+        );
+        setIsLoading(false);
       }
     }
     //follow route oooo
     else {
       try {
-        const token = await Storage.getItem("token")
+        const token = await Storage.getItem("token");
 
-          const response = await fetch(`${API_URL}/api/follow/follow-user`, {
+        const response = await fetch(`${API_URL}/api/follow/follow-user`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           credentials: "include",
-          body: JSON.stringify({ otherUserID: otherUserID}),
+          body: JSON.stringify({ otherUserID: otherUserID }),
         });
 
         if (!response.ok) {
-          setIsFollowed(original)
-          alert("Something went wrong when following this person. Try again later.")
-          return
+          setIsFollowed(original);
+          alert(
+            "Something went wrong when following this person. Try again later."
+          );
+          return;
         }
-
-      }
-      catch(error) {
-        console.log("Failed to follow user:", error)
-      }
-      finally {
+      } catch (error) {
+        console.log("Failed to follow user:", error);
+      } finally {
         //success: state change yay
-        setOtherUser(prev => prev ? { ...prev, followers: originalFollowers + (original ? -1 : 1) } : prev);
-        setIsLoading(false)
+        setOtherUser((prev) =>
+          prev
+            ? { ...prev, followers: originalFollowers + (original ? -1 : 1) }
+            : prev
+        );
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   const openMenu = () => {
     setMenuVisible(true);
@@ -372,101 +373,116 @@ export default function OtherUserProfile() {
   const handleBlock = async () => {
     //prevent spam blocks
     if (isBlocking) {
-      return
+      return;
     }
 
-    const otherUserID = otherUser?.userID
+    const otherUserID = otherUser?.userID;
 
     if (otherUserID === null) {
-      console.log("otheruserID is null")
-      return
+      console.log("otheruserID is null");
+      return;
     }
 
-    setIsBlocking(true)
+    setIsBlocking(true);
 
     //is here so it aligns with our optimistic updates
-    setMenuVisible(false)
+    setMenuVisible(false);
 
     //og if current user blocked other user
-    const original = isBlockedUser
-    setIsBlockedUser(!original)
+    const original = isBlockedUser;
+    setIsBlockedUser(!original);
 
-    const originalFollowed = isFollowed //keep track if you followed user
-    const originalUserFollow = isUserFollowing //keep track if user is following you
-    const originalUsersFollowerCnt = Number(otherUser?.followers ?? 0)
-    const originalUsersFollowingCnt = Number(otherUser?.following ?? 0)
-
+    const originalFollowed = isFollowed; //keep track if you followed user
+    const originalUserFollow = isUserFollowing; //keep track if user is following you
+    const originalUsersFollowerCnt = Number(otherUser?.followers ?? 0);
+    const originalUsersFollowingCnt = Number(otherUser?.following ?? 0);
 
     //unblock route
     if (isBlockedUser) {
-      const token = await Storage.getItem("token")
+      const token = await Storage.getItem("token");
 
       try {
-        const response = await fetch(`${API_URL}/api/block/block-user/${otherUserID}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${API_URL}/api/block/block-user/${otherUserID}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        );
 
         if (!response.ok) {
-          setIsBlockedUser(original)
+          setIsBlockedUser(original);
           alert("Error while unblocking this user. Try again later.");
           return;
         }
-
-      }
-      catch(error) {
-        console.log("Failed to unblock user:", error)
-      }
-      finally {
+      } catch (error) {
+        console.log("Failed to unblock user:", error);
+      } finally {
         //unblock complete
-        setIsBlocking(false)
+        setIsBlocking(false);
       }
     }
 
     //block route
     else {
-      const token = await Storage.getItem("token")
+      const token = await Storage.getItem("token");
 
       try {
-        const response = await fetch(`${API_URL}/api/block/block-user/${otherUserID}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${API_URL}/api/block/block-user/${otherUserID}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        );
 
         if (!response.ok) {
-          setIsBlockedUser(original)
+          setIsBlockedUser(original);
           alert("Error while unblocking this user. Try again later.");
           return;
         }
-
-      }
-      catch(error) {
-        console.log("Failed to block user:", error)
-      }
-      finally {
-        //if we followed them, update UI to unfollow 
+      } catch (error) {
+        console.log("Failed to block user:", error);
+      } finally {
+        //if we followed them, update UI to unfollow
         if (originalFollowed) {
-          setOtherUser(prev => prev ? { ...prev, followers: originalUsersFollowerCnt + (originalFollowed ? -1 : 1) } : prev);
+          setOtherUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  followers:
+                    originalUsersFollowerCnt + (originalFollowed ? -1 : 1),
+                }
+              : prev
+          );
         }
 
         //if user was following us, they will now unfollow us in UI
         if (originalUserFollow) {
-          setOtherUser(prev => prev ? { ...prev, following: originalUsersFollowingCnt + (originalUserFollow ? -1 : 1) } : prev);
+          setOtherUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  following:
+                    originalUsersFollowingCnt + (originalUserFollow ? -1 : 1),
+                }
+              : prev
+          );
         }
 
         //block complete
-        setIsBlocking(false)
+        setIsBlocking(false);
       }
     }
-  }
+  };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -475,7 +491,6 @@ export default function OtherUserProfile() {
 
     return unsubscribe;
   }, [navigation]);
-
 
   //userdata from backend yee
   const router = useRouter();
@@ -613,11 +628,11 @@ export default function OtherUserProfile() {
       color: colors.decorativeText,
     },
     followText: {
-      fontSize: 14, 
+      fontSize: 14,
       color: colors.text,
     },
     isBlockedBtn: {
-      backgroundColor: colors.blockedBackground
+      backgroundColor: colors.blockedBackground,
     },
     isBlockedText: {
       fontSize: 14,
@@ -650,85 +665,116 @@ export default function OtherUserProfile() {
       backgroundColor: colors.topBackground,
       alignItems: "center",
       zIndex: 10,
-    }
+    },
   });
-  
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <View style={{flexDirection: "row", justifyContent: "space-between", paddingTop: 10}}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingTop: 10,
+        }}
+      >
         <View style={styles.headerArrowDiv}>
           <Pressable style={styles.backFab} onPress={() => router.back()}>
             <Feather name="chevron-left" size={22} color={colors.text} />
           </Pressable>
         </View>
         {currentUser !== "" && currentUser !== userData?.userID ? (
-        <View style={{zIndex: 10, marginHorizontal: 30, height: 40, justifyContent: "center"}}>
-          <TouchableOpacity onPress={() => openMenu()}>
-            <Entypo
-              name="dots-three-vertical"
-              size={18}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        </View>) : (<View></View>)}
+          <View
+            style={{
+              zIndex: 10,
+              marginHorizontal: 30,
+              height: 40,
+              justifyContent: "center",
+            }}
+          >
+            <TouchableOpacity onPress={() => openMenu()}>
+              <Entypo
+                name="dots-three-vertical"
+                size={18}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View></View>
+        )}
       </View>
 
-      <View style={[styles.renderHeaderStyle, {paddingTop: 10}]}>
+      <View style={[styles.renderHeaderStyle, { paddingTop: 10 }]}>
         <View style={{ flexDirection: "column" }}>
           {/* user info: pic, username, follower + friend count */}
           <View style={styles.userInfo}>
             <Image
-              source={ userData?.avatarUrl ? {uri: userData.avatarUrl}
-              : require("@/assets/images/icons8-cat-profile-100.png")}
-              
-              style={[{ width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 }]}
+              source={
+                userData?.avatarUrl
+                  ? { uri: userData.avatarUrl }
+                  : require("@/assets/images/icons8-cat-profile-100.png")
+              }
+              style={[
+                { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 },
+              ]}
             />
             <View>
-              <Text style={{ fontSize: 20, color: colors.text }}>{userData?.userName ?? "User"}</Text>
+              <Text style={{ fontSize: 20, color: colors.text }}>
+                {userData?.userName ?? "User"}
+              </Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
+                {/* Followers */}
 
-              {/* Followers */}
-
-              <Pressable
-                style={{ flexDirection: "column", alignItems: "center", justifyContent: "flex-start"  }}
-                onPress={() => {
-                  if (!userData?.userID) {
-                    alert("Still fetching userdata... try again later")
-                    return
-                  }
-                  router.push({
-                  pathname: "/followers/[id]",
-                  params: {id: userData?.userID}})}}
-              >
+                <Pressable
+                  style={{
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                  }}
+                  onPress={() => {
+                    if (!userData?.userID) {
+                      alert("Still fetching userdata... try again later");
+                      return;
+                    }
+                    router.push({
+                      pathname: "/followers/[id]",
+                      params: { id: userData?.userID },
+                    });
+                  }}
+                >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: colors.decorativeText }}>
+                    <Text
+                      style={{ fontSize: 24, color: colors.decorativeText }}
+                    >
                       {userData?.followers ?? 0}
                     </Text>
                   </View>
                   <Text style={styles.countLabel}>Followers</Text>
-              </Pressable>
+                </Pressable>
 
-              {/* Following */}
-              <Pressable
-                style={{ flexDirection: "column", alignItems: "center" }}
-                onPress={() => {
-                  if (!userData?.userID) {
-                    alert("Still fetching userdata... try again later")
-                    return
-                  }
-                  router.push({
-                  pathname: "/following/[id]",
-                  params: {id: userData?.userID}})}}
-              >
+                {/* Following */}
+                <Pressable
+                  style={{ flexDirection: "column", alignItems: "center" }}
+                  onPress={() => {
+                    if (!userData?.userID) {
+                      alert("Still fetching userdata... try again later");
+                      return;
+                    }
+                    router.push({
+                      pathname: "/following/[id]",
+                      params: { id: userData?.userID },
+                    });
+                  }}
+                >
                   <View style={styles.countCircles}>
-                    <Text style={{ fontSize: 24, color: colors.decorativeText }}>
+                    <Text
+                      style={{ fontSize: 24, color: colors.decorativeText }}
+                    >
                       {userData?.following ?? 0}
                     </Text>
                   </View>
                   <Text style={styles.countLabel}>Following</Text>
-              </Pressable>
-              
+                </Pressable>
               </View>
             </View>
           </View>
@@ -737,7 +783,9 @@ export default function OtherUserProfile() {
           <View style={styles.bioContainer}>
             <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
             <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14, color: colors.text }}>{userData?.userBio?? ""}</Text>
+              <Text style={{ fontSize: 14, color: colors.text }}>
+                {userData?.userBio ?? ""}
+              </Text>
             </View>
           </View>
 
@@ -760,34 +808,50 @@ export default function OtherUserProfile() {
 
           {/* follow and message buttons */}
           {currentUser !== "" && currentUser !== userData?.userID ? (
-          <View style={styles.contactContainer}>
-            <Pressable disabled={isLoading || isBlocking || isBlocked || isBlockedUser} style={[styles.followContainer, isFollowed && styles.isFollowedBtn, 
-              (isBlockedUser || isBlocked) && styles.isBlockedBtn]} 
-              onPress={handleFollowPress}>
-              {isLoading ? (
-                <ActivityIndicator size="small" color={colors.text} />) :(
-                <Text style={[styles.followText, isFollowed && styles.isFollowedText, (isBlockedUser || isBlocked) && styles.isBlockedText]}> 
-                  {isFollowed ? "Followed" : "Follow"} </Text>
+            <View style={styles.contactContainer}>
+              <Pressable
+                disabled={isLoading || isBlocking || isBlocked || isBlockedUser}
+                style={[
+                  styles.followContainer,
+                  isFollowed && styles.isFollowedBtn,
+                  (isBlockedUser || isBlocked) && styles.isBlockedBtn,
+                ]}
+                onPress={handleFollowPress}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={colors.text} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.followText,
+                      isFollowed && styles.isFollowedText,
+                      (isBlockedUser || isBlocked) && styles.isBlockedText,
+                    ]}
+                  >
+                    {isFollowed ? "Followed" : "Follow"}{" "}
+                  </Text>
                 )}
-            </Pressable>
-            {/* <View style={[styles.followContainer, (isBlockedUser || isBlocked) && styles.isBlockedBtn]}>
+              </Pressable>
+              {/* <View style={[styles.followContainer, (isBlockedUser || isBlocked) && styles.isBlockedBtn]}>
               <Text style={[styles.followText, (isBlockedUser || isBlocked) && styles.isBlockedText]}> Message </Text>
             </View> */}
-          </View>
-          ) : (<View></View>)}
+            </View>
+          ) : (
+            <View></View>
+          )}
         </View>
       </View>
 
       {/* user's posts section */}
       <View style={styles.postTabs}>
         <View style={styles.postTabText}>
-          <Text style={{ color: colors.decorativeText }}>{userData?.userName?? "User"}'s Posts</Text>
+          <Text style={{ color: colors.decorativeText }}>
+            {userData?.userName ?? "User"}'s Posts
+          </Text>
         </View>
       </View>
     </View>
   );
-
-
 
   const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS - 10;
 
@@ -807,9 +871,14 @@ export default function OtherUserProfile() {
           if (item == undefined) return null;
 
           return (
-            <Pressable onPress={() => router.push({
-            pathname: "/singlePost/[id]",
-            params: { id }})}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/singlePost/[id]",
+                  params: { id },
+                })
+              }
+            >
               <Image
                 source={thumbSource}
                 resizeMode="cover"
@@ -824,10 +893,12 @@ export default function OtherUserProfile() {
             </Pressable>
           );
         }}
-
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh}
-          progressViewOffset={insets.top + 10}/>
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            progressViewOffset={insets.top + 10}
+          />
         }
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100,
@@ -837,11 +908,9 @@ export default function OtherUserProfile() {
           justifyContent: "flex-start",
           // marginVertical: 10,
           // paddingHorizontal: 10,
-          // columnGap: 10,  
+          // columnGap: 10,
         }}
       />
-
-      <BottomNavButton />
 
       <Modal
         transparent
@@ -860,15 +929,20 @@ export default function OtherUserProfile() {
             ]}
           >
             {/*very good icon usage here*/}
-            <TouchableOpacity disabled={isBlocking} onPress={handleBlock} style={styles.menuOption}>
+            <TouchableOpacity
+              disabled={isBlocking}
+              onPress={handleBlock}
+              style={styles.menuOption}
+            >
               {isBlockedUser ? (
                 <Feather name="smile" size={18} color={colors.text} />
               ) : (
                 <Feather name="frown" size={18} color={colors.text} />
               )}
-              <Text style={[styles.menuText, { color: colors.text }]}>{isBlockedUser ? "Unblock" : "Block"}</Text>
+              <Text style={[styles.menuText, { color: colors.text }]}>
+                {isBlockedUser ? "Unblock" : "Block"}
+              </Text>
             </TouchableOpacity>
-
           </View>
         </TouchableOpacity>
       </Modal>

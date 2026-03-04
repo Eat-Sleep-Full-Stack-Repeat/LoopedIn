@@ -18,18 +18,17 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
-import BottomNavButton from "@/components/bottomNavBar";
 import { Feather, Entypo } from "@expo/vector-icons";
 import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
-import { useFocusEffect, useRoute } from '@react-navigation/native'; 
+import { useFocusEffect, useRoute } from "@react-navigation/native";
 
 type PhotoCard = {
   pic: string;
   altText: string;
   id: string;
-}
+};
 
 type SinglePost = {
   id: string;
@@ -46,13 +45,13 @@ type Tag = {
   tagID: string;
   tagColor: string;
   tagName: string;
-}
+};
 
 type BackendTags = {
   tagid: string;
   tagname: string;
   tagcolor: string;
-}
+};
 
 export default function SinglePost() {
   const { currentTheme } = useTheme();
@@ -85,9 +84,9 @@ export default function SinglePost() {
 
   //actually call the refresh
   useEffect(() => {
-    const getPost = async() => {
+    const getPost = async () => {
       await fetchPostInfo();
-    }
+    };
     getPost();
   }, []);
 
@@ -100,19 +99,19 @@ export default function SinglePost() {
   //   );
   // }, [updatedCaption, editVersion]);
 
-
-useEffect(() => {
-  if (updatedCaption && post) { setPostInfo({ ...post, content: updatedCaption });}
-  fetchPostInfo();
-}, [route.key, editVersion, updatedCaption]);
-
+  useEffect(() => {
+    if (updatedCaption && post) {
+      setPostInfo({ ...post, content: updatedCaption });
+    }
+    fetchPostInfo();
+  }, [route.key, editVersion, updatedCaption]);
 
   //call refresh upon return from editing
   useFocusEffect(
-  React.useCallback(() => {
-    fetchPostInfo();
-  }, [])
-);
+    React.useCallback(() => {
+      fetchPostInfo();
+    }, [])
+  );
 
   //handle behavior on web and mobile appropriately
   const onImagePress = (uri: string) => {
@@ -128,21 +127,18 @@ useEffect(() => {
     console.log("token okay");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/single-post?id=${postID}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/single-post?id=${postID}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 404) {
         alert("Could not find that post");
-        router.back()
+        router.back();
       }
 
       const responseData = await res.json();
@@ -160,12 +156,16 @@ useEffect(() => {
                 if (Array.isArray(pic)) {
                   const [url, alt, id] = pic;
                   if (!url) return null;
-                  return { pic: url, altText: alt ?? "", id: id ?? ""};
+                  return { pic: url, altText: alt ?? "", id: id ?? "" };
                 }
 
                 //backup
                 if (pic?.pic) {
-                  return { pic: pic.pic, altText: pic.altText ?? "", id: pic.id ?? ""};
+                  return {
+                    pic: pic.pic,
+                    altText: pic.altText ?? "",
+                    id: pic.id ?? "",
+                  };
                 }
 
                 return null;
@@ -180,20 +180,18 @@ useEffect(() => {
       setCurrentUser(responseData.currentUser);
 
       //structure and set the tag data
-      let tempTagData: Tag[] = responseData.tags.map(
-        (tag: BackendTags) => ({
-          tagID: tag.tagid,
-          tagName: tag.tagname,
-          tagColor: tag.tagcolor,
-        })
-      )
+      let tempTagData: Tag[] = responseData.tags.map((tag: BackendTags) => ({
+        tagID: tag.tagid,
+        tagName: tag.tagname,
+        tagColor: tag.tagcolor,
+      }));
       setTagData(tempTagData);
       setLiked(!!responseData.postInfo?.fld_is_liked);
       setSaved(!!responseData.postInfo?.fld_is_saved);
     } catch (e) {
       console.log("Error when fetching post data", e);
     }
-  }
+  };
 
   //clean up weird timestamp format (consistent w forums)
   const formatDate = (isoString: string) => {
@@ -204,7 +202,7 @@ useEffect(() => {
     currentPost.current = Number(item.id);
     creatorID.current = Number(item.creatorID);
     setAreCommentsVisible(true);
-  }
+  };
 
   const handleLikePress = async () => {
     if (likingRef.current) return;
@@ -214,17 +212,14 @@ useEffect(() => {
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/toggle_like?id=${postID}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/toggle_like?id=${postID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (!res.ok) {
         setLiked(original);
@@ -252,17 +247,14 @@ useEffect(() => {
 
     try {
       const token = await Storage.getItem("token");
-      const res = await fetch(
-        `${API_URL}/api/toggle_save?id=${postID}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/toggle_save?id=${postID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (!res.ok) {
         setSaved(original);
@@ -284,35 +276,38 @@ useEffect(() => {
 
   // adding this to get rid of typeErrors and in case the post information can not be fetched
   if (!post) {
-    return(
-    <SafeAreaView
-      style={[
-        styles.container,
-        {
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: colors.exploreBackground, // match Explore
-        },
-      ]}
-    >
-      {/* back arrow for testing */}
-      {/* <View>
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: colors.exploreBackground, // match Explore
+          },
+        ]}
+      >
+        {/* back arrow for testing */}
+        {/* <View>
         <Pressable onPress={router.back} hitSlop={10}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </Pressable>
       </View> */}
 
-      {/* Centered message */}
-      <View>
-          <Text style={[styles.content, { color: colors.text, fontStyle: "italic" }]}>
+        {/* Centered message */}
+        <View>
+          <Text
+            style={[
+              styles.content,
+              { color: colors.text, fontStyle: "italic" },
+            ]}
+          >
             Loading page content...
           </Text>
-      </View>
-
+        </View>
       </SafeAreaView>
-    )
+    );
   }
-
 
   //UI handlers for popups - moved below "no post" handling due to null issues
   const handleEdit = async () => {
@@ -343,7 +338,6 @@ useEffect(() => {
         alert("Error while deleting the post. Please try again later.");
         return;
       }
-
     } catch (e) {
       console.log("Error when deleting post", e);
     } finally {
@@ -368,7 +362,9 @@ useEffect(() => {
         <Pressable onPress={router.back} hitSlop={10}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>More About This Post</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          More About This Post
+        </Text>
         {/* spacer so title stays centered */}
         <View style={{ width: 24 }} />
       </View>
@@ -391,27 +387,38 @@ useEffect(() => {
         >
           {/* Profile row */}
           <View style={styles.profileRow}>
-            <Pressable style={{flexDirection: "row", justifyContent: "center"}} onPress={() => router.push({
+            <Pressable
+              style={{ flexDirection: "row", justifyContent: "center" }}
+              onPress={() =>
+                router.push({
                   pathname: "/userProfile/[id]",
-                  params: { id: post.creatorID }})}>
-            <View>
-            <Image
-              source={
-                post.profilePic
-                  ? { uri: post.profilePic }
-                  : require("@/assets/images/icons8-cat-profile-50.png")
+                  params: { id: post.creatorID },
+                })
               }
-              style={styles.profilePic}
-            />
-            </View>
-            <View>
-              <Text style={[styles.username, { color: colors.text, paddingTop:2, }]}>
-                {post.username}
-              </Text>
-              <Text style={[styles.date, { color: colors.text }]}>
-                {new Date(post.datePosted).toDateString()}
-              </Text>
-            </View>
+            >
+              <View>
+                <Image
+                  source={
+                    post.profilePic
+                      ? { uri: post.profilePic }
+                      : require("@/assets/images/icons8-cat-profile-50.png")
+                  }
+                  style={styles.profilePic}
+                />
+              </View>
+              <View>
+                <Text
+                  style={[
+                    styles.username,
+                    { color: colors.text, paddingTop: 2 },
+                  ]}
+                >
+                  {post.username}
+                </Text>
+                <Text style={[styles.date, { color: colors.text }]}>
+                  {new Date(post.datePosted).toDateString()}
+                </Text>
+              </View>
             </Pressable>
 
             <View style={{ flex: 1 }} />
@@ -434,21 +441,23 @@ useEffect(() => {
             }}
           >
             {containerWidth > 0 && (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            snapToInterval={containerWidth}
-            snapToAlignment="center"
-            style={{ flexGrow: 0, borderRadius: 16 }}
-            onMomentumScrollEnd={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-              const offsetX = event.nativeEvent.contentOffset.x;
-              const index = Math.round(offsetX / containerWidth);
-              setImageIndex(index);
-            }}
-          >
-          {/* {post.imageUrls.map((uri, index) => (
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                decelerationRate="fast"
+                snapToInterval={containerWidth}
+                snapToAlignment="center"
+                style={{ flexGrow: 0, borderRadius: 16 }}
+                onMomentumScrollEnd={(
+                  event: NativeSyntheticEvent<NativeScrollEvent>
+                ) => {
+                  const offsetX = event.nativeEvent.contentOffset.x;
+                  const index = Math.round(offsetX / containerWidth);
+                  setImageIndex(index);
+                }}
+              >
+                {/* {post.imageUrls.map((uri, index) => (
             <Pressable key={index} onPress={() => onImagePress(uri)}>
               <Image
                 source={{ uri }}
@@ -457,40 +466,39 @@ useEffect(() => {
               />
             </Pressable> */}
 
-          {/* ))} */}
+                {/* ))} */}
 
-          {post.imageUrls.map((photo, index) => {
-            if (!photo?.pic) return null;
+                {post.imageUrls.map((photo, index) => {
+                  if (!photo?.pic) return null;
 
-            return (
-              <Pressable
-                key={`${photo.pic}-${index}`}
-                onPress={() => onImagePress(photo.pic)}
-              >
-                <Image
-                  source={{ uri: photo.pic }}
-                  accessibilityLabel={photo.altText || "Post image"}
-                  accessible
-                  style={{ width: containerWidth, height: containerWidth }}
-                  resizeMode="cover"
-                />
-              </Pressable>
-            );
-          })}
-
-          </ScrollView>
-        )}
-
-        </View>
-
-
-          {/* image count numbers */}
-          <View style={{paddingVertical:5}}>
-            <Text style={[styles.imageCountText, { color: colors.text,}]}>
-              {imageIndex+1} / {post.imageUrls.length}
-            </Text>
+                  return (
+                    <Pressable
+                      key={`${photo.pic}-${index}`}
+                      onPress={() => onImagePress(photo.pic)}
+                    >
+                      <Image
+                        source={{ uri: photo.pic }}
+                        accessibilityLabel={photo.altText || "Post image"}
+                        accessible
+                        style={{
+                          width: containerWidth,
+                          height: containerWidth,
+                        }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
 
+          {/* image count numbers */}
+          <View style={{ paddingVertical: 5 }}>
+            <Text style={[styles.imageCountText, { color: colors.text }]}>
+              {imageIndex + 1} / {post.imageUrls.length}
+            </Text>
+          </View>
 
           {/* Caption / content */}
           <Text style={[styles.content, { color: colors.text }]}>
@@ -511,7 +519,9 @@ useEffect(() => {
                     },
                   ]}
                 >
-                  {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                  {tag.tagName === "Knit" ||
+                  tag.tagName === "Crochet" ||
+                  tag.tagName === "Misc" ? (
                     <Text style={[styles.tagText, { color: colors.text }]}>
                       🌟{tag.tagName}
                     </Text>
@@ -527,10 +537,7 @@ useEffect(() => {
 
           {/* Action row (like / comment / save) */}
           <View style={styles.actionsRow}>
-            <Pressable
-              style={styles.actionButton}
-              onPress={handleLikePress}
-            >
+            <Pressable style={styles.actionButton} onPress={handleLikePress}>
               <Feather
                 name="heart"
                 size={24}
@@ -548,108 +555,114 @@ useEffect(() => {
               </Text>
             </Pressable> */}
 
-            <Pressable onPress={() => showComments(post)} style={styles.actionButton}>
+            <Pressable
+              onPress={() => showComments(post)}
+              style={styles.actionButton}
+            >
               <Feather name="message-circle" size={24} color={colors.text} />
-              <Text style={[styles.actionText, { color: colors.text }]}>Comment</Text>
+              <Text style={[styles.actionText, { color: colors.text }]}>
+                Comment
+              </Text>
             </Pressable>
 
             <View style={{ flex: 1 }} />
 
-            <Pressable
-              style={styles.actionButton}
-              onPress={handleSavePress}
-            >
+            <Pressable style={styles.actionButton} onPress={handleSavePress}>
               <Feather
                 name="bookmark"
                 size={24}
-                color={
-                  saved ? colors.exploreFilterSelected : colors.text
-                }
+                color={saved ? colors.exploreFilterSelected : colors.text}
               />
               <Text style={[styles.actionText, { color: colors.text }]}>
                 {saved ? "Saved" : "Save"}
               </Text>
             </Pressable>
           </View>
-
         </View>
-
       </ScrollView>
 
-    {/* modal for clicking into images */}
-    {modalImageUri && Platform.OS !== "web" && (
-      <Modal
-        visible
-        transparent
-        onRequestClose={() => setModalImageUri(null)}
-      >
-        <View style={{ flex: 1, backgroundColor: "black" }}>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            maximumZoomScale={3}
-            minimumZoomScale={1}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            pinchGestureEnabled={Platform.OS === "ios"}
-          >
-            <Pressable
-              onPress={() => setModalImageUri(null)}
-              style={{ width: "100%", height: "100%" }}
+      {/* modal for clicking into images */}
+      {modalImageUri && Platform.OS !== "web" && (
+        <Modal
+          visible
+          transparent
+          onRequestClose={() => setModalImageUri(null)}
+        >
+          <View style={{ flex: 1, backgroundColor: "black" }}>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              maximumZoomScale={3}
+              minimumZoomScale={1}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              pinchGestureEnabled={Platform.OS === "ios"}
             >
-              <Image
-                source={{ uri: modalImageUri }}
-                style={{
-                  width: Dimensions.get("window").width,
-                  height: Dimensions.get("window").height,
-                }}
-                resizeMode="contain"
-              />
-            </Pressable>
-          </ScrollView>
-        </View>
-      </Modal>
-    )}
+              <Pressable
+                onPress={() => setModalImageUri(null)}
+                style={{ width: "100%", height: "100%" }}
+              >
+                <Image
+                  source={{ uri: modalImageUri }}
+                  style={{
+                    width: Dimensions.get("window").width,
+                    height: Dimensions.get("window").height,
+                  }}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
 
       {/* modal for triple-dot pop-up */}
-        <Modal
-          transparent
-          visible={menuVisible}
-          animationType="fade"
-          onRequestClose={() => setMenuVisible(false)}
+      <Modal
+        transparent
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setMenuVisible(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPressOut={() => setMenuVisible(false)}
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
           >
-            <View
-              style={[
-                styles.menuContainer,
-                { backgroundColor: colors.exploreCardBackground },
-              ]}
-            >
-          {thisIsMyPost ? (
-            <>
-            {/* if this is my post, then display edit/delete options */}
-              <TouchableOpacity onPress={handleEdit} style={styles.menuOption}>
-                <Feather name="edit" size={18} color={colors.text} />
-                <Text style={[styles.menuText, { color: colors.text }]}>Edit</Text>
-              </TouchableOpacity>
+            {thisIsMyPost ? (
+              <>
+                {/* if this is my post, then display edit/delete options */}
+                <TouchableOpacity
+                  onPress={handleEdit}
+                  style={styles.menuOption}
+                >
+                  <Feather name="edit" size={18} color={colors.text} />
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleDelete} style={styles.menuOption}>
-                <Feather name="trash-2" size={18} color={colors.warning} />
-                <Text style={[styles.menuText, { color: colors.warning }]}>
-                  Delete
-                </Text>
-              </TouchableOpacity>
-            </>
-            // else, display report option
+                <TouchableOpacity
+                  onPress={handleDelete}
+                  style={styles.menuOption}
+                >
+                  <Feather name="trash-2" size={18} color={colors.warning} />
+                  <Text style={[styles.menuText, { color: colors.warning }]}>
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </>
             ) : (
+              // else, display report option
               <TouchableOpacity
                 onPress={() => {
                   setMenuVisible(false);
@@ -663,12 +676,20 @@ useEffect(() => {
                 </Text>
               </TouchableOpacity>
             )}
-            </View>
-          </TouchableOpacity>
-        </Modal>
-          <ExploreCommentsModal isVisible={areCommentsVisible} onClose={() => {setAreCommentsVisible(false); currentPost.current = null; creatorID.current = null}} currentPost={currentPost.current} postCreator={creatorID.current}></ExploreCommentsModal>
-        <BottomNavButton />
-      </SafeAreaView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+      <ExploreCommentsModal
+        isVisible={areCommentsVisible}
+        onClose={() => {
+          setAreCommentsVisible(false);
+          currentPost.current = null;
+          creatorID.current = null;
+        }}
+        currentPost={currentPost.current}
+        postCreator={creatorID.current}
+      ></ExploreCommentsModal>
+    </SafeAreaView>
   );
 }
 

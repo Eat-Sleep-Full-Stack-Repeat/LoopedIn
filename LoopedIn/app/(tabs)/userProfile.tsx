@@ -15,9 +15,8 @@ import {
   useWindowDimensions,
   TouchableOpacity,
 } from "react-native";
-import BottomNavButton from "@/components/bottomNavBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Storage } from "../utils/storage";
+import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
@@ -70,9 +69,9 @@ function getThumbnailSource(item: any): any | null {
     const first = item[0];
     if (typeof first === "string") return { uri: first };
     if (first?.uri || first?.url || first?.imageUrl) {
-      return { uri: first.uri || first.url || first.imageUrl};
+      return { uri: first.uri || first.url || first.imageUrl };
     }
-    return {first};
+    return { first };
   }
 
   const photosArray =
@@ -135,7 +134,7 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
     avatarSize,
     onLogout,
   } = props;
-  
+
   const s = themedStyles(colors);
 
   const placeholderBio =
@@ -165,18 +164,27 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             <Pressable
               onPress={editing ? chooseAvatar : undefined}
               disabled={!editing}
-              style={({ pressed }) => [{ opacity: editing && pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [
+                { opacity: editing && pressed ? 0.8 : 1 },
+              ]}
             >
               <Image
                 source={effectiveAvatarSource}
                 style={[
                   s.avatar,
-                  { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+                  {
+                    width: avatarSize,
+                    height: avatarSize,
+                    borderRadius: avatarSize / 2,
+                  },
                 ]}
               />
             </Pressable>
             {editing && (
-              <Pressable style={s.pencilBadge} onPress={editing ? chooseAvatar : undefined}>
+              <Pressable
+                style={s.pencilBadge}
+                onPress={editing ? chooseAvatar : undefined}
+              >
                 <Feather name="edit-2" size={14} color={colors.badgeIcon} />
               </Pressable>
             )}
@@ -188,22 +196,42 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             </Text>
 
             <View style={{ flexDirection: "row", gap: 20 }}>
-              <Pressable style={s.countCol} onPress={() => router.push({
-                pathname: "/followers/[id]",
-                params: {id: originalUser?.userID}})}>
+              <Pressable
+                style={s.countCol}
+                onPress={() =>
+                  router.push({
+                    pathname: "/followers/[id]",
+                    params: { id: originalUser?.userID },
+                  })
+                }
+              >
                 <View style={s.countCircles}>
-                  <Text style={[s.countNum, { color: colors.decorativeText }]}>{originalUser?.followers}</Text>
+                  <Text style={[s.countNum, { color: colors.decorativeText }]}>
+                    {originalUser?.followers}
+                  </Text>
                 </View>
-                <Text style={[s.countLabel, { color: colors.text }]}>Followers</Text>
+                <Text style={[s.countLabel, { color: colors.text }]}>
+                  Followers
+                </Text>
               </Pressable>
 
-              <Pressable style={s.countCol} onPress={() => router.push({
-                pathname: "/following/[id]",
-                params: {id: originalUser?.userID}})}>
+              <Pressable
+                style={s.countCol}
+                onPress={() =>
+                  router.push({
+                    pathname: "/following/[id]",
+                    params: { id: originalUser?.userID },
+                  })
+                }
+              >
                 <View style={s.countCircles}>
-                  <Text style={[s.countNum, { color: colors.decorativeText }]}>{originalUser?.following}</Text>
+                  <Text style={[s.countNum, { color: colors.decorativeText }]}>
+                    {originalUser?.following}
+                  </Text>
                 </View>
-                <Text style={[s.countLabel, { color: colors.text }]}>Following</Text>
+                <Text style={[s.countLabel, { color: colors.text }]}>
+                  Following
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -222,7 +250,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             />
           ) : (
             <View style={s.bioContentContainer}>
-              <Text style={[s.bioText, { color: colors.text }]}>{placeholderBio}</Text>
+              <Text style={[s.bioText, { color: colors.text }]}>
+                {placeholderBio}
+              </Text>
             </View>
           )}
         </View>
@@ -307,7 +337,8 @@ export default function UserProfile() {
   // Responsive bits
   const isTablet = width >= 768;
   const CONTENT_MAX = isTablet ? 720 : width;
-  const NUM_COLUMNS = width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
+  const NUM_COLUMNS =
+    width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
   const AVATAR = isTablet ? 120 : 100;
 
   const [originalUser, setOriginalUser] = useState<User | null>(null);
@@ -381,7 +412,7 @@ export default function UserProfile() {
           const t = await res.text().catch(() => "");
           throw new Error(`GET /api/profile failed (${res.status}) ${t}`);
         }
-        const u = (await res.json()) as Partial<User>;   
+        const u = (await res.json()) as Partial<User>;
 
         const merged: User = {
           userID: u.userID ?? "",
@@ -397,9 +428,7 @@ export default function UserProfile() {
         setOriginalUser(merged);
         setDraftBio(merged.userBio ?? "");
         setPosts(
-          activeTab === "saved"
-            ? merged.savedPosts ?? []
-            : merged.posts ?? []
+          activeTab === "saved" ? merged.savedPosts ?? [] : merged.posts ?? []
         );
 
         //setTab("posts");
@@ -451,19 +480,22 @@ export default function UserProfile() {
     // @ts-ignore
     const sub = navigation.addListener("beforeRemove", beforeRemove);
 
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (!isDirty) return false;
-      Alert.alert(
-        "Discard changes?",
-        "You have unsaved changes. Save or discard before leaving.",
-        [
-          { text: "Keep editing", style: "cancel" },
-          { text: "Discard", style: "destructive", onPress: discardChanges },
-          { text: "Save", onPress: saveChanges },
-        ]
-      );
-      return true;
-    });
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (!isDirty) return false;
+        Alert.alert(
+          "Discard changes?",
+          "You have unsaved changes. Save or discard before leaving.",
+          [
+            { text: "Keep editing", style: "cancel" },
+            { text: "Discard", style: "destructive", onPress: discardChanges },
+            { text: "Save", onPress: saveChanges },
+          ]
+        );
+        return true;
+      }
+    );
 
     return () => {
       sub();
@@ -541,7 +573,9 @@ export default function UserProfile() {
           const t = await uploadRes.text().catch(() => "");
           throw new Error(`Upload avatar failed (${uploadRes.status}): ${t}`);
         }
-        const json = (await uploadRes.json().catch(() => ({}))) as UploadAvatarResponse;
+        const json = (await uploadRes
+          .json()
+          .catch(() => ({}))) as UploadAvatarResponse;
         newAvatarUrl = json?.avatarUrl;
       }
 
@@ -564,7 +598,9 @@ export default function UserProfile() {
 
         if (!patchRes.ok) {
           const t = await patchRes.text().catch(() => "");
-          throw new Error(`PATCH /api/profile failed (${patchRes.status}): ${t}`);
+          throw new Error(
+            `PATCH /api/profile failed (${patchRes.status}): ${t}`
+          );
         }
 
         const updated = await patchRes.json().catch(() => ({} as any));
@@ -596,7 +632,10 @@ export default function UserProfile() {
   const chooseAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Allow photo library access to choose an avatar.");
+      Alert.alert(
+        "Permission needed",
+        "Allow photo library access to choose an avatar."
+      );
       return;
     }
 
@@ -650,7 +689,6 @@ export default function UserProfile() {
           <ActivityIndicator />
           <Text style={{ marginTop: 8, color: colors.text }}>Preparing…</Text>
         </View>
-        <BottomNavButton />
       </View>
     );
   }
@@ -659,7 +697,14 @@ export default function UserProfile() {
     return (
       <View style={s.container}>
         <View style={[s.centerFill, { paddingHorizontal: 24 }]}>
-          <Text style={{ color: colors.text, fontSize: 18, textAlign: "center", marginBottom: 12 }}>
+          <Text
+            style={{
+              color: colors.text,
+              fontSize: 18,
+              textAlign: "center",
+              marginBottom: 12,
+            }}
+          >
             You need to log in to access this page.
           </Text>
           <TouchableOpacity
@@ -669,7 +714,6 @@ export default function UserProfile() {
             <Text style={s.primaryBtnText}>Go to Log In</Text>
           </TouchableOpacity>
         </View>
-        <BottomNavButton />
       </View>
     );
   }
@@ -682,7 +726,6 @@ export default function UserProfile() {
           <ActivityIndicator />
           <Text style={{ marginTop: 8, color: colors.text }}>Loading…</Text>
         </View>
-        <BottomNavButton />
       </View>
     );
   }
@@ -698,7 +741,6 @@ export default function UserProfile() {
             <Text style={{ color: colors.link, marginTop: 8 }}>Go Home</Text>
           </Pressable>
         </View>
-        <BottomNavButton />
       </View>
     );
   }
@@ -742,9 +784,14 @@ export default function UserProfile() {
           if (!thumbSource) return null;
 
           return (
-            <Pressable onPress={() => router.push({
-            pathname: "/singlePost/[id]",
-            params: { id, tab: activeTab }})}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/singlePost/[id]",
+                  params: { id, tab: activeTab },
+                })
+              }
+            >
               <Image
                 source={thumbSource}
                 resizeMode="cover"
@@ -761,14 +808,13 @@ export default function UserProfile() {
         columnWrapperStyle={{
           justifyContent: "flex-start",
           paddingHorizontal: 10,
-          columnGap: 10,   
+          columnGap: 10,
         }}
-
         contentContainerStyle={{
           alignSelf: "center",
           width: "100%",
           maxWidth: CONTENT_MAX,
-          paddingBottom: insets.bottom + 100,
+          paddingBottom: insets.bottom,
           paddingTop: 10,
           backgroundColor: colors.background,
         }}
@@ -777,13 +823,11 @@ export default function UserProfile() {
       />
 
       <Pressable
-        style={[s.floatingButton, { bottom: insets.bottom + 90 }]}
+        style={[s.floatingButton, { bottom: insets.bottom }]}
         onPress={handleCreatePost}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />
       </Pressable>
-
-      <BottomNavButton />
 
       <SettingsOverlay
         visible={settingsOpen}

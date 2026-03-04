@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import BottomNavButton from "@/components/bottomNavBar";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 // FIXME remove the following import once backend is set up
@@ -21,13 +20,16 @@ import ForumPostView from "@/components/forumPost";
 import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
 import { router } from "expo-router";
-import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  RefreshControl,
+} from "react-native-gesture-handler";
 
 type Tag = {
   tagID: string;
   tagColor: string;
   tagName: string;
-}
+};
 
 type ForumPost = {
   id: string;
@@ -46,7 +48,7 @@ type BackendTags = {
   tagID: string;
   tagName: string;
   tagColor: string;
-}
+};
 
 type BackendPost = {
   fld_post_pk: string;
@@ -78,8 +80,11 @@ export default function ForumFeed() {
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
 
-  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
-
+  const [craftFilter, setCraftFilter] = useState<string[]>([
+    "Crochet",
+    "Knit",
+    "Misc",
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -90,9 +95,11 @@ export default function ForumFeed() {
   };
 
   useEffect(() => {
-    if (selectedFilter === "All") { // pass all craft filters to backend
+    if (selectedFilter === "All") {
+      // pass all craft filters to backend
       setCraftFilter(["Crochet", "Knit", "Misc"]);
-    } else { //pass specific craft to backend
+    } else {
+      //pass specific craft to backend
       setCraftFilter([selectedFilter]);
     }
   }, [selectedFilter]);
@@ -101,11 +108,11 @@ export default function ForumFeed() {
   // This makes sure the craftFilter is fully updated before fetching the new data
   useEffect(() => {
     handleRefresh();
-  }, [craftFilter])
+  }, [craftFilter]);
 
-  const handleRefresh = async() => {
+  const handleRefresh = async () => {
     if (refreshing) {
-      return 
+      return;
     } else {
       lastPostID.current = null;
       lastTimeStamp.current = null;
@@ -113,13 +120,12 @@ export default function ForumFeed() {
       setForumData([]);
       setRefreshing(true);
     }
-  }
+  };
 
   // need to use useEffect to ensure previous data is flushed before fetching new data
   useEffect(() => {
     if (refreshing) {
-
-      const refreshNewData = async() => {
+      const refreshNewData = async () => {
         try {
           await fetchData();
         } catch (e) {
@@ -127,11 +133,10 @@ export default function ForumFeed() {
         } finally {
           setRefreshing(false);
         }
-      }
+      };
       refreshNewData();
     }
-}, [refreshing])
-
+  }, [refreshing]);
 
   const fetchData = async () => {
     const token = await Storage.getItem("token");
@@ -153,9 +158,9 @@ export default function ForumFeed() {
         : "";
 
       let craftURL = ``;
-      craftFilter.forEach(element => {
-        let tempElement = element.replace(/"/g, '');
-        craftURL = craftURL + `&craft[]=${tempElement}`
+      craftFilter.forEach((element) => {
+        let tempElement = element.replace(/"/g, "");
+        craftURL = craftURL + `&craft[]=${tempElement}`;
       });
 
       const res = await fetch(
@@ -169,7 +174,6 @@ export default function ForumFeed() {
           credentials: "include",
         }
       );
-
 
       if (!res.ok) {
         alert("Error when fetching new forum posts");
@@ -190,13 +194,11 @@ export default function ForumFeed() {
           datePosted: post.fld_timestamp,
           userID: post.fld_user_pk,
           is_saved_post_render: false,
-          tag_data: post.tag_data.map(
-            (tag: BackendTags) => ({
-              tagID: tag.tagID,
-              tagName: tag.tagName,
-              tagColor: tag.tagColor,
-            })
-          )
+          tag_data: post.tag_data.map((tag: BackendTags) => ({
+            tagID: tag.tagID,
+            tagName: tag.tagName,
+            tagColor: tag.tagColor,
+          })),
         })
       );
 
@@ -205,9 +207,8 @@ export default function ForumFeed() {
         (post) => !forumData.some((checkPost) => checkPost.id === post.id)
       );
 
-
       setForumData((prev) => [...prev, ...filteredArray]);
-      hasMore.current = (responseData.hasMore);
+      hasMore.current = responseData.hasMore;
       lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
       lastPostID.current = Number(tempArray[tempArray.length - 1].id);
     } catch (e) {
@@ -217,8 +218,6 @@ export default function ForumFeed() {
       loadingMore.current = false;
     }
   };
-
-  
 
   // Styles will go here
   const styles = StyleSheet.create({
@@ -313,11 +312,10 @@ export default function ForumFeed() {
 
   const headerView = () => (
     <View>
-
-        {/* Forum title */}
-        <View style={styles.title}>
-          <Text style={styles.titleText}> Saved Posts </Text>
-        </View>
+      {/* Forum title */}
+      <View style={styles.title}>
+        <Text style={styles.titleText}> Saved Posts </Text>
+      </View>
 
       {/* Refine by craft section */}
       <View style={styles.refineHeader}>
@@ -362,16 +360,14 @@ export default function ForumFeed() {
 
   return (
     <GestureHandlerRootView>
-
       <View style={styles.container}>
-
         {/* back button */}
         <Pressable style={styles.backFab} onPress={() => router.back()}>
           <Feather name="chevron-left" size={22} color={colors.text} />
         </Pressable>
         <FlatList
-            data={forumData}
-            renderItem={({ item }) => (
+          data={forumData}
+          renderItem={({ item }) => (
             <View style={{ alignItems: "center", marginHorizontal: 20 }}>
               <ForumPostView postInfo={item} />
             </View>
@@ -387,33 +383,39 @@ export default function ForumFeed() {
           onEndReachedThreshold={0.5}
           ListEmptyComponent={() => {
             if (loadingMore.current) {
-              return <ActivityIndicator size="small" color={colors.text}/>
+              return <ActivityIndicator size="small" color={colors.text} />;
             } else {
               return (
-                <View style={{paddingVertical: 40, marginLeft: 50}}>
-                  <Text style={{color: colors.settingsText, fontWeight: "bold"}}> No Saved Posts </Text>
+                <View style={{ paddingVertical: 40, marginLeft: 50 }}>
+                  <Text
+                    style={{ color: colors.settingsText, fontWeight: "bold" }}
+                  >
+                    {" "}
+                    No Saved Posts{" "}
+                  </Text>
                 </View>
-              )
+              );
             }
           }}
           ListFooterComponent={() => {
             if (forumData.length > 0) {
               if (!hasMore.current) {
-                return <Text style={{ color: colors.text }}> No More Saved Posts </Text>;
-              } else {
                 return (
-                  <ActivityIndicator size="small" color={colors.text} />
+                  <Text style={{ color: colors.text }}>
+                    {" "}
+                    No More Saved Posts{" "}
+                  </Text>
                 );
+              } else {
+                return <ActivityIndicator size="small" color={colors.text} />;
               }
             }
           }}
           ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
         />
-
-      <BottomNavButton />
       </View>
     </GestureHandlerRootView>
   );

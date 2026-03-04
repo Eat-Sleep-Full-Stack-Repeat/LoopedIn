@@ -1,5 +1,4 @@
 import { Colors } from "@/Styles/colors";
-import BottomNavButton from "@/components/bottomNavBar";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -31,7 +30,9 @@ export default function Index() {
         backgroundColor: colors.background,
       }}
     >
-      <Text style={{ color: colors.text }}>This will be the welcome screen!</Text>
+      <Text style={{ color: colors.text }}>
+        This will be the welcome screen!
+      </Text>
 
       <TouchableOpacity
         onPress={() => router.push("/login")}
@@ -45,12 +46,6 @@ export default function Index() {
         style={{ marginTop: 20 }}
       >
         <Text style={{ color: colors.text }}>Welcome Page</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => router.push("/folderscreen")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}> My Folders </Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => router.push("/inventoryfolder")}
@@ -71,15 +66,6 @@ export default function Index() {
         <Text style={{ color: colors.text }}> New Project </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => router.push("/mystuff")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}> My Stuff </Text>
-      </TouchableOpacity>
-
-
-
       <View
         style={{
           justifyContent: "center",
@@ -96,10 +82,7 @@ export default function Index() {
           value={isEnabled}
           style={{ justifyContent: "center" }}
         />
-        
       </View>
-
-      <BottomNavButton />
     </GestureHandlerRootView>
   );
 }

@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -12,20 +18,22 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import BottomNavButton from "@/components/bottomNavBar";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ExploreCommentsModal from "@/components/exploreComments";
 import API_URL from "@/utils/config";
-import { Storage } from "../utils/storage";
-import { GestureHandlerRootView, RefreshControl } from "react-native-gesture-handler";
+import { Storage } from "../../utils/storage";
+import {
+  GestureHandlerRootView,
+  RefreshControl,
+} from "react-native-gesture-handler";
 
 type Tag = {
   tagID: string;
   tagColor: string;
   tagName: string;
-}
+};
 
 type Post = {
   id: string;
@@ -59,7 +67,7 @@ type BackendTags = {
   tagID: string;
   tagName: string;
   tagColor: string;
-}
+};
 
 export default function ExplorePage() {
   const { currentTheme } = useTheme();
@@ -100,16 +108,24 @@ export default function ExplorePage() {
   const posts: Post[] = useMemo(() => postData, [postData]);
   const loadingMore = useRef<true | false>(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [craftFilter, setCraftFilter] = useState<string[]>(["Crochet", "Knit", "Misc"]);
+  const [craftFilter, setCraftFilter] = useState<string[]>([
+    "Crochet",
+    "Knit",
+    "Misc",
+  ]);
   const likingIds = useRef<Set<string>>(new Set());
   const savingIds = useRef<Set<string>>(new Set());
 
   const updateLikeInState = useCallback((postId: string, isLiked: boolean) => {
-    setPostData((prev) => prev.map((post) => (post.id === postId ? { ...post, isLiked } : post)));
+    setPostData((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, isLiked } : post))
+    );
   }, []);
 
   const updateSaveInState = useCallback((postId: string, isSaved: boolean) => {
-    setPostData((prev) => prev.map((post) => (post.id === postId ? { ...post, isSaved } : post)));
+    setPostData((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, isSaved } : post))
+    );
   }, []);
 
   const handleLikePress = useCallback(
@@ -138,7 +154,8 @@ export default function ExplorePage() {
         }
 
         const data = await res.json();
-        if (typeof data?.liked === "boolean") updateLikeInState(item.id, data.liked);
+        if (typeof data?.liked === "boolean")
+          updateLikeInState(item.id, data.liked);
       } catch (e) {
         console.log("Error updating like: ", e);
         updateLikeInState(item.id, original);
@@ -175,7 +192,8 @@ export default function ExplorePage() {
         }
 
         const data = await res.json();
-        if (typeof data?.saved === "boolean") updateSaveInState(item.id, data.saved);
+        if (typeof data?.saved === "boolean")
+          updateSaveInState(item.id, data.saved);
       } catch (e) {
         console.log("Error updating save: ", e);
         updateSaveInState(item.id, original);
@@ -232,7 +250,9 @@ export default function ExplorePage() {
         ? `&before=${encodeURIComponent(lastTimeStamp.current)}`
         : "";
 
-      const includePostID = lastPostID.current ? `&postID=${lastPostID.current}` : "";
+      const includePostID = lastPostID.current
+        ? `&postID=${lastPostID.current}`
+        : "";
 
       let craftURL = ``;
       craftFilter.forEach((element) => {
@@ -257,38 +277,41 @@ export default function ExplorePage() {
       } else if (!response.ok) {
         const txt = await response.text().catch(() => "");
         console.log("Explore fetch failed:", response.status, txt);
-        alert("Error during post fetch from backend. You're probably not logged in.");
+        alert(
+          "Error during post fetch from backend. You're probably not logged in."
+        );
         router.replace("/");
         return;
       }
 
       const responseData = await response.json();
 
-      const tempPostData: Post[] = responseData.newFeed.map((post: BackendPost) => ({
-        id: post.fld_post_pk,
-        username: post.fld_username,
-        userID: post.fld_user_pk,
-        profilePic: post.fld_profile_pic,
-        postImage: post.fld_post_pic,
-        postImageID: post.fld_pic_id,
-        caption: post.fld_caption,
-        datePosted: post.fld_timestamp,
-        isLiked: !!post.fld_is_liked,
-        isSaved: !!post.fld_is_saved,
-        tag_data: post.tag_data.map(
-          (tag: BackendTags) => ({
+      const tempPostData: Post[] = responseData.newFeed.map(
+        (post: BackendPost) => ({
+          id: post.fld_post_pk,
+          username: post.fld_username,
+          userID: post.fld_user_pk,
+          profilePic: post.fld_profile_pic,
+          postImage: post.fld_post_pic,
+          postImageID: post.fld_pic_id,
+          caption: post.fld_caption,
+          datePosted: post.fld_timestamp,
+          isLiked: !!post.fld_is_liked,
+          isSaved: !!post.fld_is_saved,
+          tag_data: post.tag_data.map((tag: BackendTags) => ({
             tagID: tag.tagID,
             tagName: tag.tagName,
             tagColor: tag.tagColor,
-          })
-         )
-      }));
+          })),
+        })
+      );
 
       setPostData((prev) => [...prev, ...tempPostData]);
       hasMore.current = responseData.hasMore;
 
       if (tempPostData.length > 0) {
-        lastTimeStamp.current = tempPostData[tempPostData.length - 1].datePosted;
+        lastTimeStamp.current =
+          tempPostData[tempPostData.length - 1].datePosted;
         lastPostID.current = Number(tempPostData[tempPostData.length - 1].id);
       }
     } catch (error) {
@@ -460,10 +483,17 @@ export default function ExplorePage() {
             })
           }
         >
-          <Image style={[styles.postImage, { height: imageHeight }]} source={{ uri: item.postImage }} />
+          <Image
+            style={[styles.postImage, { height: imageHeight }]}
+            source={{ uri: item.postImage }}
+          />
 
           <View style={{ marginVertical: 20, flexShrink: 1 }}>
-            <Text style={styles.postCaption} numberOfLines={5} ellipsizeMode="tail">
+            <Text
+              style={styles.postCaption}
+              numberOfLines={5}
+              ellipsizeMode="tail"
+            >
               {item.caption}
             </Text>
           </View>
@@ -471,8 +501,13 @@ export default function ExplorePage() {
           {!!item.tag_data.length && (
             <View style={styles.tagRow}>
               {item.tag_data.map((tag) => (
-                <View key={`${item.id}-${tag.tagID}`} style={[styles.tagChip, {borderColor: tag.tagColor}]}>
-                  {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+                <View
+                  key={`${item.id}-${tag.tagID}`}
+                  style={[styles.tagChip, { borderColor: tag.tagColor }]}
+                >
+                  {tag.tagName === "Knit" ||
+                  tag.tagName === "Crochet" ||
+                  tag.tagName === "Misc" ? (
                     <Text style={[styles.tagText, { color: colors.text }]}>
                       🌟{tag.tagName}
                     </Text>
@@ -488,38 +523,61 @@ export default function ExplorePage() {
         </Pressable>
 
         <View style={styles.postActions}>
-          <Pressable style={styles.postAction} onPress={() => handleLikePress(item)}>
+          <Pressable
+            style={styles.postAction}
+            onPress={() => handleLikePress(item)}
+          >
             <Image
-              style={[styles.actionIcon, { tintColor: item.isLiked ? "#E57373" : colors.text }]}
-              source={require("../assets/images/heart.png")}
+              style={[
+                styles.actionIcon,
+                { tintColor: item.isLiked ? "#E57373" : colors.text },
+              ]}
+              source={require("../../assets/images/heart.png")}
             />
-            <Text style={styles.postActionText}>{item.isLiked ? "Liked" : "Like"}</Text>
+            <Text style={styles.postActionText}>
+              {item.isLiked ? "Liked" : "Like"}
+            </Text>
           </Pressable>
 
           <View style={styles.postAction}>
-            <Pressable onPress={() => showComments(item)} style={{ alignItems: "center" }}>
+            <Pressable
+              onPress={() => showComments(item)}
+              style={{ alignItems: "center" }}
+            >
               <Image
                 style={[styles.actionIcon, { tintColor: colors.text }]}
-                source={require("../assets/images/comment.png")}
+                source={require("../../assets/images/comment.png")}
               />
               <Text style={styles.postActionText}>Comment</Text>
             </Pressable>
           </View>
 
           <View style={styles.postAction}>
-            <Image style={[styles.actionIcon, { tintColor: colors.text }]} source={require("../assets/images/tags.png")} />
+            <Image
+              style={[styles.actionIcon, { tintColor: colors.text }]}
+              source={require("../../assets/images/tags.png")}
+            />
             <Text style={styles.postActionText}>Tags</Text>
           </View>
 
-          <Pressable style={styles.postAction} onPress={() => handleSavePress(item)}>
+          <Pressable
+            style={styles.postAction}
+            onPress={() => handleSavePress(item)}
+          >
             <Image
               style={[
                 styles.actionIcon,
-                { tintColor: item.isSaved ? colors.exploreFilterSelected : colors.text },
+                {
+                  tintColor: item.isSaved
+                    ? colors.exploreFilterSelected
+                    : colors.text,
+                },
               ]}
-              source={require("../assets/images/saved.png")}
+              source={require("../../assets/images/saved.png")}
             />
-            <Text style={styles.postActionText}>{item.isSaved ? "Saved" : "Save"}</Text>
+            <Text style={styles.postActionText}>
+              {item.isSaved ? "Saved" : "Save"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -549,7 +607,10 @@ export default function ExplorePage() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <Text style={styles.pageTitle}>Explore</Text>
 
-          <Pressable onPress={() => router.push("/exploreSearch")} style={{ marginHorizontal: 20 }}>
+          <Pressable
+            onPress={() => router.push("/exploreSearch")}
+            style={{ marginHorizontal: 20 }}
+          >
             <View pointerEvents="none">
               <TextInput
                 style={styles.searchBar}
@@ -565,12 +626,16 @@ export default function ExplorePage() {
               <Pressable
                 key={filterOption}
                 onPress={() => setSelectedFilter(filterOption)}
-                style={[styles.filterTag, selectedFilter === filterOption && styles.filterTagSelected]}
+                style={[
+                  styles.filterTag,
+                  selectedFilter === filterOption && styles.filterTagSelected,
+                ]}
               >
                 <Text
                   style={[
                     styles.filterText,
-                    selectedFilter === filterOption && styles.filterTextSelected,
+                    selectedFilter === filterOption &&
+                      styles.filterTextSelected,
                   ]}
                 >
                   {filterOption}
@@ -586,10 +651,17 @@ export default function ExplorePage() {
             onEndReached={fetchData}
             onEndReachedThreshold={0.2}
             ListEmptyComponent={() => {
-              if (loadingMore.current) return <ActivityIndicator size="small" color={colors.text} />;
+              if (loadingMore.current)
+                return <ActivityIndicator size="small" color={colors.text} />;
               return (
                 <View style={{ paddingVertical: 40 }}>
-                  <Text style={{ color: colors.settingsText, fontWeight: "bold", textAlign: "center" }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
                     No Recent Posts
                   </Text>
                 </View>
@@ -600,7 +672,9 @@ export default function ExplorePage() {
                 if (!hasMore.current) {
                   return (
                     <View style={{ paddingBottom: 150 }}>
-                      <Text style={{ color: colors.text }}>No More Data To Load</Text>
+                      <Text style={{ color: colors.text }}>
+                        No More Data To Load
+                      </Text>
                     </View>
                   );
                 }
@@ -613,7 +687,12 @@ export default function ExplorePage() {
               return <View style={{ height: 160 }} />;
             }}
             ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
           />
         </GestureHandlerRootView>
 
@@ -630,7 +709,6 @@ export default function ExplorePage() {
           />
         ) : null}
 
-        <BottomNavButton />
       </View>
     </>
   );
