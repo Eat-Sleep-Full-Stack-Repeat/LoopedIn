@@ -53,19 +53,6 @@ export default function Index() {
       >
         <Text style={{ color: colors.text }}> Inventory Single Folder </Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => router.push("/singleProject/1")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}> Single Project View </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => router.push("/newproject")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}> New Project </Text>
-      </TouchableOpacity>
-
       <View
         style={{
           justifyContent: "center",

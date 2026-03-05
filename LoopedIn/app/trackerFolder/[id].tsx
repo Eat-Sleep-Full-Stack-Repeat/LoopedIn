@@ -3,7 +3,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Entypo, Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Text, Pressable, FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, Pressable, FlatList, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
@@ -42,6 +42,8 @@ export default function TrackerFolderView() {
   const alreadyAlerted = useRef(false); //preventing double-alert in dev
   const [loading, setLoading] = useState(false);
   const [folderLoading, setFolderLoading] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<FolderProject | null>(null);
 
   //refresh
   const [refreshing, setRefreshing] = useState(false);
@@ -294,6 +296,31 @@ export default function TrackerFolderView() {
     }
   }
 
+  const openProjectMenu = (project: FolderProject) => {
+    setSelectedProject(project);
+    setMenuVisible(true);
+  };
+
+  const closeProjectMenu = () => {
+    setMenuVisible(false);
+    setSelectedProject(null);
+  };
+
+  const handleEditProject = () => {
+    if (!selectedProject) return;
+    router.push({
+      pathname: "/editproject/[id]",
+      params: { id: selectedProject.id.toString() },
+    });
+    closeProjectMenu();
+  };
+
+  const handleDeleteProject = () => {
+    if (!selectedProject) return;
+    alert(`Delete selected: ${selectedProject.title}`);
+    closeProjectMenu();
+  };
+
 
   const filterStyles = StyleSheet.create({
     default: {
@@ -394,6 +421,30 @@ export default function TrackerFolderView() {
       shadowRadius: 6,
       elevation: 5,
     },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+    },
+    menuContainer: {
+      width: 180,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+    },
+    menuAction: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 8,
+    },
+    menuActionText: {
+      fontSize: 16,
+    },
+    deleteText: {
+      color: colors.warning,
+    },
   });
 
   return (
@@ -462,7 +513,14 @@ export default function TrackerFolderView() {
         <FlatList
           data={projects}
           renderItem={({ item }) => (
-            <Pressable onPress={() => router.push(`/singleProject/${item.id}`)}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/singleProject/[id]",
+                  params: { id: item.id.toString() },
+                })
+              }
+            >
               <View style={styles.projectContainer}>
                 <View
                   style={{
@@ -492,7 +550,12 @@ export default function TrackerFolderView() {
                       ]}
                     />
                   </View>
-                  <Pressable>
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      openProjectMenu(item);
+                    }}
+                  >
                     <Entypo
                       name="dots-three-vertical"
                       size={20}
@@ -500,6 +563,7 @@ export default function TrackerFolderView() {
                     />
                   </Pressable>
                 </View>
+
               </View>
             </Pressable>
           )}
@@ -539,10 +603,40 @@ export default function TrackerFolderView() {
 
       <Pressable
         style={[styles.floatingButton, { bottom: insets.bottom + 10 }]}
-        onPress={() => console.log("Will update to add a project!")}
+        onPress={() => router.push("/newproject")}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />
       </Pressable>
+
+      <Modal
+        transparent
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={closeProjectMenu}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={closeProjectMenu}
+        >
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
+          >
+            <TouchableOpacity onPress={handleEditProject} style={styles.menuAction}>
+              <Feather name="edit" size={18} color={colors.text} />
+              <Text style={[styles.menuActionText, { color: colors.text }]}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleDeleteProject} style={styles.menuAction}>
+              <Feather name="trash-2" size={18} color={colors.warning} />
+              <Text style={[styles.menuActionText, styles.deleteText]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
