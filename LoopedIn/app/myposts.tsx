@@ -304,7 +304,7 @@ export default function MyPosts() {
 
         {!!item.tag_data.length && (
           <View style={styles.tagRow}>
-            {item.tag_data.slice(0, 5).map((tag) => (
+            {item.tag_data.map((tag) => (
               <View
                 key={`${item.id}-${tag.tagID}`}
                 style={[

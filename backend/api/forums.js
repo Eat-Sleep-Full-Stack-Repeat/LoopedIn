@@ -64,7 +64,12 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
       LEFT JOIN LATERAL (
-        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)
+          ORDER BY CASE 
+            WHEN tt.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+            ELSE 2
+          END ASC, tt.fld_tag_name ASC
+        ) AS tags
             FROM forums.tbl_forum_tag AS tr
               INNER JOIN tags.tbl_tags AS tt
                 ON tr.fld_tag = tt.fld_tags_pk
@@ -94,7 +99,12 @@ router.get("/get-forums", authenticateToken, async (req, res) => {
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
       LEFT JOIN LATERAL (
-        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)
+          ORDER BY CASE 
+            WHEN tt.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+            ELSE 2
+          END ASC, tt.fld_tag_name ASC
+        ) AS tags
             FROM forums.tbl_forum_tag AS tr
               INNER JOIN tags.tbl_tags AS tt
                 ON tr.fld_tag = tt.fld_tags_pk
@@ -169,7 +179,12 @@ router.get("/get-saved-forums", authenticateToken, async (req, res) => {
             INNER JOIN forums.tbl_save_forum AS sf
               ON ff.fld_post_pk = sf.fld_post_fk
     LEFT JOIN LATERAL (
-      SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+      SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)
+        ORDER BY CASE 
+          WHEN tt.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+          ELSE 2
+        END ASC, tt.fld_tag_name ASC
+      ) AS tags
           FROM forums.tbl_forum_tag AS tr
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
@@ -261,7 +276,12 @@ router.get("/get-all-saved-forums", authenticateToken, async (req, res) => {
               INNER JOIN forums.tbl_save_forum as sf
                 ON ff.fld_post_pk = sf.fld_post_fk
       LEFT JOIN LATERAL (
-        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+        SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)
+          ORDER BY CASE 
+            WHEN tt.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+            ELSE 2
+          END ASC, tt.fld_tag_name ASC
+        ) AS tags
             FROM forums.tbl_forum_tag AS tr
               INNER JOIN tags.tbl_tags AS tt
                 ON tr.fld_tag = tt.fld_tags_pk
@@ -290,7 +310,12 @@ router.get("/get-all-saved-forums", authenticateToken, async (req, res) => {
               INNER JOIN forums.tbl_save_forum as sf
                 ON ff.fld_post_pk = sf.fld_post_fk
       LEFT JOIN LATERAL (
-      SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)) AS tags
+      SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', tt.fld_tags_pk, 'tagName', tt.fld_tag_name, 'tagColor', tt.fld_tag_color)
+      	ORDER BY CASE 
+		  	  WHEN tt.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+			    ELSE 2
+		    END ASC, tt.fld_tag_name ASC
+      ) AS tags
           FROM forums.tbl_forum_tag AS tr
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
@@ -591,7 +616,8 @@ router.get("/get-single-post", authenticateToken, async (req, res) => {
             ON ff.fld_post_pk = tr.fld_post
             INNER JOIN tags.tbl_tags AS tt
               ON tr.fld_tag = tt.fld_tags_pk
-      WHERE ff.fld_post_pk = $1;`
+      WHERE ff.fld_post_pk = $1
+      ORDER BY tt.fld_tag_name IN ('Misc', 'Crochet', 'Knit') DESC, tt.fld_tag_name;`
 
     const tags = await pool.query(query, [postID])
 
@@ -1366,7 +1392,12 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
     if (req.query.before === "undefined" || !req.query.before) {
       query = `
       SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
-      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)), '[]'::jsonb) AS tag_data
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)
+        ORDER BY CASE 
+          WHEN t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+          ELSE 2
+        END ASC, t.fld_tag_name ASC
+      ), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
         ON u.fld_user_pk = f.fld_creator
         INNER JOIN forums.tbl_forum_tag AS ft
@@ -1390,7 +1421,12 @@ router.get("/my-forum-posts", authenticateToken, async (req, res) => {
     else { //if fetched before -> very hienous query
       query = `
       SELECT f.fld_post_pk, f.fld_header, f.fld_body, u.fld_user_pk, u.fld_username, u.fld_profile_pic, CAST(f.fld_timestamp AS TIMESTAMPTZ),
-      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)), '[]'::jsonb) AS tag_data
+      COALESCE(JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)
+        ORDER BY CASE 
+          WHEN t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+          ELSE 2
+        END ASC, t.fld_tag_name ASC
+      ), '[]'::jsonb) AS tag_data
       FROM login.tbl_user AS u INNER JOIN forums.tbl_forum_post AS f
         ON u.fld_user_pk = f.fld_creator
         INNER JOIN forums.tbl_forum_tag AS ft

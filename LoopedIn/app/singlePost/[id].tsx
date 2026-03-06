@@ -508,7 +508,7 @@ export default function SinglePost() {
           {/* tag work */}
           {!!tagData?.length && (
             <View style={styles.tagRow}>
-              {tagData.slice(0, 5).map((tag) => (
+              {tagData.map((tag) => (
                 <View
                   key={`${post.id}-${tag.tagID}`}
                   style={[
