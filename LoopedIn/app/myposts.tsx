@@ -370,7 +370,6 @@ export default function MyPosts() {
     },
     scrollContent: {
       paddingHorizontal: 20,
-      paddingBottom: 180,
     },
     pageTitle: {
       fontSize: 28,
