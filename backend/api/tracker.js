@@ -323,7 +323,6 @@ router.get("/project/:id", authenticateToken, async (req, res) => {
         p.fld_folder_fk,
         p.fld_creator,
         p.fld_p_name,
-        p.fld_cover_image,
         p.fld_date_started,
         p.fld_date_completed,
         p.fld_notes,
@@ -348,6 +347,68 @@ router.get("/project/:id", authenticateToken, async (req, res) => {
   } catch (error) {
     console.log("[tracker]: Server error fetching project:", error);
     res.status(500).json(error);
+  }
+});
+
+// edit project fields (title, note, start date only)
+router.patch("/project/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const curr_user = req.userID.trim();
+    const { title, note, dateStarted } = req.body;
+
+    if (typeof title !== "string" || title.trim().length === 0) {
+      return res.status(400).json({ message: "Invalid title" });
+    }
+
+    if (title.length > 40) {
+      return res.status(400).json({ message: "Title too long" });
+    }
+
+    if (typeof note !== "string") {
+      return res.status(400).json({ message: "Invalid note" });
+    }
+
+    if (note.length > 5000) {
+      return res.status(400).json({ message: "Note too long" });
+    }
+
+    let parsedDate = null;
+    if (dateStarted !== null && dateStarted !== undefined && dateStarted !== "") {
+      const dateObj = new Date(dateStarted);
+      if (Number.isNaN(dateObj.getTime())) {
+        return res.status(400).json({ message: "Invalid date" });
+      }
+      parsedDate = dateObj.toISOString();
+    }
+
+    const query = `
+      UPDATE tracker.tbl_project
+      SET
+        fld_p_name = $1,
+        fld_notes = $2,
+        fld_date_started = $3
+      WHERE fld_project_pk = $4
+        AND fld_creator = $5
+      RETURNING fld_project_pk;
+    `;
+
+    const result = await pool.query(query, [
+      title.trim(),
+      note,
+      parsedDate,
+      id,
+      curr_user,
+    ]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+
+    return res.status(200).json({ message: "Project updated successfully." });
+  } catch (error) {
+    console.log("[tracker]: Server error updating project:", error);
+    return res.status(500).json(error);
   }
 });
 
@@ -385,7 +446,6 @@ router.get("/single-project", authenticateToken, async (req, res) => {
         p.fld_folder_fk,
         p.fld_creator,
         p.fld_p_name,
-        p.fld_cover_image,
         p.fld_date_started,
         p.fld_date_completed,
         p.fld_notes,
@@ -413,23 +473,7 @@ router.get("/single-project", authenticateToken, async (req, res) => {
     }
 
     const projectInfo = { ...returnFeed.rows[0] };
-
-    // cover image (expects full "folder/file" in DB, but supports legacy no-slash keys)
-    if (projectInfo.fld_cover_image) {
-      const coverParts = splitS3Key(projectInfo.fld_cover_image, "tracker");
-      if (coverParts) {
-        try {
-          projectInfo.fld_cover_image = await getSignedFile(
-            coverParts.folder,
-            coverParts.fileName
-          );
-        } catch (e) {
-          projectInfo.fld_cover_image = null;
-        }
-      } else {
-        projectInfo.fld_cover_image = null;
-      }
-    }
+    projectInfo.fld_cover_image = null;
 
     // project pics
     let projectPics = [];

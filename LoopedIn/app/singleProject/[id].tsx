@@ -343,11 +343,7 @@ export default function SingleProject() {
             </Text>
           </View>
 
-          <View style={styles.headerSide}>
-            <Pressable style={styles.createButton}>
-              <Feather name="edit" size={20} color={colors.text} />
-            </Pressable>
-          </View>
+          <View style={styles.headerSide} />
         </View>
 
         {loading && !project ? (

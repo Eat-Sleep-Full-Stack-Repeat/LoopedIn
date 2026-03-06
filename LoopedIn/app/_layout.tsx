@@ -47,6 +47,10 @@ export default function RootLayout() {
           options={{ headerShown: false, animation: "none" }}
         />
         <Stack.Screen
+          name="editproject/[id]"
+          options={{ headerShown: false, animation: "none" }}
+        />
+        <Stack.Screen
           name="myposts"
           options={{ headerShown: false, animation: "none" }}
         />
