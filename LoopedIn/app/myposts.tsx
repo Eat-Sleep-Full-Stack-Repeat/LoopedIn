@@ -304,7 +304,7 @@ export default function MyPosts() {
 
         {!!item.tag_data.length && (
           <View style={styles.tagRow}>
-            {item.tag_data.slice(0, 5).map((tag) => (
+            {item.tag_data.map((tag) => (
               <View
                 key={`${item.id}-${tag.tagID}`}
                 style={[
@@ -370,7 +370,6 @@ export default function MyPosts() {
     },
     scrollContent: {
       paddingHorizontal: 20,
-      paddingBottom: 180,
     },
     pageTitle: {
       fontSize: 28,
