@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import { useRouter } from "expo-router";
 
 type Folder = {
   id: string;
@@ -14,6 +15,7 @@ export default function MyStuffScreen() {
   const insets = useSafeAreaInsets();
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
+  const router = useRouter();
 
   const folders: Folder[] = [
     { id: "1", name: "Inventory", count: 3 },
@@ -31,8 +33,18 @@ export default function MyStuffScreen() {
 
       {/* Folder Cards */}
       {folders.map((folder) => (
-        <View
+        <Pressable
           key={folder.id}
+          onPress={() => {
+            if (folder.name === "Inventory") {
+              router.push("/inventoryfolder");
+              return;
+            }
+
+            if (folder.name === "Wishlist") {
+              router.push("/wishlistfolder");
+            }
+          }}
           style={[
             styles.card,
             {
@@ -58,7 +70,7 @@ export default function MyStuffScreen() {
             {folder.count} {folder.name.toLowerCase()}{" "}
             {folder.count === 1 ? "item" : "items"}
           </Text>
-        </View>
+        </Pressable>
       ))}
     </View>
   );
