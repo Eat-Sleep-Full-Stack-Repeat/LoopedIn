@@ -83,6 +83,10 @@ export default function RootLayout() {
           name="inventoryfolder"
           options={{ headerShown: false, animation: "none" }}
         />
+        <Stack.Screen
+          name="wishlistfolder"
+          options={{ headerShown: false, animation: "none" }}
+        />
       </Stack>
     </ThemeProvider>
   );
