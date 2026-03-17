@@ -44,6 +44,7 @@ export default function SingleFolderScreen() {
   const [editedCategoryName, setEditedCategoryName] = useState("");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editedItemName, setEditedItemName] = useState("");
+  const [editedItemCount, setEditedItemCount] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
   const filteredItems = useMemo(() => {
@@ -51,7 +52,8 @@ export default function SingleFolderScreen() {
     const result = items.filter((item) => {
       const matchesCategory =
         selectedCategory === "All" || item.category === selectedCategory;
-      const matchesSearch = query.length === 0 || item.name.toLowerCase().includes(query);
+      const matchesSearch =
+        query.length === 0 || item.name.toLowerCase().includes(query);
       return matchesCategory && matchesSearch;
     });
     if (selectedCategory === "All") {
@@ -69,79 +71,78 @@ export default function SingleFolderScreen() {
   const [folderLoading, setFolderLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-    //check token before doing anything
-    const checkTokenOkay = async () => {
-      try{
-        const token = await Storage.getItem("token");
-        if (!token) {
-          throw new Error("no token");
-        }
-        else{
-          setTokenOkay(true);
-        }
-    }
-      catch(e){
-        if (!alreadyAlerted.current) {
-          console.log(e)
-          alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
-          router.replace("/");
-        }
+  const secondTextInput = useRef<TextInput>(null);
+
+  //check token before doing anything
+  const checkTokenOkay = async () => {
+    try {
+      const token = await Storage.getItem("token");
+      if (!token) {
+        throw new Error("no token");
+      } else {
+        setTokenOkay(true);
+      }
+    } catch (e) {
+      if (!alreadyAlerted.current) {
+        console.log(e);
+        alreadyAlerted.current = true;
+        alert("Access denied, please log in and try again.");
+        router.replace("/");
       }
     }
-  
-    useEffect(() => {
-      checkTokenOkay();
-    }, []);
-  
-    //with good token, load up data
-    useEffect(() => {
-      if (!tokenOkay) { return };
-      //fetch data
-      fetchCategories()
-      fetchItems();
-    }, [tokenOkay]);
-  
-      useEffect(() => {
-        if (!refreshing) return;
-    
-        const refreshNewData = async () => {
-          try {
-            console.log("getting items for this category:", selectedCategory);
-            //await fetchData();
-          } catch (e) {
-            console.log("error when refreshing data", e);
-          } finally {
-            setRefreshing(false);
-          }
-        };
-    
-        refreshNewData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [refreshing]);
+  };
 
+  useEffect(() => {
+    checkTokenOkay();
+  }, []);
 
+  //with good token, load up data
+  useEffect(() => {
+    if (!tokenOkay) {
+      return;
+    }
+    //fetch data
+    fetchCategories();
+    fetchItems();
+  }, [tokenOkay]);
+
+  useEffect(() => {
+    if (!refreshing) return;
+
+    const refreshNewData = async () => {
+      try {
+        console.log("getting items for this category:", selectedCategory);
+        //await fetchData();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+    refreshNewData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshing]);
 
   //category fetch handler
   const fetchCategories = async () => {
-    if (!tokenOkay) { return };
-//    if (folderLoading) { return };
+    if (!tokenOkay) {
+      return;
+    }
+    //    if (folderLoading) { return };
 
-//    setFolderLoading(true);
+    //    setFolderLoading(true);
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/get-i-folders`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/get-i-folders`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -150,18 +151,14 @@ export default function SingleFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         router.back();
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -173,7 +170,7 @@ export default function SingleFolderScreen() {
       const data = await res.json();
 
       //map out all folders, or skip this step if there R none :P
-      if(!data.empty){
+      if (!data.empty) {
         const mappedFolders: Folder[] = data.feed.map((folder: any) => ({
           id: folder.fld_folder_pk,
           name: folder.fld_f_name,
@@ -181,37 +178,35 @@ export default function SingleFolderScreen() {
 
         setCategories(mappedFolders);
       }
-
-    }
-    catch(error) {
-      console.log("Error when trying to fetch folder data:", error)
+    } catch (error) {
+      console.log("Error when trying to fetch folder data:", error);
     }
     // finally {
     //   setFolderLoading(false);
     // }
-  }
-
+  };
 
   //items fetch handler
   const fetchItems = async () => {
-    if (!tokenOkay) { return };
-    if (folderLoading) { return };
+    if (!tokenOkay) {
+      return;
+    }
+    if (folderLoading) {
+      return;
+    }
 
     setFolderLoading(true);
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/get-i-items`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/get-i-items`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -220,18 +215,14 @@ export default function SingleFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         router.back();
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -242,27 +233,23 @@ export default function SingleFolderScreen() {
 
       const data = await res.json();
 
-
       //map out all items, or skip this step if there R none :P
-      if(!data.empty){
+      if (!data.empty) {
         const mappedItems: InventoryItem[] = data.feed.map((inv: any) => ({
           id: inv.fld_item_pk,
           name: inv.fld_item_name,
-          count: inv.fld_num_items,
+          itemCount: inv.fld_num_items,
           category: inv.fld_f_name,
         }));
 
         setItems(mappedItems);
       }
-    }
-    catch(error) {
-      console.log("Error when trying to fetch folder data:", error)
-    }
-    finally {
+    } catch (error) {
+      console.log("Error when trying to fetch folder data:", error);
+    } finally {
       setFolderLoading(false);
     }
-  }
-
+  };
 
   const handleAddItem = async () => {
     const trimmed = newItemName.trim();
@@ -308,36 +295,36 @@ export default function SingleFolderScreen() {
         alert("Could not add item. Try again later");
         return;
       }
+
+      const data = await response.json();
+
+      setItems((prev) => [
+        ...prev,
+        {
+          id: data.item.fld_item_pk,
+          name: trimmed,
+          itemCount: 0,
+          category: selectedCategory === "All" ? "Etc" : selectedCategory,
+        },
+      ]);
     } catch (error) {
       console.log("Error adding inventory item: ", error);
       alert("Could not add inventory item. Please try again later.");
+    } finally {
+      setNewItemName("");
+      setIsAddingItem(false);
     }
-
-    setItems((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: trimmed,
-        itemCount: 0,
-        category: selectedCategory === "All" ? "Etc" : selectedCategory,
-      },
-    ]);
-
-    setNewItemName("");
-    setIsAddingItem(false);
   };
-
-
-
 
   //add a new folder
   const handleAddCategory = async () => {
     const trimmed = newCategoryName.trim();
     if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
       return;
-    }
-    else if(trimmed.length > 20){
-      alert("Name is too long! Please try again with a folder name of 20 characters or less.");
+    } else if (trimmed.length > 20) {
+      alert(
+        "Name is too long! Please try again with a folder name of 20 characters or less."
+      );
       return;
     }
 
@@ -352,20 +339,17 @@ export default function SingleFolderScreen() {
 
     //if no duplicate
     const token = await Storage.getItem("token");
-    const res = await fetch(
-      `${API_URL}/api/new-i-folder`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          name: trimmed,
-        })
-      }
-    );
+    const res = await fetch(`${API_URL}/api/new-i-folder`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        name: trimmed,
+      }),
+    });
 
     if (res.status == 404) {
       if (!alreadyAlerted.current) {
@@ -374,9 +358,7 @@ export default function SingleFolderScreen() {
       }
       router.back();
       return;
-    }
-
-    else if (!res.ok) {
+    } else if (!res.ok) {
       if (!alreadyAlerted.current) {
         alreadyAlerted.current = true;
         alert("Whoops! Something went wrong... please try again later.");
@@ -392,19 +374,17 @@ export default function SingleFolderScreen() {
       name: data.fName,
     };
 
-    setCategories((prev) => [
-      ...prev,
-      mappedFolder,
-    ]);
+    setCategories((prev) => [...prev, mappedFolder]);
     // setSelectedCategory(trimmed);
     setNewCategoryName("");
     setIsAddingCategory(false);
   };
 
-
   //folder deletion (not implemented yet)
   const handleDeleteCategory = (categoryToDelete: string) => {
-    setCategories((prev) => prev.filter((category) => category.name !== categoryToDelete));
+    setCategories((prev) =>
+      prev.filter((category) => category.name !== categoryToDelete)
+    );
     if (selectedCategory === categoryToDelete) {
       setSelectedCategory("All");
     }
@@ -436,7 +416,9 @@ export default function SingleFolderScreen() {
       )
     );
 
-    if (selectedCategory === categories.find(c => c.id === categoryId)?.name) {
+    if (
+      selectedCategory === categories.find((c) => c.id === categoryId)?.name
+    ) {
       setSelectedCategory(trimmed);
     }
 
@@ -452,17 +434,69 @@ export default function SingleFolderScreen() {
     }
   };
 
-  const handleRenameItem = (itemId: string) => {
+  const handleEditItem = async (item: InventoryItem) => {
+    const itemId = item.id;
+    let updateName = true;
+    let updateCount = true;
+    let regex = /^\d+$/;
+    const token = await Storage.getItem("token");
+
     const trimmed = editedItemName.trim();
     if (trimmed.length === 0) {
       return;
     }
 
+    const newCount = editedItemCount.trim();
+
+    if (!regex.test(newCount) || item.itemCount === Number(newCount)) {
+      //The entered quantity is not a digit or was not changed
+      updateCount = false;
+    }
+
+    if (item.name === trimmed) {
+      //The entered name is not new
+      updateName = false;
+    }
+
+    if (!updateCount && !updateName) {
+      console.log("Nothing to update!");
+      return;
+    }
+
+    //Update backend item info
+    const response = await fetch(`${API_URL}/api/edit-inventory-item`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        itemID: itemId,
+        newName: trimmed,
+        newCount: newCount,
+      }),
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      alert("Server error occured. Please try again later.");
+      return;
+    }
+
     setItems((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, name: trimmed } : item))
+      prev.map((updateItem) =>
+        updateItem.id === itemId
+          ? {
+              ...updateItem,
+              name: updateName ? trimmed : updateItem.name,
+              itemCount: updateCount ? Number(newCount) : updateItem.itemCount,
+            }
+          : updateItem
+      )
     );
     setEditingItemId(null);
     setEditedItemName("");
+    setEditedItemCount("");
   };
 
   return (
@@ -722,7 +756,10 @@ export default function SingleFolderScreen() {
             </Text>
           </View>
         }
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 20 },
+        ]}
         renderItem={({ item, index }) => (
           <View
             style={[
@@ -743,46 +780,73 @@ export default function SingleFolderScreen() {
                   }
                   setEditingItemId(item.id);
                   setEditedItemName(item.name);
+                  setEditedItemCount(String(item.itemCount));
                 }}
               >
                 {editingItemId === item.id ? (
-                  <TextInput
-                    value={editedItemName}
-                    onChangeText={setEditedItemName}
-                    placeholder="Rename item"
-                    placeholderTextColor={colors.settingsText}
-                    style={[
-                      styles.renameItemInput,
-                      {
-                        borderColor: colors.exploreBorder,
-                        backgroundColor:
-                          index % 2 === 0
-                            ? colors.boxBackground
-                            : colors.topBackground,
-                        color: colors.text,
-                      },
-                    ]}
-                    autoCorrect={false}
-                    autoCapitalize="words"
-                    returnKeyType="done"
-                    onSubmitEditing={() => handleRenameItem(item.id)}
-                    onBlur={() => {
-                      setEditingItemId(null);
-                      setEditedItemName("");
-                    }}
-                    autoFocus
-                  />
+                  <View>
+                    <TextInput
+                      value={editedItemName}
+                      onChangeText={setEditedItemName}
+                      placeholder="Rename item"
+                      placeholderTextColor={colors.settingsText}
+                      style={[
+                        styles.renameItemInput,
+                        {
+                          borderColor: colors.exploreBorder,
+                          backgroundColor:
+                            index % 2 === 0
+                              ? colors.boxBackground
+                              : colors.topBackground,
+                          color: colors.text,
+                        },
+                      ]}
+                      autoCorrect={false}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                      onSubmitEditing={() => secondTextInput.current?.focus()}
+                      blurOnSubmit={false}
+                      autoFocus
+                    />
+                    <TextInput
+                      ref={secondTextInput}
+                      value={editedItemCount}
+                      onChangeText={setEditedItemCount}
+                      placeholder="Quantity"
+                      placeholderTextColor={colors.settingsText}
+                      style={[
+                        styles.renameItemInput,
+                        {
+                          borderColor: colors.exploreBorder,
+                          backgroundColor:
+                            index % 2 === 0
+                              ? colors.boxBackground
+                              : colors.topBackground,
+                          color: colors.text,
+                        },
+                      ]}
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => handleEditItem(item)}
+                      onBlur={() => handleEditItem(item)}
+                      blurOnSubmit={true}
+                    />
+                  </View>
                 ) : (
-                  <Text
-                    style={[styles.itemName, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {item.name}
-                  </Text>
+                  <View>
+                    <Text
+                      style={[styles.itemName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={[styles.itemMeta, { color: colors.settingsText }]}
+                    >
+                      {item.itemCount} items
+                    </Text>
+                  </View>
                 )}
-                <Text style={[styles.itemMeta, { color: colors.settingsText }]}>
-                  {item.itemCount} items
-                </Text>
               </Pressable>
               {isCategoryEditMode ? (
                 <Pressable
@@ -793,12 +857,15 @@ export default function SingleFolderScreen() {
                   <Feather name="x" size={16} color={colors.text} />
                 </Pressable>
               ) : (
-                <Feather
-                  name="more-vertical"
-                  size={18}
-                  color={colors.settingsText}
-                  style={styles.cardMenuIcon}
-                />
+                <></>
+                // <Pressable onPress={handleEditItem}>
+                //   <Feather
+                //     name="edit-2"
+                //     size={18}
+                //     color={colors.settingsText}
+                //     style={styles.cardMenuIcon}
+                //   />
+                // </Pressable>
               )}
             </View>
           </View>

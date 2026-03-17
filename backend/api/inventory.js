@@ -120,12 +120,12 @@ router.get("/get-i-items", authenticateToken, async (req, res) => {
 });
 
 //Add an item
-router.post("/add-inventory-item", authenticateToken, async(req, res) => {
+router.post("/add-inventory-item", authenticateToken, async (req, res) => {
   console.log("Adding the item to the backend");
   try {
     const currentUser = req.userID;
     //Get the item name and category from front-end
-    const {itemName, itemCategory} = req.body;
+    const { itemName, itemCategory } = req.body;
 
     let query = ``;
 
@@ -136,9 +136,9 @@ router.post("/add-inventory-item", authenticateToken, async(req, res) => {
               AND fld_f_name = $2;`;
 
     const checkCategory = await pool.query(query, [currentUser, itemCategory]);
-    if (checkCategory.rowCount === 0){
+    if (checkCategory.rowCount === 0) {
       console.log("That category does not exist");
-      res.status(404).json({message: "That category does not exist"})
+      res.status(404).json({ message: "That category does not exist" });
       return;
     }
 
@@ -146,21 +146,59 @@ router.post("/add-inventory-item", authenticateToken, async(req, res) => {
     const folderID = checkCategory.rows[0].fld_folder_pk;
 
     query = `INSERT INTO inventory.tbl_inventory_item (fld_i_folder_fk, fld_creator, fld_item_name, fld_num_items)
-    VALUES ($1, $2, $3, $4)`;
+    VALUES ($1, $2, $3, $4)
+    RETURNING fld_item_pk;`;
 
-    await pool.query(query, [folderID, currentUser, itemName, 0]);
+    const newItemRow = await pool.query(query, [
+      folderID,
+      currentUser,
+      itemName,
+      0,
+    ]);
 
-    //Add item to the backend
-    res.status(200).json({message: "Successfully added inventory item"})
+    if (newItemRow.rowCount === 0) {
+      res.status(500).json({ message: "Error when adding inventory item" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Successfully added inventory item",
+      item: newItemRow.rows[0],
+    });
     return;
-
   } catch (e) {
     console.log("Error when adding inventory item: ", e);
     res.status(500).json(e);
   }
-})
+});
 
 //Update an item -> name and number of items
+router.patch("/edit-inventory-item", authenticateToken, async (req, res) => {
+  console.log("Editing inventory item!");
+  try {
+    const { itemID, newName, newCount } = req.body; //cleanup of this data is done on front-end
+    let query;
+
+    console.log(
+      "The things passed from the front-end: ",
+      itemID,
+      newName,
+      newCount
+    );
+
+    query = `UPDATE inventory.tbl_inventory_item
+    SET fld_item_name = $1, fld_num_items = $2
+    WHERE fld_item_pk = $3;`;
+
+    await pool.query(query, [newName, newCount, itemID]);
+
+    res.status(200).json({ message: "Successfully updated inventory item!" });
+    return;
+  } catch (e) {
+    console.log("Error when updating inventory item name/count: ", e);
+    res.status(500).json({ message: e });
+  }
+});
 
 //Delete an item
 
