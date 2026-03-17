@@ -426,11 +426,34 @@ export default function SingleFolderScreen() {
     setEditedCategoryName("");
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== itemId));
-    if (editingItemId === itemId) {
-      setEditingItemId(null);
-      setEditedItemName("");
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      const token = await Storage.getItem("token");
+
+      const response = await fetch(`${API_URL}/api/delete-inventory-item`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ itemID: itemId }),
+      });
+
+      if (!response.ok) {
+        alert("Error while removing item. Try again later.");
+        return;
+      }
+
+      setItems((prev) => prev.filter((item) => item.id !== itemId));
+    } catch (e) {
+      console.log("Error when deleting inventory item: ", e);
+      return;
+    } finally {
+      if (editingItemId === itemId) {
+        setEditingItemId(null);
+        setEditedItemName("");
+      }
     }
   };
 
@@ -463,40 +486,47 @@ export default function SingleFolderScreen() {
       return;
     }
 
-    //Update backend item info
-    const response = await fetch(`${API_URL}/api/edit-inventory-item`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        itemID: itemId,
-        newName: trimmed,
-        newCount: newCount,
-      }),
-      credentials: "include",
-    });
+    try {
+      const response = await fetch(`${API_URL}/api/edit-inventory-item`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itemID: itemId,
+          newName: trimmed,
+          newCount: newCount,
+        }),
+        credentials: "include",
+      });
 
-    if (!response.ok) {
-      alert("Server error occured. Please try again later.");
+      if (!response.ok) {
+        alert("Server error occured. Please try again later.");
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((updateItem) =>
+          updateItem.id === itemId
+            ? {
+                ...updateItem,
+                name: updateName ? trimmed : updateItem.name,
+                itemCount: updateCount
+                  ? Number(newCount)
+                  : updateItem.itemCount,
+              }
+            : updateItem
+        )
+      );
+    } catch (e) {
+      alert("Unable to update item. Please try again later");
       return;
+    } finally {
+      setEditingItemId(null);
+      setEditedItemName("");
+      setEditedItemCount("");
     }
-
-    setItems((prev) =>
-      prev.map((updateItem) =>
-        updateItem.id === itemId
-          ? {
-              ...updateItem,
-              name: updateName ? trimmed : updateItem.name,
-              itemCount: updateCount ? Number(newCount) : updateItem.itemCount,
-            }
-          : updateItem
-      )
-    );
-    setEditingItemId(null);
-    setEditedItemName("");
-    setEditedItemCount("");
   };
 
   return (

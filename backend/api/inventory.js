@@ -201,6 +201,40 @@ router.patch("/edit-inventory-item", authenticateToken, async (req, res) => {
 });
 
 //Delete an item
+router.delete("/delete-inventory-item", authenticateToken, async (req, res) => {
+  console.log("Going to delete an inventory item!");
+  try {
+    //front-end will pass item id
+    const { itemID } = req.body;
+
+    //check if the user has access to delete that item:
+    const curr_user = req.userID;
+
+    let query;
+
+    query = `SELECT * FROM inventory.tbl_inventory_item
+    WHERE fld_creator = $1 AND fld_item_pk = $2;`;
+
+    const doubleCheckUser = await pool.query(query, [curr_user, itemID]);
+    if (doubleCheckUser.rowCount === 0) {
+      res
+        .status(401)
+        .json({ message: "User does not have access to delete that item" });
+      return;
+    }
+
+    //if user has access -> delete item
+    query = `DELETE FROM inventory.tbl_inventory_item
+    WHERE fld_creator = $1 AND fld_item_pk = $2;`;
+
+    await pool.query(query, [curr_user, itemID]);
+
+    res.status(200).json({ message: "Successfully deleted inventory item" });
+    return;
+  } catch (e) {
+    res.status(500).json({ message: e });
+  }
+});
 
 
 module.exports = router;
