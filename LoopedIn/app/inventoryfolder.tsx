@@ -264,10 +264,53 @@ export default function SingleFolderScreen() {
   }
 
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     const trimmed = newItemName.trim();
     if (trimmed.length === 0) {
       return;
+    }
+
+    //Add item to the backend
+
+    if (!isAddingItem) {
+      //check if item is still being added -> should be true all the time
+      console.log("User is no longer adding an item");
+      return;
+    }
+
+    if (selectedCategory === "All") {
+      alert("Item has category 'All' -> cannot add this item");
+      return;
+    }
+    //Send item name and category to backend
+
+    //token
+    const token = await Storage.getItem("token");
+
+    const newItem = {
+      itemName: trimmed.trim(),
+      itemCategory: selectedCategory.trim(),
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/api/add-inventory-item`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(newItem),
+      });
+
+      //Get success code
+      if (!response.ok) {
+        alert("Could not add item. Try again later");
+        return;
+      }
+    } catch (error) {
+      console.log("Error adding inventory item: ", error);
+      alert("Could not add inventory item. Please try again later.");
     }
 
     setItems((prev) => [

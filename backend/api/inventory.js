@@ -119,5 +119,50 @@ router.get("/get-i-items", authenticateToken, async (req, res) => {
   }
 });
 
+//Add an item
+router.post("/add-inventory-item", authenticateToken, async(req, res) => {
+  console.log("Adding the item to the backend");
+  try {
+    const currentUser = req.userID;
+    //Get the item name and category from front-end
+    const {itemName, itemCategory} = req.body;
+
+    let query = ``;
+
+    //make sure the itemCategory exists and that the user has access
+    query = `SELECT * FROM folders.tbl_folder
+            WHERE fld_creator = $1 
+              AND fld_type = 'I' 
+              AND fld_f_name = $2;`;
+
+    const checkCategory = await pool.query(query, [currentUser, itemCategory]);
+    if (checkCategory.rowCount === 0){
+      console.log("That category does not exist");
+      res.status(404).json({message: "That category does not exist"})
+      return;
+    }
+
+    //Get the itemCategory ID
+    const folderID = checkCategory.rows[0].fld_folder_pk;
+
+    query = `INSERT INTO inventory.tbl_inventory_item (fld_i_folder_fk, fld_creator, fld_item_name, fld_num_items)
+    VALUES ($1, $2, $3, $4)`;
+
+    await pool.query(query, [folderID, currentUser, itemName, 0]);
+
+    //Add item to the backend
+    res.status(200).json({message: "Successfully added inventory item"})
+    return;
+
+  } catch (e) {
+    console.log("Error when adding inventory item: ", e);
+    res.status(500).json(e);
+  }
+})
+
+//Update an item -> name and number of items
+
+//Delete an item
+
 
 module.exports = router;
