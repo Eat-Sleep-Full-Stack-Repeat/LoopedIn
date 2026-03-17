@@ -359,19 +359,68 @@ export default function SingleFolderScreen() {
   };
 
 
-  //folder deletion (not implemented yet)
-  const handleDeleteCategory = (categoryToDelete: string) => {
-    setCategories((prev) => prev.filter((category) => category.name !== categoryToDelete));
-    if (selectedCategory === categoryToDelete) {
-      setSelectedCategory("All");
+  //folder deletion 
+  const handleDeleteCategory = async (categoryToDelete: string) => {
+    const token = await Storage.getItem("token");
+    const categoryObj = categories.find((category) => category.name === categoryToDelete);
+
+    if (!categoryObj) {
+      return;
     }
-    if (editingCategory === categoryToDelete) {
-      setEditingCategory(null);
-      setEditedCategoryName("");
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/delete-i-folder/${categoryObj.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        return;
+      }
+
+      setCategories((prev) => prev.filter((category) => category.name !== categoryToDelete));
+      if (selectedCategory === categoryToDelete) {
+        setSelectedCategory("All");
+      }
+      if (editingCategory === categoryObj.id) {
+        setEditingCategory(null);
+        setEditedCategoryName("");
+      }
+    }
+    catch(error) {
+      console.log("Error when trying to delete folder:", error)
     }
   };
 
-  const handleRenameCategory = (categoryId: string) => {
+  const handleRenameCategory = async (categoryId: string) => {
     const trimmed = editedCategoryName.trim();
     if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
       return;
@@ -387,18 +436,71 @@ export default function SingleFolderScreen() {
       return;
     }
 
-    setCategories((prev) =>
-      prev.map((category) =>
-        category.id === categoryId ? { ...category, name: trimmed } : category
-      )
-    );
+    const token = await Storage.getItem("token");
+    const oldCategory = categories.find((category) => category.id === categoryId);
 
-    if (selectedCategory === categories.find(c => c.id === categoryId)?.name) {
-      setSelectedCategory(trimmed);
+    if (!oldCategory) {
+      return;
     }
 
-    setEditingCategory(null);
-    setEditedCategoryName("");
+    try {
+      const res = await fetch(
+        `${API_URL}/api/rename-i-folder`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            folderId: categoryId,
+            name: trimmed,
+          }),
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        return;
+      }
+
+      setCategories((prev) =>
+        prev.map((category) =>
+          category.id === categoryId ? { ...category, name: trimmed } : category
+        )
+      );
+
+      if (selectedCategory === oldCategory.name) {
+        setSelectedCategory(trimmed);
+      }
+
+      setEditingCategory(null);
+      setEditedCategoryName("");
+    }
+    catch(error) {
+      console.log("Error when trying to rename folder:", error)
+    }
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -442,19 +544,24 @@ export default function SingleFolderScreen() {
           <Pressable
             style={styles.headerActionButton}
             onPress={() => {
-              setIsCategoryEditMode((prev) => {
-                const next = !prev;
-                if (!next) {
-                  setEditingCategory(null);
-                  setEditedCategoryName("");
-                  setEditingItemId(null);
-                  setEditedItemName("");
-                }
-                return next;
-              });
-              setIsAddingCategory(false);
-              setIsAddingItem(false);
-            }}
+            // if currently editing a category, save it first
+            if (isCategoryEditMode && editingCategory) {
+              handleRenameCategory(editingCategory);
+            }
+
+            setIsCategoryEditMode((prev) => {
+              const next = !prev;
+              if (!next) {
+                setEditingCategory(null);
+                setEditedCategoryName("");
+                setEditingItemId(null);
+                setEditedItemName("");
+              }
+              return next;
+            });
+            setIsAddingCategory(false);
+            setIsAddingItem(false);
+          }}
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
@@ -501,10 +608,10 @@ export default function SingleFolderScreen() {
 
           {categories.map((category) => {
             const isSelected = selectedCategory === category.name;
-            if (editingCategory === category.name) {
+            if (editingCategory === category.id) {
               return (
                 <TextInput
-                  key={`${category}-edit`}
+                  key={`${category.id}-edit`}
                   value={editedCategoryName}
                   onChangeText={setEditedCategoryName}
                   placeholder="Rename"
@@ -516,11 +623,8 @@ export default function SingleFolderScreen() {
                   autoCapitalize="words"
                   autoCorrect={false}
                   returnKeyType="done"
-                  onSubmitEditing={() => handleRenameCategory(category.name)}
-                  onBlur={() => {
-                    setEditingCategory(null);
-                    setEditedCategoryName("");
-                  }}
+                  onSubmitEditing={() => handleRenameCategory(category.id)}
+                  onBlur={() => handleRenameCategory(category.id)}
                   autoFocus
                 />
               );
@@ -539,27 +643,35 @@ export default function SingleFolderScreen() {
                   },
                 ]}
                 onPress={() => {
-                  setSelectedCategory(category.name);
-                }}
-                onLongPress={() => {
-                  if (!isCategoryEditMode) {
+                  if (isCategoryEditMode) {
+                    setEditingCategory(category.id);
+                    setEditedCategoryName(category.name);
                     return;
                   }
-                  setEditingCategory(category.name);
-                  setEditedCategoryName(category.name);
+                  setSelectedCategory(category.name);
                 }}
               >
                 <View style={styles.categoryTabContent}>
-                  <Text
+                  <View
                     style={[
-                      styles.categoryTabText,
+                    styles.editableCategoryBox,
                       {
-                        color: isSelected ? colors.decorativeText : colors.text,
+                        borderWidth: isCategoryEditMode ? 1 : 0,
+                        borderColor: colors.text,
                       },
                     ]}
                   >
-                    {category.name}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.categoryTabText,
+                        {
+                          color: isSelected ? colors.decorativeText : colors.text,
+                        },
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </View>
                   {isCategoryEditMode && (
                     <Pressable
                       onPress={(event) => {
@@ -842,6 +954,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  editableCategoryBox: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   categoryDeleteButton: {
     alignItems: "center",

@@ -85,6 +85,79 @@ router.post("/new-i-folder", authenticateToken, async (req, res) => {
 });
 
 
+//rename inventory folder
+router.put("/rename-i-folder", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim();
+    const folderId = req.body.folderId;
+    const newName = req.body.name || "";
+
+    const duplicateQuery = `
+      SELECT fld_folder_pk
+      FROM folders.tbl_folder
+      WHERE fld_creator = $1
+        AND fld_type = 'I'
+        AND LOWER(fld_f_name) = LOWER($2)
+        AND fld_folder_pk != $3;
+    `;
+    const duplicateFeed = await pool.query(duplicateQuery, [curr_user, newName, folderId]);
+
+    if (duplicateFeed.rowCount > 0) {
+      res.status(409).json({ message: "Duplicate folder name." });
+      return;
+    }
+
+    const query = `
+      UPDATE folders.tbl_folder
+      SET fld_f_name = $1
+      WHERE fld_folder_pk = $2 AND fld_creator = $3 AND fld_type = 'I'
+      RETURNING fld_folder_pk, fld_f_name;
+    `;
+    const returnFeed = await pool.query(query, [newName, folderId, curr_user]);
+
+    if (returnFeed.rowCount === 0) {
+      res.status(404).json({ message: "Folder does not exist." });
+      return;
+    }
+
+    res.status(200).json({fID: returnFeed.rows[0].fld_folder_pk, fName: returnFeed.rows[0].fld_f_name});
+    return;
+
+  } catch (error) {
+    console.log("[Inventory]: Server error when renaming folder:", error);
+    res.status(500).json(error);
+  }
+});
+
+
+//delete inventory folder
+router.delete("/delete-i-folder/:folderId", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim();
+    const folderId = req.params.folderId;
+
+    const query = `
+      DELETE FROM folders.tbl_folder
+      WHERE fld_folder_pk = $1 AND fld_creator = $2 AND fld_type = 'I'
+      RETURNING fld_folder_pk;
+    `;
+    const returnFeed = await pool.query(query, [folderId, curr_user]);
+
+    if (returnFeed.rowCount === 0) {
+      res.status(404).json({ message: "Folder does not exist." });
+      return;
+    }
+
+    res.status(200).json({ message: "Folder deleted successfully." });
+    return;
+
+  } catch (error) {
+    console.log("[Inventory]: Server error when deleting folder:", error);
+    res.status(500).json(error);
+  }
+});
+
+
 //------------------------ INVENTORY ITEM WORK -------------------------------
 
 //fetching all items 
