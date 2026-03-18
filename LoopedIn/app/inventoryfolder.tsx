@@ -611,6 +611,7 @@ export default function SingleFolderScreen() {
             if (editingCategory === category.id) {
               return (
                 <TextInput
+                  maxLength={20}
                   key={`${category.id}-edit`}
                   value={editedCategoryName}
                   onChangeText={setEditedCategoryName}
