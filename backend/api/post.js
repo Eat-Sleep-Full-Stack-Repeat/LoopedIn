@@ -278,7 +278,12 @@ router.get("/post", authenticateToken, async (req, res) => {
             ON ps.fld_post_fk = p.fld_post_pk
             AND ps.fld_user_fk = $2
           LEFT JOIN LATERAL (
-            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tags
+            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)
+              ORDER BY CASE 
+                WHEN t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+                ELSE 2
+              END ASC, t.fld_tag_name ASC
+            ) AS tags
                 FROM posts.tbl_post_tag AS tp
                   INNER JOIN tags.tbl_tags AS t
                     ON tp.fld_tag = t.fld_tags_pk
@@ -329,7 +334,12 @@ router.get("/post", authenticateToken, async (req, res) => {
             ON ps.fld_post_fk = p.fld_post_pk
             AND ps.fld_user_fk = $4
           LEFT JOIN LATERAL (
-            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)) AS tags
+            SELECT JSONB_AGG(JSONB_BUILD_OBJECT('tagID', t.fld_tags_pk, 'tagName', t.fld_tag_name, 'tagColor', t.fld_tag_color)
+              ORDER BY CASE 
+                WHEN t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+                ELSE 2
+              END ASC, t.fld_tag_name ASC
+            ) AS tags
                 FROM posts.tbl_post_tag AS tp
                   INNER JOIN tags.tbl_tags AS t
                     ON tp.fld_tag = t.fld_tags_pk
@@ -758,6 +768,7 @@ router.get("/single-post", authenticateToken, async (req, res) => {
       INNER JOIN posts.tbl_post_tag AS tp ON tp.fld_post = p.fld_post_pk
       INNER JOIN tags.tbl_tags AS t ON t.fld_tags_pk = tp.fld_tag
       WHERE p.fld_post_pk = $1
+      ORDER BY t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') DESC, t.fld_tag_name
     `;
     const tags = await pool.query(query2, [postID]);
 
