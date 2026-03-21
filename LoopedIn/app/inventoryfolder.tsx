@@ -257,6 +257,11 @@ export default function SingleFolderScreen() {
       return;
     }
 
+    if (trimmed.length > 40) {
+      alert("The name of the item must be less than 40 characters");
+      return;
+    }
+
     //Add item to the backend
 
     if (!isAddingItem) {
@@ -380,11 +385,12 @@ export default function SingleFolderScreen() {
     setIsAddingCategory(false);
   };
 
-
-  //folder deletion 
+  //folder deletion
   const handleDeleteCategory = async (categoryToDelete: string) => {
     const token = await Storage.getItem("token");
-    const categoryObj = categories.find((category) => category.name === categoryToDelete);
+    const categoryObj = categories.find(
+      (category) => category.name === categoryToDelete
+    );
 
     if (!categoryObj) {
       return;
@@ -410,17 +416,13 @@ export default function SingleFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -428,7 +430,9 @@ export default function SingleFolderScreen() {
         return;
       }
 
-      setCategories((prev) => prev.filter((category) => category.name !== categoryToDelete));
+      setCategories((prev) =>
+        prev.filter((category) => category.name !== categoryToDelete)
+      );
       if (selectedCategory === categoryToDelete) {
         setSelectedCategory("All");
       }
@@ -436,9 +440,8 @@ export default function SingleFolderScreen() {
         setEditingCategory(null);
         setEditedCategoryName("");
       }
-    }
-    catch(error) {
-      console.log("Error when trying to delete folder:", error)
+    } catch (error) {
+      console.log("Error when trying to delete folder:", error);
     }
   };
 
@@ -459,28 +462,27 @@ export default function SingleFolderScreen() {
     }
 
     const token = await Storage.getItem("token");
-    const oldCategory = categories.find((category) => category.id === categoryId);
+    const oldCategory = categories.find(
+      (category) => category.id === categoryId
+    );
 
     if (!oldCategory) {
       return;
     }
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/rename-i-folder`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            folderId: categoryId,
-            name: trimmed,
-          }),
-        }
-      );
+      const res = await fetch(`${API_URL}/api/rename-i-folder`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          folderId: categoryId,
+          name: trimmed,
+        }),
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -489,17 +491,13 @@ export default function SingleFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -519,9 +517,8 @@ export default function SingleFolderScreen() {
 
       setEditingCategory(null);
       setEditedCategoryName("");
-    }
-    catch(error) {
-      console.log("Error when trying to rename folder:", error)
+    } catch (error) {
+      console.log("Error when trying to rename folder:", error);
     }
   };
 
@@ -565,6 +562,11 @@ export default function SingleFolderScreen() {
 
     const trimmed = editedItemName.trim();
     if (trimmed.length === 0) {
+      return;
+    }
+
+    if (trimmed.length > 40) {
+      alert("Title of item must be less than 40 characters");
       return;
     }
 
@@ -648,24 +650,24 @@ export default function SingleFolderScreen() {
           <Pressable
             style={styles.headerActionButton}
             onPress={() => {
-            // if currently editing a category, save it first
-            if (isCategoryEditMode && editingCategory) {
-              handleRenameCategory(editingCategory);
-            }
-
-            setIsCategoryEditMode((prev) => {
-              const next = !prev;
-              if (!next) {
-                setEditingCategory(null);
-                setEditedCategoryName("");
-                setEditingItemId(null);
-                setEditedItemName("");
+              // if currently editing a category, save it first
+              if (isCategoryEditMode && editingCategory) {
+                handleRenameCategory(editingCategory);
               }
-              return next;
-            });
-            setIsAddingCategory(false);
-            setIsAddingItem(false);
-          }}
+
+              setIsCategoryEditMode((prev) => {
+                const next = !prev;
+                if (!next) {
+                  setEditingCategory(null);
+                  setEditedCategoryName("");
+                  setEditingItemId(null);
+                  setEditedItemName("");
+                }
+                return next;
+              });
+              setIsAddingCategory(false);
+              setIsAddingItem(false);
+            }}
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
@@ -759,7 +761,7 @@ export default function SingleFolderScreen() {
                 <View style={styles.categoryTabContent}>
                   <View
                     style={[
-                    styles.editableCategoryBox,
+                      styles.editableCategoryBox,
                       {
                         borderWidth: isCategoryEditMode ? 1 : 0,
                         borderColor: colors.text,
@@ -770,7 +772,9 @@ export default function SingleFolderScreen() {
                       style={[
                         styles.categoryTabText,
                         {
-                          color: isSelected ? colors.decorativeText : colors.text,
+                          color: isSelected
+                            ? colors.decorativeText
+                            : colors.text,
                         },
                       ]}
                     >
@@ -870,6 +874,7 @@ export default function SingleFolderScreen() {
               onChangeText={setNewItemName}
               placeholder="Item name"
               placeholderTextColor={colors.settingsText}
+              maxLength={40}
               style={[
                 styles.addItemInput,
                 { borderColor: colors.topBackground, color: colors.text },
@@ -928,6 +933,7 @@ export default function SingleFolderScreen() {
                     <TextInput
                       value={editedItemName}
                       onChangeText={setEditedItemName}
+                      maxLength={40}
                       placeholder="Rename item"
                       placeholderTextColor={colors.settingsText}
                       style={[
