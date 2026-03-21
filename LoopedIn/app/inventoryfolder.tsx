@@ -73,6 +73,8 @@ export default function SingleFolderScreen() {
 
   const secondTextInput = useRef<TextInput>(null);
 
+  const isEditing = useRef(false);
+
   //check token before doing anything
   const checkTokenOkay = async () => {
     try {
@@ -554,40 +556,51 @@ export default function SingleFolderScreen() {
   };
 
   const handleEditItem = async (item: InventoryItem) => {
-    const itemId = item.id;
-    let updateName = true;
-    let updateCount = true;
-    let regex = /^\d+$/;
-    const token = await Storage.getItem("token");
-
-    const trimmed = editedItemName.trim();
-    if (trimmed.length === 0) {
-      return;
-    }
-
-    if (trimmed.length > 40) {
-      alert("Title of item must be less than 40 characters");
-      return;
-    }
-
-    const newCount = editedItemCount.trim();
-
-    if (!regex.test(newCount) || item.itemCount === Number(newCount)) {
-      //The entered quantity is not a digit or was not changed
-      updateCount = false;
-    }
-
-    if (item.name === trimmed) {
-      //The entered name is not new
-      updateName = false;
-    }
-
-    if (!updateCount && !updateName) {
-      console.log("Nothing to update!");
-      return;
-    }
-
     try {
+      if (isEditing.current) {
+        return;
+      }
+      isEditing.current = true;
+
+      const itemId = item.id;
+      let updateName = true;
+      let updateCount = true;
+      let regex = /^\d+$/;
+      const token = await Storage.getItem("token");
+
+      const trimmed = editedItemName.trim();
+      if (trimmed.length === 0) {
+        return;
+      }
+
+      if (trimmed.length > 40) {
+        alert("Title of item must be less than 40 characters");
+        return;
+      }
+
+      const newCount = editedItemCount.trim();
+
+      if (!regex.test(newCount)) {
+        //The entered quantity is not a digit
+        alert("The second input must contain numerical data only");
+        return;
+      }
+
+      if (item.itemCount === Number(newCount)) {
+        // Item count was not changed
+        updateCount = false;
+      }
+
+      if (item.name === trimmed) {
+        //The entered name is not new
+        updateName = false;
+      }
+
+      if (!updateCount && !updateName) {
+        console.log("Nothing to update!");
+        return;
+      }
+
       const response = await fetch(`${API_URL}/api/edit-inventory-item`, {
         method: "PATCH",
         headers: {
@@ -627,6 +640,7 @@ export default function SingleFolderScreen() {
       setEditingItemId(null);
       setEditedItemName("");
       setEditedItemCount("");
+      isEditing.current = false;
     }
   };
 
