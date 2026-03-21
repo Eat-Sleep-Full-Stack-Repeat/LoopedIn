@@ -44,7 +44,7 @@ type BackendPostRow = {
   fld_is_saved?: boolean;
 };
 
-type TagObj = { name: string; color: string };
+type TagObj = { id: string; name: string; color: string };
 
 type Post = {
   id: string;
@@ -425,15 +425,23 @@ export default function ExploreSearch() {
             <View style={styles(colors, isTablet).tagRow}>
               {tags.slice(0, 18).map((t) => (
                 <View
-                  key={`${item.id}-${t.name}`}
+                  key={`${item.id}-${t.id}`}
                   style={[
                     styles(colors, isTablet).tagChip,
                     { borderColor: t.color },
                   ]}
                 >
-                  <Text style={styles(colors, isTablet).tagText}>
-                    #{t.name}
-                  </Text>
+                  {t.name === "Knit" ||
+                  t.name === "Crochet" ||
+                  t.name === "Misc" ? (
+                    <Text style={styles(colors, isTablet).tagText}>
+                      🌟{t.name} 
+                    </Text>
+                  ) : (
+                    <Text style={styles(colors, isTablet).tagText}>
+                      #{t.name}
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>
