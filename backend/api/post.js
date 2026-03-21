@@ -563,7 +563,6 @@ router.post("/search", authenticateToken, async (req, res) => {
     let tagsByPost = {};
 
     if (postIds.length > 0) {
-      console.log("here")
       const tagQ = `
         SELECT
           tp.fld_post AS post_id,
