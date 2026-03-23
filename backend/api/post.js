@@ -567,18 +567,23 @@ router.post("/search", authenticateToken, async (req, res) => {
         SELECT
           tp.fld_post AS post_id,
           t.fld_tag_name,
-          t.fld_tag_color
+          t.fld_tag_color,
+          t.fld_tags_pk
         FROM posts.tbl_post_tag tp
         INNER JOIN tags.tbl_tags t
           ON t.fld_tags_pk = tp.fld_tag
-        WHERE tp.fld_post = ANY($1::int[]);
+        WHERE tp.fld_post = ANY($1::int[])
+        ORDER BY CASE 
+          WHEN t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+          ELSE 2
+        END ASC, t.fld_tag_name ASC;
       `;
       const tagR = await pool.query(tagQ, [postIds]);
 
       tagsByPost = tagR.rows.reduce((acc, row) => {
         const pid = String(row.post_id);
         if (!acc[pid]) acc[pid] = [];
-        acc[pid].push({ name: row.fld_tag_name, color: row.fld_tag_color });
+        acc[pid].push({ id: row.fld_tags_pk, name: row.fld_tag_name, color: row.fld_tag_color });
         return acc;
       }, {});
     }
