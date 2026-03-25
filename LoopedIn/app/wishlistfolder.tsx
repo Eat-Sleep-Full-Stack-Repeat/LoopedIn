@@ -1,8 +1,9 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
+import API_URL from "@/utils/config";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -13,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Storage } from "../utils/storage";
 
 type WishlistItem = {
   id: string;
@@ -62,13 +64,215 @@ export default function WishlistFolderScreen() {
     });
 
     if (selectedCategory === "All") {
-      return [...result].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      );
+      // return [...result].sort((a, b) =>
+      //   a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      // );
+      return [...result];
     }
 
     return result;
   }, [items, searchQuery, selectedCategory]);
+
+  const { id } = useLocalSearchParams();
+
+//token-related variables + states
+  const [tokenOkay, setTokenOkay] = useState(false);
+  const alreadyAlerted = useRef(false); //preventing double-alert in dev
+  const [loading, setLoading] = useState(false);
+  const [folderLoading, setFolderLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+    //check token before doing anything
+    const checkTokenOkay = async () => {
+      try{
+        const token = await Storage.getItem("token");
+        if (!token) {
+          throw new Error("no token");
+        }
+        else{
+          setTokenOkay(true);
+        }
+    }
+      catch(e){
+        if (!alreadyAlerted.current) {
+          console.log(e)
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+          router.replace("/");
+        }
+      }
+    }
+  
+    useEffect(() => {
+      checkTokenOkay();
+    }, []);
+  
+    //with good token, load up data
+    useEffect(() => {
+      if (!tokenOkay) { return };
+      //fetch data
+      fetchCategories()
+      fetchItems();
+    }, [tokenOkay]);
+
+    useEffect(() => {
+        if (!refreshing) return;
+    
+        const refreshNewData = async () => {
+          try {
+            console.log("getting items for this category:", selectedCategory);
+            //await fetchData();
+          } catch (e) {
+            console.log("error when refreshing data", e);
+          } finally {
+            setRefreshing(false);
+          }
+        };
+    
+        refreshNewData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refreshing]);
+
+//category fetch handler
+  const fetchCategories = async () => {
+    if (!tokenOkay) { return };
+//    if (folderLoading) { return };
+
+//    setFolderLoading(true);
+    const token = await Storage.getItem("token");
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/get-w-folders`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        router.back();
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.back();
+        return;
+      }
+
+      const data = await res.json();
+
+      //map out all folders, or skip this step if there R none :P
+      if(!data.empty){
+        const mappedFolders: Folder[] = data.feed.map((folder: any) => ({
+          id: folder.fld_folder_pk,
+          name: folder.fld_f_name,
+        }));
+
+        setCategories(mappedFolders);
+      }
+
+    }
+    catch(error) {
+      console.log("Error when trying to fetch folder data:", error)
+    }
+    // finally {
+    //   setFolderLoading(false);
+    // }
+  }
+
+//items fetch handler
+  const fetchItems = async () => {
+    if (!tokenOkay) { return };
+    if (folderLoading) { return };
+
+    setFolderLoading(true);
+    const token = await Storage.getItem("token");
+
+    try {
+      const res = await fetch(
+        `${API_URL}/api/get-w-items`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        router.back();
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.back();
+        return;
+      }
+
+      const data = await res.json();
+
+
+      //map out all items, or skip this step if there R none :P
+      if(!data.empty){
+        const mappedItems: WishlistItem[] = data.feed.map((inv: any) => ({
+          id: inv.fld_item_pk,
+          name: inv.fld_item_name,
+          itemCount: inv.fld_num_items,
+          category: inv.fld_f_name,
+        }));
+
+        setItems(mappedItems);
+      }
+    }
+    catch(error) {
+      console.log("Error when trying to fetch folder data:", error)
+    }
+    finally {
+      setFolderLoading(false);
+    }
+  }
+
 
   const handleAddCategory = () => {
     const trimmed = newCategoryName.trim();
