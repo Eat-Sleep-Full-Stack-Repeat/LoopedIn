@@ -1,9 +1,13 @@
 import React from "react";
+import {useState, useEffect, useRef, useCallback} from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
+import { Storage } from "../../utils/storage";
+import API_URL from "@/utils/config";
 
 type Folder = {
   id: string;
@@ -17,9 +21,92 @@ export default function MyStuffScreen() {
   const colors = Colors[currentTheme];
   const router = useRouter();
 
+  const [inventoryCount, setInventoryCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+
+  //const [tokenOkay, setTokenOkay] = useState(false);
+  const alreadyAlerted = useRef(false); //preventing double-alert in dev
+
+  //token check + reload after navigtion
+  useFocusEffect(
+    useCallback(() => {
+      const loadData = async () => {
+        try {
+          const token = await Storage.getItem("token");
+          if (!token) throw new Error("no token");
+
+          await findNumItems(token);
+        } catch (e) {
+          if (!alreadyAlerted.current) {
+            alreadyAlerted.current = true;
+            alert("Access denied, please log in and try again.");
+            router.replace("/");
+          }
+        }
+      };
+
+      loadData();
+    }, [])
+  );
+
+  //for "# inventory/wishlist items" lines; endpoint in inventory.js
+  const findNumItems = async (token: string) =>{
+    try {
+      const res = await fetch(
+        `${API_URL}/api/get-num-items`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Endpoint does not exist. Please try again later.`);
+        }
+        router.back();
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        router.back();
+        return;
+      }
+
+      const data = await res.json();
+
+      if(!data.empty){
+        console.log("inputting data");
+        setInventoryCount(data.iCount);
+        setWishlistCount(data.wCount);
+      }
+    }
+    catch(error) {
+      console.log("Error when trying to fetch folder counts:", error)
+    }
+  }
+
   const folders: Folder[] = [
-    { id: "1", name: "Inventory", count: 3 },
-    { id: "2", name: "Wishlist", count: 0 },
+    { id: "1", name: "Inventory", count: inventoryCount },
+    { id: "2", name: "Wishlist", count: wishlistCount },
   ];
 
   return (
