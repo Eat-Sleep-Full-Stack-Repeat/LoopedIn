@@ -372,7 +372,8 @@ export default function SingleProject() {
           ) : (
             <View style={{ alignItems: "center", justifyContent: "center" }}>
               <Feather name="image" size={40} color={colors.decorativeText} />
-              <Text style={styles.mainPhotoText}>Main image placeholder</Text>
+              <Text style={styles.mainPhotoText}>No pictures yet...</Text>
+              <Text style={styles.mainPhotoText}>Edit this project to add up to 5 pictures!</Text>
             </View>
           )}
         </View>
