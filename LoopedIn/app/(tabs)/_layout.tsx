@@ -1,14 +1,11 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { Entypo, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Tabs, router } from "expo-router";
+import { Tabs } from "expo-router";
 import {
   Pressable,
   View,
-  Text,
-  Image,
-  ImageSourcePropType,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -18,16 +15,18 @@ const ICONSIZE = 26;
 type IconProps = {
   name: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
   size: number;
+  label: string;
+  hint: string;
 };
 
 //array of objects for the nav bar icons
 const icons: Record<string, IconProps> = {
-  userProfile: { name: "account", size: ICONSIZE + 2 },
-  forumFeed: { name: "forum", size: ICONSIZE },
-  mystuff: { name: "bag-personal", size: ICONSIZE },
-  explore: { name: "home", size: ICONSIZE + 3 },
-  folderscreen: { name: "notebook", size: ICONSIZE },
-  index: { name: "cake", size: ICONSIZE },
+  userProfile: { name: "account", size: ICONSIZE + 2, label: "Profile", hint: "account page" },
+  forumFeed: { name: "forum", size: ICONSIZE, label: "Forums", hint: "forum feed" },
+  mystuff: { name: "bag-personal", size: ICONSIZE, label: "My Stuff", hint: "inventory and wishlist page" },
+  explore: { name: "home", size: ICONSIZE + 3, label: "Explore", hint: "posts feed" },
+  folderscreen: { name: "notebook", size: ICONSIZE, label: "Project Tracker", hint: "project folder page" },
+  index: { name: "cake", size: ICONSIZE, label: "Dev Screen yippee", hint: "this will be deleted page" },
 };
 
 // Bottom tab bar style
@@ -61,7 +60,11 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               if (!isFocused) navigation.navigate(route.name);
             }}
             style={{ alignItems: "center", flex: 1 }}
-            accessibilityState={isFocused ? { selected: true } : {}}
+            accessible={true}
+            accessibilityLabel={icons[route.name].label}
+            accessibilityHint={"Navigates to the " + icons[route.name].hint}
+            accessibilityState={isFocused ? { selected: true } : { selected: false }}
+            accessibilityRole={"menuitem"}
           >
             <View
               style={{

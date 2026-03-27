@@ -526,6 +526,10 @@ export default function ExplorePage() {
           <Pressable
             style={styles.postAction}
             onPress={() => handleLikePress(item)}
+            accessible={true}
+            accessibilityHint={"Likes a post"}
+            accessibilityState={item.isLiked? {checked: true} : {checked: false}}
+            accessibilityRole={"switch"}
           >
             <Image
               style={[
@@ -543,6 +547,9 @@ export default function ExplorePage() {
             <Pressable
               onPress={() => showComments(item)}
               style={{ alignItems: "center" }}
+              accessible={true}
+              accessibilityHint={"Opens comment feed on a post"}
+              accessibilityRole={"button"}
             >
               <Image
                 style={[styles.actionIcon, { tintColor: colors.text }]}
@@ -563,6 +570,10 @@ export default function ExplorePage() {
           <Pressable
             style={styles.postAction}
             onPress={() => handleSavePress(item)}
+            accessible={true}
+            accessibilityHint={"Saves a post"}
+            accessibilityState={item.isSaved? {checked: true} : {checked: false}}
+            accessibilityRole={"switch"}
           >
             <Image
               style={[
@@ -610,6 +621,10 @@ export default function ExplorePage() {
           <Pressable
             onPress={() => router.push("/exploreSearch")}
             style={{ marginHorizontal: 20 }}
+            accessible={true}
+            accessibilityLabel={"Search Bar"}
+            accessibilityHint={"Allows to search for specific content from the Explore page"}
+            accessibilityRole={"search"}
           >
             <View pointerEvents="none">
               <TextInput
@@ -626,6 +641,11 @@ export default function ExplorePage() {
               <Pressable
                 key={filterOption}
                 onPress={() => setSelectedFilter(filterOption)}
+                accessible={true}
+                accessibilityHint={filterOption == "All" ? "Shows all posts" : "Shows posts sorted by " + filterOption + " craft type"}
+                accessibilityRole={"tab"}
+                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
+
                 style={[
                   styles.filterTag,
                   selectedFilter === filterOption && styles.filterTagSelected,
