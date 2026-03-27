@@ -570,7 +570,10 @@ export default function FolderScreen() {
               params: { id: item.id },
             })
           }
-          style={{ alignItems: "center" }}
+          style={{ width: "100%", alignItems: "center" }}
+          accessible={true}
+          accessibilityHint={"Navigates inside the " + item.name + " folder, allowing to view projects within."}
+          accessibilityRole={"button"}
         >
           <Image source={item.icon} style={styles.icon} />
           <Text style={styles.folderName}>{item.name}</Text>
@@ -583,6 +586,10 @@ export default function FolderScreen() {
             setFolderName(item.name);
             setSelectedIcon(item.icon);
           }}
+          accessible={true}
+          accessibilityHint={"Navigates to the edit " + item.name + " project folder screen. Click to edit "+ item.name + " project folder."}
+          accessibilityRole={"button"}
+          style={{width: "100%", alignItems: "center"}}
         >
           <Text style={styles.editText}>Edit</Text>
         </Pressable>
@@ -609,9 +616,12 @@ export default function FolderScreen() {
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
+            accessible={true}
+            accessibilityHint={"Allows to search for specific folders from the Project Folder page"}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}>
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+            >
               <Feather name="x" size={16} color="#888" />
             </Pressable>
           )}
@@ -690,6 +700,10 @@ export default function FolderScreen() {
       {/* FAB */}
       <Pressable
         style={[styles.fab, { bottom: insets.bottom }]}
+        accessible={true}
+        accessibilityLabel={"Create Project Folder"}
+        accessibilityHint={"Navigates to the create project folder screen. Click to create project folder."}
+        accessibilityRole={"button"}
         onPress={() => {
           setCreateOpen(true);
           setSelectedIcon(require("@/assets/images/misc.png"));
@@ -738,6 +752,10 @@ export default function FolderScreen() {
                     selectedIcon === item.icon && styles.iconSelected,
                   ]}
                   onPress={() => setSelectedIcon(item.icon)}
+                  accessible={true}
+                  accessibilityHint={"Selects " + item.label + " as Project Folder craft type."}
+                  accessibilityRole={"button"}
+                  accessibilityState={selectedIcon === item.icon ? {selected: true} : {selected: false}}
                 >
                   <Image source={item.icon} style={styles.choiceIcon} />
                   <Text style={styles.choiceText}>{item.label}</Text>
@@ -748,6 +766,9 @@ export default function FolderScreen() {
             <View style={styles.modalRow}>
               <Pressable
                 style={styles.cancelBtn}
+                accessible={true}
+                accessibilityHint={"Exits the Create Project Folder Screen."}
+                accessibilityRole={"button"}
                 onPress={() => {
                   setCreateOpen(false);
                   setEditingFolder(null);
@@ -761,6 +782,9 @@ export default function FolderScreen() {
                 style={styles.createBtn}
                 onPress={editingFolder ? saveRename : createFolder}
                 disabled={createOrSaving}
+                accessible={true}
+                accessibilityHint={"Creates a Project Folder"}
+                accessibilityRole={"button"}
               >
                 <Text style={{ color: "#fff" }}>
                   {createOrSaving ? "Please Wait..." : (editingFolder ? "Save" : "Create →")}
