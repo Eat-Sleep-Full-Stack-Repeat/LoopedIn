@@ -192,5 +192,63 @@ router.get("/get-i-items", authenticateToken, async (req, res) => {
   }
 });
 
+//------------------------ shared b/w inv & wishlist -------------------------------
+router.get("/get-num-items", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim();
+    let inventoryCount = 0;
+    let wishlistCount = 0;
+
+    //first, get inventory numbers
+    const query_i = `
+        SELECT i.fld_num_items
+        FROM inventory.tbl_inventory_item as i
+            LEFT OUTER JOIN folders.tbl_folder as f
+            ON i.fld_i_folder_fk = f.fld_folder_pk
+        WHERE fld_type = 'I' AND f.fld_creator = $1
+        ORDER BY i.fld_item_pk;
+        `;
+
+    const returnFeed = await pool.query(query_i, [curr_user]);
+
+    //add up all the individual counts
+    if (returnFeed.rowCount !== 0) {
+//      console.log("summing inv!");
+      for(let i = 0; i < returnFeed.rowCount; i++){
+        inventoryCount += returnFeed.rows[i].fld_num_items;
+      }
+//      console.log("sum is", inventoryCount);
+    }
+
+    //next, get wishlist numbers
+    const query_w = `
+        SELECT w.fld_num_items
+        FROM wishlist.tbl_wishlist_item as w
+            LEFT OUTER JOIN folders.tbl_folder as f
+            ON w.fld_w_folder_fk = f.fld_folder_pk
+        WHERE fld_type = 'W' AND f.fld_creator = $1
+        ORDER BY w.fld_item_pk;
+        `;
+
+    const returnFeed2 = await pool.query(query_w, [curr_user]);
+
+    //add up all the individual counts
+    if (returnFeed2.rowCount !== 0) {
+//      console.log("summing wishlist!");
+      for(let i = 0; i < returnFeed2.rowCount; i++){
+        wishlistCount += returnFeed2.rows[i].fld_num_items;
+      }
+//      console.log("sum is", wishlistCount);
+    }
+
+    res.status(200).json({iCount: inventoryCount, wCount: wishlistCount});
+    return;
+
+  } catch (error) {
+    console.log("[Inventory]: Server error:", error);
+    res.status(500).json(error);
+  }
+});
+
 
 module.exports = router;

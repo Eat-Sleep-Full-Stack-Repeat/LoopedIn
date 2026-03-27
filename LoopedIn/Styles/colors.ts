@@ -1,53 +1,73 @@
 export const Colors = {
-  warning: "red",
+warning: "red",
 
-  dark: {
-    text: "#FFFFFF",
-    decorativeText: "#FFFFFF",
-    decorativeBackground: "#B57C2B",
-    topBackground: "#87617C",
-    background: "#000000",
-    boxBackground: "#9C7C93",
-    welcomeText: "#87617C",
-    linkText: "#4753FF",
-    settingsText: "#F9F7F5",
-    settingsMenuText: "#F9F7F5",
-    warning: "#FF7F7F",
+dark: {
+text: "#FFFFFF",
+decorativeText: "#FFFFFF",
+decorativeBackground: "#D9B4FE",
+topBackground: "#5D5D5D",
+background: "#2D2C2E",
+boxBackground: "#5D5D5D",
+welcomeText: "#87617C",
+linkText: "#4753FF",
+settingsText: "#E4E4E4",
+settingsMenuText: "#E4E4E4",
+warning: "#FF7F7F",
 
-    // 🌙 Explore-specific (dark)
-    exploreBackground: "#1A1A1A",
-    exploreCardBackground: "#2C2C2C",
-    exploreBorder: "#444444",
-    exploreFilterSelected: "#B57C2B",
+//  Explore-specific (updated)
+exploreBackground: "#2D2C2E",
+exploreCardBackground: "#5D5D5D",
+exploreBorder: "#5D5D5D",
+exploreFilterSelected: "#D9B4FE",
 
-    //disabled block button colors; really can just use this for any disabled button lol
-    //disabled buttons don't need to follow color contrast requirements per WCAG requirements
-    blockedBackground: "#515151ff",
-    blockedText: "#9c9c9cff"
-  },
+// Disabled / blocked
+blockedBackground: "#474747",
+blockedText: "#939393",
 
-  light: {
-    text: "#000000",
-    decorativeText: "#C1521E",
-    decorativeBackground: "#F7B557",
-    topBackground: "#E0D5DD",
-    background: "#F8F2E5",
-    boxBackground: "#F8F2E5",
-    welcomeText: "#C296B6",
-    linkText: "blue",
-    settingsText: "rgba(0,0,0,0.45)",
-    settingsMenuText: "#111827",
-    warning: "#B91C1C",
+// NEW TOKENS
+activeContainer: "#D3D3D3",
+disabledButton: "#5D5D5D",
+disabledButtonText: "#B7B7B7",
+cancel: "#FF5A5A",
+enabledCraftButton: "#5D5D5D",
+inputContainer: "#5D5D5D",
+inputContainerPlaceholderText: "#E4E4E4",
+searchBarContainer: "#5D5D5D",
+searchBarContainerPlaceholderText: "#E4E4E4",
+},
 
-    // 🌞 Explore-specific (light)
-    exploreBackground: "#F7F2E7",
-    exploreCardBackground: "#FFFFFF",
-    exploreBorder: "#E0E0E0",
-    exploreFilterSelected: "#F4B860",
+light: {
+text: "#000000",
+decorativeText: "#000000",
+decorativeBackground: "#B062FF",
+topBackground: "#FFFFFF",
+background: "#EFEFEF",
+boxBackground: "#FFFFFF",
+welcomeText: "#C296B6",
+linkText: "blue",
+settingsText: "#929292",
+settingsMenuText: "#111827",
+warning: "#B91C1C",
 
-    //disabled block button colors; really can just use this for any disabled button lol
-    //disabled buttons don't need to follow color contrast requirements per WCAG requirements
-    blockedBackground: "#bbbbbbff",
-    blockedText: "#6e6e6eff"
-  },
+// Explore-specific (updated)
+exploreBackground: "#EFEFEF",
+exploreCardBackground: "#FFFFFF",
+exploreBorder: "#FFFFFF",
+exploreFilterSelected: "#B062FF",
+
+// Disabled / blocked
+blockedBackground: "#D9D9D9",
+blockedText: "#929292",
+
+// NEW TOKENS
+activeContainer: "#444444",
+disabledButton: "#D9D9D9",
+disabledButtonText: "#929292",
+cancel: "#DB0000",
+enabledCraftButton: "#FFFFFF",
+inputContainer: "#D9D9D9",
+inputContainerPlaceholderText: "#444444",
+searchBarContainer: "#FFFFFF",
+searchBarContainerPlaceholderText: "#8F8F8F",
+},
 };

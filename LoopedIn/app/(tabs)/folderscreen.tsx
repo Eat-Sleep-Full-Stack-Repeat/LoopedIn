@@ -415,7 +415,7 @@ export default function FolderScreen() {
     setFolders((prev) => prev.filter((f) => f.id !== editingFolder.id));
     setEditingFolder(null);
 
-    alert("Forum post successfully deleted!");
+    alert("Empty folder successfully deleted!");
   };
 
   const renameFolder = async () => {
@@ -461,7 +461,7 @@ export default function FolderScreen() {
         return;
       }
 
-      alert("Forum post successfully saved!");
+      alert("Folder successfully renamed!");
     } catch (error) {
       alert("Server error. Please try again later.");
       console.log("Error editing post:", error);
@@ -558,18 +558,24 @@ export default function FolderScreen() {
     }
     };
 
+  const enterFolder = async (fid) => {
+    //save folderID in local storage
+    await Storage.setItem('folderID', fid);
+
+    //move
+    router.push({
+      pathname: "/trackerFolder/[id]",
+      params: { id: fid },
+    })
+  }
+
   /* ---------------- render component ---------------- */
   //need component to render folder items one by one
   const renderFolder = useCallback(
     ({ item }: { item: Folder }) => (
       <View style={styles.folderCard}>
         <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/trackerFolder/[id]",
-              params: { id: item.id },
-            })
-          }
+          onPress={() => enterFolder(item.id)}
           style={{ width: "100%", alignItems: "center" }}
           accessible={true}
           accessibilityHint={"Navigates inside the " + item.name + " folder, allowing to view projects within."}
