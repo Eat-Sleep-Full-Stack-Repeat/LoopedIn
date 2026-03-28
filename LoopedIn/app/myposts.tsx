@@ -277,8 +277,12 @@ export default function MyPosts() {
             </View>
           </Pressable>
 
-          <TouchableOpacity onPress={() => openMenu(parseInt(item.id))}>
-            <Entypo name="dots-three-vertical" size={18} color={colors.text} />
+          <TouchableOpacity onPress={() => openMenu(parseInt(item.id))}
+            accessible={true}
+            accessibilityLabel={"Forum Post Menu"}
+            accessibilityHint={"Double tap to edit or delete this forum post"}
+            accessibilityRole={"button"}>
+            <Entypo name="dots-three-vertical" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -289,6 +293,9 @@ export default function MyPosts() {
               params: { id: item.id },
             })
           }
+          accessibilityLabel={"Forum title: " + item.header}
+          accessibilityHint={"Double tap to read more about this forum post."}
+          accessibilityRole={"button"}
         >
           <Text style={[styles.postTitle, { color: colors.text }]}>
             {item.header}
@@ -478,6 +485,14 @@ export default function MyPosts() {
     menuText: {
       fontSize: 16,
     },
+    cancelBtn: {
+      marginTop: 10,
+      padding: 8,
+      backgroundColor: colors.blockedBackground,
+      borderRadius: 12,
+      width: "100%",
+      alignItems: "center",
+    },
   });
 
   return (
@@ -492,10 +507,16 @@ export default function MyPosts() {
       >
         <GestureHandlerRootView style={styles.scrollContent}>
           <View style={styles.header}>
-            <Pressable onPress={router.back} hitSlop={10}>
+            <Pressable onPress={router.back} hitSlop={10}
+                accessible={true}
+                accessibilityLabel={"Go Back"}
+                accessibilityHint={"Navigates back to the previous page."}
+                accessibilityRole={"button"}>
               <Feather name="arrow-left" size={24} color={colors.text} />
             </Pressable>
-            <Text style={[styles.pageTitle, { color: colors.text }]}>
+            <Text style={[styles.pageTitle, { color: colors.text }]}
+              accessible={true}
+              accessibilityRole={"header"}>
               My Posts
             </Text>
             <View style={{ height: 10 }} />
@@ -582,7 +603,11 @@ export default function MyPosts() {
             },
           ]}
           onPress={handleCreatePost}
-        >
+          accessible={true}
+          accessibilityLabel={"Create Forum Post"}
+          accessibilityHint={"Navigates to the create forum post screen. Click to create a forum post."}
+          accessibilityRole={"button"}>
+
           <Feather name="plus" size={28} color={colors.decorativeText} />
         </Pressable>
 
@@ -597,6 +622,7 @@ export default function MyPosts() {
             style={styles.modalOverlay}
             activeOpacity={1}
             onPressOut={() => setMenuVisible(false)}
+            accessible={false}
           >
             <View
               style={[
@@ -604,7 +630,10 @@ export default function MyPosts() {
                 { backgroundColor: colors.exploreCardBackground },
               ]}
             >
-              <TouchableOpacity onPress={handleEdit} style={styles.menuOption}>
+              <TouchableOpacity onPress={handleEdit} style={styles.menuOption}
+                accessible={true}
+                accessibilityLabel={"Edit"}
+                accessibilityHint={"Navigates to the edit forum post screen. Double tap to edit this forum post."}>
                 <Feather name="edit" size={18} color={colors.text} />
                 <Text style={[styles.menuText, { color: colors.text }]}>
                   Edit
@@ -614,11 +643,23 @@ export default function MyPosts() {
               <TouchableOpacity
                 onPress={handleDelete}
                 style={styles.menuOption}
-              >
+                accessible={true}
+                accessibilityLabel={"Delete"}
+                accessibilityHint={"Double tap to delete this forum post."}>
                 <Feather name="trash-2" size={18} color={colors.warning} />
                 <Text style={[styles.menuText, { color: colors.warning }]}>
                   Delete
                 </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setMenuVisible(false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Close menu"
+                accessibilityHint="Double tap to exit forum post menu"
+                style={styles.cancelBtn}
+              >
+                <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>

@@ -372,15 +372,25 @@ export default function EditForum() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}
+            accessible={true}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
-          <Text style={styles.title}>Edit Forum Post</Text>
+          <Text style={styles.title}
+            accessible={true}
+            accessibilityRole={"header"}
+          >Edit Forum Post</Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Associated Craft</Text>
-          <View style={styles.lockedCraftCard}>
+          <View style={styles.lockedCraftCard}
+            accessible={true}
+            accessibilityLabel={"Locked Craft Type: " + lockedCraft?.label}
+            accessibilityHint={"Craft Type cannot be swapped."}>
             {lockedCraft?.icon ? (
               <View style={styles.craftIconWrapper}>
                 <Image
@@ -405,7 +415,10 @@ export default function EditForum() {
         <View style={styles.section}>
           <View style={styles.sectionLabelRow}>
             <Text style={styles.inputLabel}>Title</Text>
-            <Text style={styles.characterCounter}>{`${postTitle.length}/150`}</Text>
+            <Text style={styles.characterCounter}
+              accessible={true}
+              accessibilityLabel={`${postTitle.length} out of 150 characters are used.`}
+            >{`${postTitle.length}/150`}</Text>
           </View>
           <TextInput
             value={postTitle}
@@ -421,7 +434,10 @@ export default function EditForum() {
         <View style={styles.section}>
           <View style={styles.sectionLabelRow}>
             <Text style={styles.inputLabel}>Content</Text>
-            <Text style={styles.characterCounter}>{`${postContent.length}/10000`}</Text>
+            <Text style={styles.characterCounter}
+              accessible={true}
+              accessibilityLabel={`${postContent.length} out of 10000 characters are used.`}
+            >{`${postContent.length}/10000`}</Text>
           </View>
           <TextInput
             value={postContent}
@@ -434,33 +450,9 @@ export default function EditForum() {
           />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Attached Files</Text>
-          {attachments.length ? (
-            <View style={styles.attachmentList}>
-              {attachments.map((file) => (
-                <View key={file.id} style={styles.attachmentCard}>
-                  {file.type === "image" && file.thumbnail ? (
-                    <Image
-                      source={file.thumbnail}
-                      style={styles.attachmentThumb}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Text style={styles.characterCounter}>File</Text>
-                  )}
-                  <Text style={styles.attachmentName} numberOfLines={1}>
-                    {file.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.characterCounter}>No attachments added.</Text>
-          )}
-        </View>
-
-        <Pressable style={styles.saveButton} disabled={savedChanges} onPress={saveChangedHandler}>
+        <Pressable style={styles.saveButton} disabled={savedChanges} onPress={saveChangedHandler}
+          accessible={true}
+          accessibilityHint={"Save edits to forum post"}>
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </Pressable>
       </ScrollView>

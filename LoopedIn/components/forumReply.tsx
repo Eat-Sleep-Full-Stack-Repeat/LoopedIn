@@ -234,10 +234,18 @@ const ForumReplyModal = ({
             autoFocus={true}
           />
           <View style={{justifyContent: "flex-end", gap: 10, flexDirection: "row"}}>
-            <Pressable onPress={handleCancel} style={styles.button}>
+            <Pressable onPress={handleCancel} style={styles.button}
+              accessible={true}
+              accessibilityLabel={"Cancel"}
+              accessibilityHint={"double tap to cancel reply"}
+              accessibilityRole={"button"}>
                 <Text style={{color: colors.warning}}> Cancel </Text>
             </Pressable>
-            <Pressable onPress={handlePost} style={styles.button}>
+            <Pressable onPress={handlePost} style={styles.button}
+              accessible={true}
+              accessibilityLabel={"Post"}
+              accessibilityHint={"double tap to post reply"}
+              accessibilityRole={"button"}>
                 <Text style={{color: "black"}}>Post →</Text>
             </Pressable>
           </View>

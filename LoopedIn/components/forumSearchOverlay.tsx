@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -205,7 +205,8 @@ const handleSearch = async (fresh = false) => {
       pointerEvents={visible ? "auto" : "none"}
     >
       {/* Backdrop */}
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}
+        accessible={false}>
         <Animated.View
           style={[
             styles.backdrop,
@@ -229,10 +230,19 @@ const handleSearch = async (fresh = false) => {
           {/* Header */}
           <View style={styles.header}>
             <Pressable   onPress={onClose}
+                accessible={true}
+                accessibilityLabel={"Exit"}
+                accessibilityHint={"double tap to exit out of comment section"}
+                accessibilityRole={"button"}
                 style={{ padding: 6 }}>
               <Feather name="x" size={26} color={colors.text} />
             </Pressable>
-            <Text style={[styles.headerText, { color: colors.text }]}>Search</Text>
+            <Text style={[styles.headerText, { color: colors.text }]}
+              accessible={true}
+              accessibilityLabel={"Search"}
+              accessibilityRole={"header"}>
+              Search
+            </Text>
           </View>
 
           {/* Input row */}
@@ -253,7 +263,11 @@ const handleSearch = async (fresh = false) => {
               onSubmitEditing={() => handleSearch(true)}
               returnKeyType="search"
             />
-            <Pressable onPress={() => handleSearch(true)} style={styles.iconButton}>
+            <Pressable onPress={() => handleSearch(true)} style={styles.iconButton}
+              accessible={true}
+              accessibilityLabel={"Search"}
+              accessibilityHint={"double tap to enter search query"}
+              accessibilityRole={"button"}>
               <Feather name="search" size={22} color={colors.decorativeText} />
             </Pressable>
           </View>
@@ -277,6 +291,11 @@ const handleSearch = async (fresh = false) => {
                         : colors.boxBackground,
                     },
                   ]}
+                  accessible={true}
+                  accessibilityHint={"Searches forum posts by " + type}
+                  accessibilityRole={"tab"}
+                  accessibilityState={active ? {selected: true} : {selected: false}}
+
                 >
                   <Text
                     style={{

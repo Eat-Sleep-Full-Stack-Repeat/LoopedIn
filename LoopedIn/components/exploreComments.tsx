@@ -419,7 +419,9 @@ const ExploreCommentsModal = ({
     <View style={styles.individualCommentContainer}>
       <View style={styles.topComments}>
         <View style={styles.userInfoHeader}>
-          <Pressable onPress={() => profilePress(item)}>
+          <Pressable onPress={() => profilePress(item)}
+            accessible={true}
+            accessibilityHint={"Double tap to view " + item.username + " profile"}>
             {item.profilepic ? (
               <Image
                 source={{ uri: item.profilepic }}
@@ -446,7 +448,9 @@ const ExploreCommentsModal = ({
           </Pressable>
           <View style={styles.userInfo}>
             <View style={{ flexDirection: "row", gap: 5 }}>
-              <Pressable onPress={() => profilePress(item)}>
+              <Pressable onPress={() => profilePress(item)}
+                  accessible={true}
+                  accessibilityHint={"Double tap to view " + item.username + " profile"}>
                 <Text style={{ color: colors.text }}>{item.username}</Text>
               </Pressable>
               {postCreator === Number(item.commenterid) && (
@@ -462,7 +466,11 @@ const ExploreCommentsModal = ({
           </View>
         </View>
         {currentUser.current === item.commenterid ? (
-          <Pressable onPress={() => checkDeleteComment(item.id)}>
+          <Pressable onPress={() => checkDeleteComment(item.id)}
+            accessible={true}
+            accessibilityLabel={"Delete"}
+            accessibilityHint={"double tap to delete reply"}
+            accessibilityRole={"button"}>
             <Ionicons name="trash-outline" size={24} color={colors.text} />
           </Pressable>
         ) : null}
@@ -501,7 +509,11 @@ const ExploreCommentsModal = ({
                 width: "100%",
               }}
             >
-              <Pressable onPress={handleCloseComments}>
+              <Pressable onPress={handleCloseComments}
+                accessible={true}
+                accessibilityLabel={"Exit"}
+                accessibilityHint={"double tap to exit out of comment section"}
+                accessibilityRole={"button"}>
                 <AntDesign
                   name="close"
                   size={24}
@@ -510,7 +522,11 @@ const ExploreCommentsModal = ({
                 />
               </Pressable>
             </View>
-            <Text style={styles.commentsHeading}>Comments</Text>
+            <Text style={styles.commentsHeading}
+              accessible={true}
+              accessibilityRole={"header"}>
+              Comments
+            </Text>
             <View style={{ flex: 1, width: "100%" }}>
               <FlatList
                 data={Comments}
@@ -569,6 +585,10 @@ const ExploreCommentsModal = ({
               <Pressable
                 onPress={() => postComment(commentValue)}
                 style={{ marginBottom: 20, marginLeft: 5, marginRight: 5 }}
+                accessible={true}
+                accessibilityLabel={"Post"}
+                accessibilityHint={"double tap to post reply"}
+                accessibilityRole={"button"}
               >
                 <MaterialCommunityIcons
                   name="send-circle-outline"
@@ -620,6 +640,9 @@ const ExploreCommentsModal = ({
                 >
                   <Pressable
                     onPress={handleDeleteComment}
+                    accessible={true}
+                    accessibilityHint={"double tap to delete reply"}
+                    accessibilityRole={"button"}
                     style={{
                       backgroundColor: colors.exploreCardBackground,
                       padding: 10,
@@ -640,7 +663,11 @@ const ExploreCommentsModal = ({
                     onPress={() => {
                       setDisplayCheckDelete(false);
                       commentIDToDelete.current = null;
+                      
                     }}
+                    accessible={true}
+                    accessibilityHint={"double tap to cancel reply deletion"}
+                    accessibilityRole={"button"}
                     style={{
                       backgroundColor: colors.exploreCardBackground,
                       padding: 10,

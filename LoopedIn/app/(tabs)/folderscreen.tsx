@@ -558,7 +558,7 @@ export default function FolderScreen() {
     }
     };
 
-  const enterFolder = async (fid) => {
+  const enterFolder = async (fid: string) => {
     //save folderID in local storage
     await Storage.setItem('folderID', fid);
 
@@ -593,7 +593,7 @@ export default function FolderScreen() {
             setSelectedIcon(item.icon);
           }}
           accessible={true}
-          accessibilityHint={"Navigates to the edit " + item.name + " project folder screen. Click to edit "+ item.name + " project folder."}
+          accessibilityHint={"Navigates to the edit project folder screen. Click to edit "+ item.name + " project folder."}
           accessibilityRole={"button"}
           style={{width: "100%", alignItems: "center"}}
         >
@@ -608,7 +608,10 @@ export default function FolderScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Text style={styles.title}>My Folders</Text>
+        <Text style={styles.title}
+          accessible={true}
+          accessibilityRole={"header"}
+        >My Folders</Text>
 
         {/* search */}
         <View style={styles.searchBar}>
@@ -799,7 +802,11 @@ export default function FolderScreen() {
             </View>
 
             {editingFolder && (
-              <Pressable onPress={deleteFolder}>
+              <Pressable onPress={deleteFolder}
+                accessible={true}
+                accessibilityHint={"Deletes " + editingFolder.name + " project folder."}
+                accessibilityRole={"button"}
+                >
                 <Text style={styles.deleteText}>Delete folder</Text>
               </Pressable>
             )}

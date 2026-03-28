@@ -8,18 +8,16 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
-  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "expo-router";
 // FIXME remove the following import once backend is set up
 import mockUser from "../mockData";
 import ForumPostView from "@/components/forumPost";
 import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
-import { router } from "expo-router";
 import {
   GestureHandlerRootView,
   RefreshControl,
@@ -440,23 +438,34 @@ export default function ForumFeed() {
           <Pressable
             style={styles.searchIcon}
             onPress={() => router.push("/myposts")}
+            accessible={true}
+            accessibilityLabel={"My Posts"}
+            accessibilityRole={"button"}
+            accessibilityHint={"Navigates to the page to view all your forum posts."}
           >
             <Feather name="user" size={24} color={colors.text} />
-            <Text style={styles.searchText}> My Posts </Text>
+            <Text style={styles.searchText}>My Posts</Text>
           </Pressable>
         </View>
         {/* Search icon section */}
         <View style={styles.searchBar}>
-          <Pressable style={styles.searchIcon} onPress={searchFunctionality}>
+          <Pressable style={styles.searchIcon} onPress={searchFunctionality}
+            accessible={true}
+            accessibilityLabel={"Search"}
+            accessibilityRole={"button"}
+            accessibilityHint={"Navigates to the forum posts search bar. Double tap to search all forum posts."}>
             <Feather name="search" size={24} color={colors.text} />
-            <Text style={styles.searchText}> Search </Text>
+            <Text style={styles.searchText}>Search</Text>
           </Pressable>
         </View>
       </View>
 
       {/* Forum title */}
       <View style={styles.title}>
-        <Text style={styles.titleText}> Forum </Text>
+        <Text style={styles.titleText}
+          accessible={true}
+          accessibilityRole={"header"}  
+        > Forum </Text>
       </View>
 
       {/* Refine by craft section */}
@@ -469,6 +478,10 @@ export default function ForumFeed() {
               <Pressable
                 key={filterOption}
                 onPress={() => setFilter(filterOption)}
+                accessible={true}
+                accessibilityHint={filterOption == "All" ? "Shows all forum posts" : "Shows forum posts sorted by " + filterOption + " craft type"}
+                accessibilityRole={"tab"}
+                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
                 style={[
                   styles.buttonBase,
                   filterOption === selectedFilter
@@ -495,7 +508,11 @@ export default function ForumFeed() {
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
           <Text style={styles.refineHeaderText}> Saved Posts </Text>
-          <Pressable onPress={() => handleSeeMorePress("saved")}>
+          <Pressable onPress={() => handleSeeMorePress("saved")}
+            accessible={true}
+            accessibilityLabel={"See More"}
+            accessibilityRole={"button"}
+            accessibilityHint={"Navigates to the page to view all saved posts."}>
             <Text style={{ color: colors.text }}>See More {">"}</Text>
           </Pressable>
         </View>
@@ -615,7 +632,11 @@ export default function ForumFeed() {
           }
         />
 
-        <Pressable style={styles.floatingButton} onPress={handleCreatePost}>
+        <Pressable style={styles.floatingButton} onPress={handleCreatePost}
+          accessible={true}
+          accessibilityLabel={"Create Forum Post"}
+          accessibilityHint={"Navigates to the create forum post screen. Double tap to create a forum post."}
+          accessibilityRole={"button"}>
           <Feather name="plus" size={28} color={colors.decorativeText} />
         </Pressable>
 

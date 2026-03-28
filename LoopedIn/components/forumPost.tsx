@@ -131,7 +131,11 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   });
 
   return (
-    <Pressable onPress={forumPressed}>
+    <Pressable onPress={forumPressed}
+      accessible={true}
+      //have to limit it in some way or it will read out the entire forum post lol
+      accessibilityLabel={"Forum title: " + postInfo.title + " posted by " + postInfo.username}
+      accessibilityHint={"Double tap to read more about this forum post."}>
       <View style={styles.forumPost}>
         <View
           style={{
@@ -141,7 +145,9 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
           }}
         >
           <View style={styles.topForumPost}>
-            <Pressable onPress={profilePress}>
+            <Pressable onPress={profilePress}
+              accessible={true}
+              accessibilityHint={"Double tap to view " + postInfo.username + " profile"}>
               {postInfo.profilePic ? (
                 <Image source={{ uri: postInfo.profilePic}} style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2, backgroundColor: colors.boxBackground }}/>
               ):(
@@ -162,7 +168,9 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
               >
                 {postInfo.title}
               </Text>
-              <Pressable onPress={profilePress}>
+              <Pressable onPress={profilePress}
+                accessible={true}
+                accessibilityHint={"Double tap to view " + postInfo.username + " profile"}>
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"

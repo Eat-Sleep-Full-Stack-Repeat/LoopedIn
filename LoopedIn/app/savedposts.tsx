@@ -313,7 +313,9 @@ export default function ForumFeed() {
   const headerView = () => (
     <View>
       {/* Forum title */}
-      <View style={styles.title}>
+      <View style={styles.title} 
+        accessible={true}
+        accessibilityRole={"header"}>
         <Text style={styles.titleText}> Saved Posts </Text>
       </View>
 
@@ -333,6 +335,10 @@ export default function ForumFeed() {
                     ? styles.buttonPressed
                     : styles.buttonNotPressed,
                 ]}
+                accessible={true}
+                accessibilityHint={filterOption == "All" ? "Shows all forum posts" : "Shows forum posts sorted by " + filterOption + " craft type"}
+                accessibilityRole={"tab"}
+                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
               >
                 <Text
                   style={[
@@ -362,7 +368,11 @@ export default function ForumFeed() {
     <GestureHandlerRootView>
       <View style={styles.container}>
         {/* back button */}
-        <Pressable style={styles.backFab} onPress={() => router.back()}>
+        <Pressable style={styles.backFab} onPress={() => router.back()}
+          accessible={true}
+          accessibilityLabel={"Go Back"}
+          accessibilityHint={"Navigates back to the previous page."}
+          accessibilityRole={"button"}>
           <Feather name="chevron-left" size={22} color={colors.text} />
         </Pressable>
         <FlatList

@@ -463,6 +463,8 @@ export default function ExplorePage() {
               params: { id: item.userID },
             })
           }
+          accessible={true}
+          accessibilityHint={"Double tap to view " + item.username + " profile"}
         >
           <Image
             style={styles.profilePic}
@@ -482,6 +484,9 @@ export default function ExplorePage() {
               params: { id: item.id },
             })
           }
+          accessible={true}
+          accessibilityHint={"Double tap to read more about this explore post."}
+
         >
           <Image
             style={[styles.postImage, { height: imageHeight }]}
@@ -527,9 +532,10 @@ export default function ExplorePage() {
             style={styles.postAction}
             onPress={() => handleLikePress(item)}
             accessible={true}
-            accessibilityHint={"Likes a post"}
+            accessibilityLabel={"Like"}
+            accessibilityHint={item.isLiked? "double tap to unlike the post" : "double tap to like this post"}
             accessibilityState={item.isLiked? {checked: true} : {checked: false}}
-            accessibilityRole={"switch"}
+            accessibilityRole={"button"}
           >
             <Image
               style={[
@@ -548,7 +554,8 @@ export default function ExplorePage() {
               onPress={() => showComments(item)}
               style={{ alignItems: "center" }}
               accessible={true}
-              accessibilityHint={"Opens comment feed on a post"}
+              accessibilityLabel={"Comment feed"}
+              accessibilityHint={"Double tap to open comment section on this post"}
               accessibilityRole={"button"}
             >
               <Image
@@ -571,9 +578,10 @@ export default function ExplorePage() {
             style={styles.postAction}
             onPress={() => handleSavePress(item)}
             accessible={true}
-            accessibilityHint={"Saves a post"}
+            accessibilityLabel={"Save"}
+            accessibilityHint={item.isSaved? "double tap to unsave this post" : "double tap to save this post"}
             accessibilityState={item.isSaved? {checked: true} : {checked: false}}
-            accessibilityRole={"switch"}
+            accessibilityRole={"button"}
           >
             <Image
               style={[
@@ -616,13 +624,15 @@ export default function ExplorePage() {
 
       <View style={styles.container}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Text style={styles.pageTitle}>Explore</Text>
+          <Text style={styles.pageTitle}
+            accessible={true}
+            accessibilityRole={"header"}  
+          >Explore</Text>
 
           <Pressable
             onPress={() => router.push("/exploreSearch")}
             style={{ marginHorizontal: 20 }}
             accessible={true}
-            accessibilityLabel={"Search Bar"}
             accessibilityHint={"Allows to search for specific content from the Explore page"}
             accessibilityRole={"search"}
           >

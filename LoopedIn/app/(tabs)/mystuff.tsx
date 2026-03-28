@@ -116,7 +116,10 @@ export default function MyStuffScreen() {
         { backgroundColor: colors.background, paddingTop: insets.top + 20 },
       ]}
     >
-      <Text style={[styles.title, { color: colors.text }]}>My Stuff</Text>
+      <Text style={[styles.title, { color: colors.text }]}
+        accessible={true}
+        accessibilityRole={"header"}      
+      >My Stuff</Text>
 
       {/* Folder Cards */}
       {folders.map((folder) => (
@@ -139,6 +142,8 @@ export default function MyStuffScreen() {
               borderColor: colors.topBackground,
             },
           ]}
+          accessible={true}
+          accessibilityHint={"Click to view all " + folder.name + " items."}
         >
           <Image
             source={
