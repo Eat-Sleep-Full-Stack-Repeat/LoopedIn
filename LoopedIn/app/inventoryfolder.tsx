@@ -583,7 +583,12 @@ export default function SingleFolderScreen() {
 
       if (!regex.test(newCount)) {
         //The entered quantity is not a digit
-        alert("The second input must contain numerical data only");
+        alert("Please enter a whole number for quantity");
+        return;
+      }
+
+      if (Number(newCount) > 999) {
+        alert("Quantity must not exceed 999");
         return;
       }
 
@@ -974,6 +979,7 @@ export default function SingleFolderScreen() {
                       value={editedItemCount}
                       onChangeText={setEditedItemCount}
                       placeholder="Quantity"
+                      maxLength={3}
                       placeholderTextColor={colors.settingsText}
                       style={[
                         styles.renameItemInput,
