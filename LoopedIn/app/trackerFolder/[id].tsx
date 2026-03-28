@@ -500,26 +500,54 @@ export default function TrackerFolderView() {
     deleteText: {
       color: colors.warning,
     },
+    cancelBtn: {
+      marginTop: 10,
+      padding: 8,
+      backgroundColor: colors.blockedBackground,
+      borderRadius: 12,
+      width: "100%",
+      alignItems: "center",
+    },
   });
 
   return (
     <View style={styles.container}>
       {/* Back Button + Search Bar Icon */}
       <View style={styles.headerBox}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable style={styles.backButton} onPress={() => router.back()}
+          accessible={true}
+          accessibilityLabel={"Go Back"}
+          accessibilityHint={"Navigates back to the previous page."}
+          accessibilityRole={"button"}>
           <Feather name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Feather name="search" size={24} color={colors.text} />
+        <Pressable
+          accessible={true}
+          accessibilityLabel={"Search"}
+          accessibilityRole={"button"}
+          accessibilityHint={"Allows to search for projects within this folder."}>
+          <Feather name="search" size={24} color={colors.text} />
+        </Pressable>
       </View>
 
       {/*Folder Name title*/}
-      <View style={styles.folderName}>
+      <View style={styles.folderName}
+          accessible={true}
+          accessibilityHint={"Project folder name."}
+          accessibilityRole={"header"}>
         <Text style={styles.titleText}>{folder?.name}</Text>
       </View>
 
       {/* Filter options -> not started, in progress, completed */}
       <View style={styles.projectFiltersBar}>
-        <Pressable onPress={() => updateFilters("Not Started")}>
+        <Pressable onPress={() => updateFilters("Not Started")}
+            accessible={true}
+            accessibilityHint={filter.includes("Not Started") ? "Double tap to remove the Not Started filter."
+              : "Double tap to filter for projects that are Not Started."
+            }
+            accessibilityRole={"button"}
+            accessibilityState={filter.includes("Not Started") ? {checked: true} : {checked:false}}
+          >
           <Text
             style={[
               styles.projectFilterButton,
@@ -533,7 +561,13 @@ export default function TrackerFolderView() {
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => updateFilters("In Progress")}>
+        <Pressable onPress={() => updateFilters("In Progress")}
+            accessible={true}
+            accessibilityHint={filter.includes("In Progress") ? "Double tap to remove the In Progress filter."
+              : "Double tap to filter for projects that are In Progress."
+            }
+            accessibilityRole={"button"}
+            accessibilityState={filter.includes("In Progress") ? {checked: true} : {checked:false}}>
           <Text
             style={[
               styles.projectFilterButton,
@@ -547,7 +581,13 @@ export default function TrackerFolderView() {
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => updateFilters("Completed")}>
+        <Pressable onPress={() => updateFilters("Completed")}
+          accessible={true}
+          accessibilityHint={filter.includes("Completed") ? "Double tap to remove the Completed filter."
+            : "Double tap to filter for projects that are Completed."
+          }
+          accessibilityRole={"button"}
+          accessibilityState={filter.includes("Completed") ? {checked: true} : {checked:false}}>
           <Text
             style={[
               styles.projectFilterButton,
@@ -568,59 +608,64 @@ export default function TrackerFolderView() {
         <FlatList
           data={projects}
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: "/singleProject/[id]",
-                  params: { id: item.id.toString() },
-                })
-              }
-            >
-              <View style={styles.projectContainer}>
-                <View
+            <View style={styles.projectContainer}>
+              <View
+                style={{
+                  justifyContent: "space-between",
+                  flexDirection: "row",
+                }}
+              >
+                <Pressable
+                  onPress={() =>
+                  router.push({
+                    pathname: "/singleProject/[id]",
+                    params: { id: item.id.toString() },
+                  })
+                }
+                accessible={true}
+                accessibilityLabel={"Project title: " + item.title + ". " + item.status}
+                accessibilityHint={"Double tap to view this project."}
                   style={{
-                    justifyContent: "space-between",
                     flexDirection: "row",
+                    alignItems: "flex-start",
+                    flex: 1,
+                    paddingRight: 12,
+                    height: "100%"
                   }}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "flex-start",
-                      flex: 1,
-                      paddingRight: 12,
-                    }}
-                  >
-                    <Text style={{ color: colors.text, flexShrink: 1 }}>
-                      {item.title}
-                    </Text>
-                    <View
-                      style={[
-                        styles.statusDot,
-                        item.status == "Completed"
-                          ? filterStyles.green
-                          : item.status == "In Progress"
-                          ? filterStyles.yellow
-                          : filterStyles.red,
-                      ]}
-                    />
-                  </View>
-                  <Pressable
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      openProjectMenu(item);
-                    }}
-                  >
-                    <Entypo
-                      name="dots-three-vertical"
-                      size={20}
-                      color={colors.text}
-                    />
-                  </Pressable>
-                </View>
+                  <Text style={{ color: colors.text, flexShrink: 1 }}>
+                    {item.title}
+                  </Text>
+                <View
+                  style={[
+                    styles.statusDot,
+                    item.status == "Completed"
+                      ? filterStyles.green
+                      : item.status == "In Progress"
+                      ? filterStyles.yellow
+                      : filterStyles.red,
+                  ]}
+                  />
+                </Pressable>
 
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    openProjectMenu(item);
+                  }}
+                  accessible={true}
+                  accessibilityLabel={"Project Menu"}
+                  accessibilityHint={"Double tap to edit or delete this project"}
+                  accessibilityRole={"button"}
+                >
+                  <Entypo
+                    name="dots-three-vertical"
+                    size={20}
+                    color={colors.text}
+                  />
+                </Pressable>
               </View>
-            </Pressable>
+            </View>
           )}
           keyExtractor={(item) => item.id.toString()}
           ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
@@ -659,6 +704,10 @@ export default function TrackerFolderView() {
       <Pressable
         style={[styles.floatingButton, { bottom: insets.bottom + 10 }]}
         onPress={() => router.push("/newproject")}
+          accessible={true}
+          accessibilityLabel={"Create Project"}
+          accessibilityHint={"Navigates to the create project screen. Double tap to create a project."}
+          accessibilityRole={"button"}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />
       </Pressable>
@@ -673,6 +722,7 @@ export default function TrackerFolderView() {
           style={styles.modalOverlay}
           activeOpacity={1}
           onPressOut={closeProjectMenu}
+          accessible={false}
         >
           <View
             style={[
@@ -680,14 +730,32 @@ export default function TrackerFolderView() {
               { backgroundColor: colors.exploreCardBackground },
             ]}
           >
-            <TouchableOpacity onPress={handleEditProject} style={styles.menuAction}>
+            <TouchableOpacity onPress={handleEditProject} style={styles.menuAction}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Edit"
+              accessibilityHint="Double tap to edit this project">
               <Feather name="edit" size={18} color={colors.text} />
               <Text style={[styles.menuActionText, { color: colors.text }]}>Edit</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleDeleteProject} style={styles.menuAction}>
+            <TouchableOpacity onPress={handleDeleteProject} style={styles.menuAction}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Delete"
+              accessibilityHint="Double tap to delete this project">
               <Feather name="trash-2" size={18} color={colors.warning} />
               <Text style={[styles.menuActionText, styles.deleteText]}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit project menu"
+              style={styles.cancelBtn}
+            >
+              <Text style={[styles.menuActionText, { color: colors.text}]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

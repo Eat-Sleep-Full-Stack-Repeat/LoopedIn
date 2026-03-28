@@ -691,11 +691,17 @@ export default function SingleProject() {
         >
         <View style={styles.headerRow}>
           <View style={styles.headerSide}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}
+              accessible={true}
+              accessibilityLabel={"Go Back"}
+              accessibilityHint={"Navigates back to the previous page."}
+              accessibilityRole={"button"}>
               <Feather name="arrow-left" size={22} color={colors.text} />
             </Pressable>
           </View>
-          <View style={styles.headerCenter}>
+          <View style={styles.headerCenter}
+            accessible={true}
+            accessibilityRole={"header"}>
             <Text style={styles.title}>Create New Project</Text>
           </View>
           <View style={styles.headerSide}>
@@ -705,7 +711,11 @@ export default function SingleProject() {
         {/* PRE-PHOTO-UPLOADS */}
         <View style={styles.noteHeaderRow}>
           <Text style={styles.dateLabel}>Title</Text>
-          <Text style={styles.countText}>{titleText.length}/40</Text>
+          <Text style={styles.countText}
+            accessible={true}
+            accessibilityLabel={`${titleText.length} out of  40 characters are used.`}>
+            {titleText.length}/40
+          </Text>
         </View>
         <View style={styles.noteTitleBox}>
           <TextInput
@@ -737,6 +747,10 @@ export default function SingleProject() {
             setTempDate(baseDate);
             setIsDatePickerVisible(true);
           }}
+          accessible={true}
+          accessibilityLabel={"Add Start Date"}
+          accessibilityHint={"Double tap to add a project start date."}
+          accessibilityRole={"spinbutton"}
         >
           <Text style={styles.dateInput}>{formattedStartDate}</Text>
         </Pressable>
@@ -778,7 +792,11 @@ export default function SingleProject() {
         </Modal>
         <View style={styles.noteHeaderRow}>
           <Text style={styles.dateLabel}>Note</Text>
-          <Text style={styles.countText}>{noteText.length}/5000</Text>
+          <Text style={styles.countText}
+            accessible={true}
+            accessibilityLabel={`${noteText.length} out of 5000 characters are used.`}>
+          {noteText.length}/5000
+        </Text>
         </View>
         <View style={styles.notePlaceholder}>
           <TextInput
@@ -822,6 +840,10 @@ export default function SingleProject() {
                     <Pressable
                       style={styles.removePhotoButton}
                       onPress={() => handleRemovePhotoCard(card.id)}
+                      accessible={true}
+                      accessibilityLabel={"Delete photo."}
+                      accessibilityHint={`Removes photo ${index + 1} from selection.`}
+                      accessibilityRole={"button"}
                     >
                       <Feather
                         name="trash-2"
@@ -837,6 +859,10 @@ export default function SingleProject() {
                         ? undefined
                         : () => handleUploadPress(card.id)
                     }
+                    accessible={true}
+                    accessibilityLabel={card.hasImage ? "Uploaded Photo" : "Upload a photo"}
+                    accessibilityHint={card.hasImage ? "" : "Double tap to choose from your library or camera."}
+                    accessibilityRole={card.hasImage ? "image" : "button"}
                     disabled={card.hasImage}
                   >
                     {card.hasImage && card.localUri ? (
@@ -871,7 +897,9 @@ export default function SingleProject() {
                       multiline
                       maxLength={CARD_ALT_TEXT_LIMIT}
                     />
-                    <Text style={styles.cardCounterText}>
+                    <Text style={styles.cardCounterText}
+                      accessible={true}
+                      accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}>
                       {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
                     </Text>
                   </View>
@@ -883,7 +911,9 @@ export default function SingleProject() {
             Add up to 5 cards. Each card holds one photo with its own alt text.
           </Text>
           <View style={styles.addCardRow}>
-            <Text style={styles.photoCountText}>
+            <Text style={styles.photoCountText}
+              accessible={true}
+              accessibilityLabel={`${photoCards.length} out of ${PHOTO_LIMIT} cards are taken.`}>
               {photoCards.length}/{PHOTO_LIMIT}
             </Text>
             <Pressable
@@ -894,6 +924,10 @@ export default function SingleProject() {
               ]}
               onPress={handleAddPhotoCard}
               disabled={photoCards.length >= PHOTO_LIMIT}
+              accessible={true}
+              accessibilityLabel={"Add Card"}
+              accessibilityHint={photoCards.length >= PHOTO_LIMIT ? "Cannot add more cards. Reached 5 card maximum." 
+                : "Double tap to add another card"}
             >
               <Feather
                 name="plus"
@@ -909,7 +943,10 @@ export default function SingleProject() {
         </View>
         
         
-        <Pressable style={styles.addProjectButton} onPress={handleSubmit} disabled={submitting}>
+        <Pressable style={styles.addProjectButton} onPress={handleSubmit} disabled={submitting}
+          accessible={true}
+          accessibilityHint={"Add project to folder"}
+          accessibilityRole={"button"}>
           <Text style={styles.addProjectButtonText}>Add Project</Text>
         </Pressable>
         </ScrollView>

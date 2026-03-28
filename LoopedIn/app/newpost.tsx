@@ -786,7 +786,9 @@ export default function NewPost() {
                       multiline
                       maxLength={CARD_ALT_TEXT_LIMIT}
                     />
-                    <Text style={styles.cardCounterText}>
+                    <Text style={styles.cardCounterText}
+                      accessible={true}
+                      accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}>
                       {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
                     </Text>
                   </View>

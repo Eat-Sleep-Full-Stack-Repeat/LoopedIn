@@ -661,7 +661,10 @@ const fetchData = async () => {
                         multiline
                         maxLength={CARD_ALT_TEXT_LIMIT}
                         />
-                        <Text style={styles.cardCounterText}>
+                        <Text style={styles.cardCounterText}
+                          accessible={true}
+                          accessibilityLabel={`${caption.length} out of ${CAPTION_LIMIT} characters are used.`}
+                        >
                         {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
                         </Text>
                     </View>
