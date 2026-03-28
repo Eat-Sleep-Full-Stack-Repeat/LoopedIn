@@ -2,11 +2,61 @@
 //bare-bones template
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const crypto = require("crypto");
+
 const { pool } = require("../backend_connection");
-const { getSignedFile } = require("../s3_connection");
+const { uploadFile, getSignedFile } = require("../s3_connection");
 
 //jwt-checker before revealing any sensitive info
 const authenticateToken = require("../middleware/authenticate");
+
+require("dotenv").config();
+
+//helper for S3 cleanup
+const deleteFile = async (fileName, folderName) => {
+  try {
+    const key = `${folderName}/${fileName}`;
+
+    const params = {
+      Bucket: process.env.BUCKET_NAME,
+      Key: key,
+    };
+
+    const command = new DeleteObjectCommand(params);
+    await s3.send(command);
+
+    console.log(`[tracker]: Deleted from S3 -> ${key}`);
+  } catch (err) {
+    console.error("[tracker]: Error deleting file from S3:", err);
+  }
+};
+
+//initialize S3
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const s3 = new S3Client({
+    region: process.env.BUCKET_REGION,
+    credentials: {
+    accessKeyId: process.env.BUCKET_ACCESS_KEY,
+    secretAccessKey: process.env.BUCKET_SECRET_KEY,
+  },
+});
+
+/**
+ * Multer setup: memory storage, 5MB max per file
+ */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Unsupported file type. Use jpg, png, webp, or gif."));
+    }
+    cb(null, true);
+  },
+});
 
 //------------------------ FOLDER ENDPOINTS -------------------------------
 
@@ -500,5 +550,174 @@ router.get("/single-project", authenticateToken, async (req, res) => {
     res.status(500).json(error);
   }
 });
+
+//delete single project----------------------------
+router.delete("/delete-project/:selectedProjId", authenticateToken, async (req, res) => {
+  try {
+    const { selectedProjId: id } = req.params;
+
+    //check if person actually has permission to delete    
+    query = `
+    SELECT *
+    FROM tracker.tbl_project
+    WHERE fld_project_pk = $1 AND fld_creator = $2;
+    `
+    const post = await pool.query(query, [id, req.userID.trim()]);
+
+    if (post.rowCount == 0) {
+      console.log("No permissions to delete project")
+      return res.status(403).json({message: "Does not have permission to delete project"})
+    }
+    else {
+
+      //delete images (if exist) first from S3
+      query = `
+      SELECT fld_project_pic
+      FROM tracker.tbl_project_pic
+      WHERE fld_project_fk = $1 AND fld_project_pic IS NOT NULL;
+      `
+
+      let image_key = await pool.query(query, [id]);
+
+
+      //finally, delete records from our RDS tables
+      query = `
+      DELETE FROM tracker.tbl_project
+      WHERE fld_project_pk = $1;
+      `
+
+      await pool.query(query, [id])
+
+
+      //now S3 image deletion time (non-cover first)
+      if (image_key.rowCount != 0) {
+        for(let i = 0; i < image_key.rowCount; i++){
+          image_key = image_key.rows[i].fld_project_pic
+          console.log("[tracker]: image we need to delete: ", image_key)
+
+          //get variables
+          const fullKey = image_key.includes("/") ? image_key : `project-tracker/${image_key}`;
+          const folderName = fullKey.split("/")[0];
+          const fileName = fullKey.split("/").slice(1).join("/");
+
+          console.log("[tracker]: delete project images in process. foldername, filename ", folderName, fileName)
+
+          //delete images (hopefully)
+          await deleteFile(fileName, folderName);
+
+          console.log("[tracker] successful deletion of project images")
+        }
+      }
+
+      }
+
+      res.status(200).json({message: "successful deletion of project!"})
+    }
+  catch(error) {
+    console.log("Error deleting project: ", error)
+    res.status(500).json(error)
+  }
+})
+
+//-------------------------- CREATION ----------------------------
+/**
+ * POST /api/create-project
+ *
+ * multipart/form-data:
+ *   title      : string
+ *   startDate  : "true" | "false"
+ *   notes      : string
+ *   photos     : up to 5 image files (field name "photos")
+ *   folder     : integer 
+ *   altTexts  : JSON string array of alt texts (one per photo card)
+ */
+router.post("/create-project", authenticateToken, upload.array("photos", 5), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const userPk = req.userID?.trim?.() || req.userID;
+    const { title = "", startDate, notes = "", folderID, altTexts } = req.body || {};
+
+    if (!userPk) {
+      return res.status(401).json({ error: "Missing user id from auth token" });
+    }
+
+    if (!folderID) {
+      return res.status(400).json({ error: "Missing folderID" });
+    }
+
+    // if (!req.files || req.files.length === 0) {
+    //   return res.status(400).json({ error: "At least one photo is required" });
+    // }
+
+    const parsedDate = startDate ? new Date(startDate) : new Date();
+
+   let altArray = [];
+
+    try {
+      if (altTexts) altArray = JSON.parse(altTexts);
+    } catch (e) {
+      console.error("Failed to parse altTexts JSON:", altTexts, e);
+    }
+
+    await client.query("BEGIN");
+
+    // const now = new Date();
+    // const date = now.toISOString();
+
+    // 1) Insert Project
+    const insertProjectSql = `
+      INSERT INTO tracker.tbl_project
+        (fld_folder_fk, fld_creator, fld_p_name, fld_date_started, fld_notes, fld_status)
+      VALUES
+        ($1, $2, $3, $4, $5, 'In Progress')
+      RETURNING fld_project_pk AS "projectId"
+    `;
+    const projResult = await client.query(insertProjectSql, [
+      folderID,
+      userPk,
+      title || "",
+      startDate,
+      notes || "",
+    ]);
+    const projId = projResult.rows[0].projectId;
+
+    // 2) Upload images to S3 and insert into posts.tbl_post_pic
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+
+      const originalExt = path.extname(file.originalname) || ".jpg";
+      const randomName = crypto.randomBytes(16).toString("hex");
+      const fileName = `${projId}_${randomName}_${i}${originalExt}`;
+      const folderName = "project-tracker";
+
+      await uploadFile(file.buffer, fileName, folderName, file.mimetype);
+
+      const s3Key = `${folderName}/${fileName}`;
+      const altText = Array.isArray(altArray) && altArray[i] ? altArray[i] : "";
+
+      const insertPicSql = `
+        INSERT INTO tracker.tbl_project_pic
+          (fld_project_fk, fld_project_pic, fld_alt_text)
+        VALUES
+          ($1, $2, $3)
+      `;
+      await client.query(insertPicSql, [projId, s3Key, altText]);
+    }
+
+    await client.query("COMMIT");
+
+    return res.status(201).json({
+      projectId: projId,
+      message: "Project created successfully",
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("POST /create-project error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+});
+
 
 module.exports = router;

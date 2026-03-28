@@ -32,14 +32,32 @@ const pool=new Pool({
     //no SSL, but need this to connect to db
     ssl: {
         rejectUnauthorized: false
-    }
+    },
+    keepAlive: true,
+    idleTimeoutMillis: 30000, //connection can only be idle for 30 seconds
+    connectionTimeoutMillis: 10000 //wait 10 seconds for another live connection at most
 })
 
-//connecting to database
-pool.connect()
-.then(()=>{console.log("Connected to Postgres database!")})
-//if failed to connect, show error
-.catch((error)=>{console.log("Error connecting to database", error)})
+//catch econnreset error if it was globally thrown (vs per query thrown)
+//if per query, pool.query should handle that with our try/catch blocks
+pool.on("error", (error, client) => {
+    console.error("Database connection was reset.", error)
+})
+
+//check connection to db in a different way as we got rid of the pool.connect() statement due to the
+//fact we are not correctly managing all db connections previously
+async function attempt() {
+    try {
+        //very common query (called a heartbeart query) to check connection to database
+        await pool.query("SELECT 1")
+        console.log("Connected to Postgres database!")
+    }
+    catch(error) {
+        console.log("Error connecting to database:", error)
+    }
+}
+
+attempt()
 
 //exporting connection for use
 module.exports={pool}

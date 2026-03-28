@@ -57,9 +57,10 @@ export default function SingleFolderScreen() {
       return matchesCategory && matchesSearch;
     });
     if (selectedCategory === "All") {
-      return [...result].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      );
+      // return [...result].sort((a, b) =>
+      //   a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      // );
+      return [...result];
     }
     return result;
   }, [items, searchQuery, selectedCategory]);

@@ -13,6 +13,34 @@ const { generateColor } = require("../functions/color_generator");
 
 require("dotenv").config();
 
+const deleteFile = async (fileName, folderName) => {
+  try {
+    const key = `${folderName}/${fileName}`;
+
+    const params = {
+      Bucket: process.env.BUCKET_NAME,
+      Key: key,
+    };
+
+    const command = new DeleteObjectCommand(params);
+    await s3.send(command);
+
+    console.log(`[post]: Deleted from S3 -> ${key}`);
+  } catch (err) {
+    console.error("[post]: Error deleting file from S3:", err);
+  }
+};
+
+//initialize S3
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const s3 = new S3Client({
+    region: process.env.BUCKET_REGION,
+    credentials: {
+    accessKeyId: process.env.BUCKET_ACCESS_KEY,
+    secretAccessKey: process.env.BUCKET_SECRET_KEY,
+  },
+});
+
 /**
  * Multer setup: memory storage, 5MB max per file
  */
@@ -567,18 +595,23 @@ router.post("/search", authenticateToken, async (req, res) => {
         SELECT
           tp.fld_post AS post_id,
           t.fld_tag_name,
-          t.fld_tag_color
+          t.fld_tag_color,
+          t.fld_tags_pk
         FROM posts.tbl_post_tag tp
         INNER JOIN tags.tbl_tags t
           ON t.fld_tags_pk = tp.fld_tag
-        WHERE tp.fld_post = ANY($1::int[]);
+        WHERE tp.fld_post = ANY($1::int[])
+        ORDER BY CASE 
+          WHEN t.fld_tag_name IN ('Misc', 'Crochet', 'Knit') THEN 1
+          ELSE 2
+        END ASC, t.fld_tag_name ASC;
       `;
       const tagR = await pool.query(tagQ, [postIds]);
 
       tagsByPost = tagR.rows.reduce((acc, row) => {
         const pid = String(row.post_id);
         if (!acc[pid]) acc[pid] = [];
-        acc[pid].push({ name: row.fld_tag_name, color: row.fld_tag_color });
+        acc[pid].push({ id: row.fld_tags_pk, name: row.fld_tag_name, color: row.fld_tag_color });
         return acc;
       }, {});
     }
@@ -901,12 +934,39 @@ router.delete("/delete-post", authenticateToken, async (req, res) => {
   const postToDelete = req.body.PostID;
 
   try {
+
+    //get image info to delete from S3
+    queryPics = `
+    SELECT fld_pic_id, fld_post_pic
+    FROM posts.tbl_post_pic
+    WHERE fld_post_fk = $1 AND fld_pic_id IS NOT NULL;
+    `
+
+    let image_key = await pool.query(queryPics, [postToDelete]);
+
     const query = `
       DELETE FROM posts.tbl_post
       WHERE fld_post_pk = $1 AND fld_creator = $2;
     `;
 
     await pool.query(query, [postToDelete, user]);
+
+    //now S3 image deletion time
+    if (image_key.rowCount != 0) {
+      for(let i = 0; i < image_key.rowCount; i++){
+        image_key = image_key.rows[i].fld_post_pic
+
+        //get variables
+        const fullKey = image_key.includes("/") ? image_key : `posts/${image_key}`;
+        const folderName = fullKey.split("/")[0];
+        const fileName = fullKey.split("/").slice(1).join("/");
+
+        //console.log("[posts]: delete post images in process. foldername, filename ", folderName, fileName)
+
+        //delete images (hopefully)
+        await deleteFile(fileName, folderName);
+      }
+    }
 
     res.status(200).json({ message: "Successfully deleted the post!" });
   } catch (e) {

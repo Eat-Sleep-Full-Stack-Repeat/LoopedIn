@@ -315,10 +315,65 @@ export default function TrackerFolderView() {
     closeProjectMenu();
   };
 
-  const handleDeleteProject = () => {
-    if (!selectedProject) return;
-    alert(`Delete selected: ${selectedProject.title}`);
-    closeProjectMenu();
+//delete project in triple-dot menu
+  const handleDeleteProject = async () => {
+    if (selectedProject !== null) {
+      setMenuVisible(false);
+      console.log(`Deleting post ID: ${selectedProject.id}`);
+      // future delete logic here
+
+      //check token
+      const token = await Storage.getItem("token");
+
+      //login check to reduce unnecessary fetches
+      if (!token) {
+        alert("Hold on there... you need to login first!")
+        router.replace("/login")
+        return
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/delete-project/${selectedProject.id}`,
+          {
+            method: "DELETE",
+            headers : {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        )
+
+        if (response.status === 403) {
+          alert("Forbidden: You do not have permission to edit this post.")
+          return
+        }
+        
+        else if (response.status === 404) {
+          alert("Cannot delete: project does not exist")
+        }
+
+        else if (!response.ok) {
+          alert("Server error occured. Please try again later.")
+          router.back()
+          return
+        }
+
+        alert("Project successfully deleted!")
+
+                  console.log("moving...");
+        //for refreshing
+        router.replace({
+                    pathname: "/trackerFolder/[id]",
+                    params: { id: folder.id } 
+                  })
+
+      }
+      catch(error) {
+        alert("Server error. Please try again later.")
+        console.log("Error editing project:", error)
+      }
+    }
   };
 
 

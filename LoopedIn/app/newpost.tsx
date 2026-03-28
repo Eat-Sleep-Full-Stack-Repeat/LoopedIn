@@ -894,7 +894,7 @@ export default function NewPost() {
             <TextInput
               value={newTag}
               onChangeText={(text) =>
-                setNewTag(text.replace(/\s/g, ""))
+                setNewTag(text.replace(/\s/g, "").toLowerCase())
               }
               placeholder="Add a tag"
               placeholderTextColor={`${colors.text}99`}
@@ -904,7 +904,7 @@ export default function NewPost() {
             <Pressable
               onPress={handleAddTag}
               disabled={tags.length >= 5 || !newTag.trim()}
-              style={[
+              style={[ 
                 styles.addTagButton,
                 (tags.length >= 5 || !newTag.trim()) &&
                   styles.addTagButtonDisabled,
