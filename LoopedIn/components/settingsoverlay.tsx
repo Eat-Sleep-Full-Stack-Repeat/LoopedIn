@@ -247,7 +247,7 @@ export default function SettingsOverlay({
         />
 
         {/* Overlay panel */}
-        <Pressable style={styles.flex}>
+        <View style={styles.flex}>
           <GestureDetector gesture={pan}>
             <Animated.View
               style={[styles.panel, { width: panelW }, panelStyle]}
@@ -255,11 +255,19 @@ export default function SettingsOverlay({
               <SafeAreaView style={styles.safeArea}>
                 {/* Header Row */}
                 <View style={styles.headerRow}>
-                  <Text style={styles.headerTitle}>{title}</Text>
+                  <Text style={styles.headerTitle}
+                    accessible={true}
+                    accessibilityRole={"header"}
+                  >{title}
+                  </Text>
                   <Pressable
                     onPress={animateClose}
                     hitSlop={12}
                     style={styles.closeBtn}
+                    accessible={true}
+                    accessibilityLabel={"Close"}
+                    accessibilityHint={"Double tap to close settings."}
+                    accessibilityRole={"button"}
                   >
                     <Text style={styles.closeBtnText}>✕</Text>
                   </Pressable>
@@ -273,7 +281,7 @@ export default function SettingsOverlay({
                   contentContainerStyle={styles.scrollContent}
                   showsVerticalScrollIndicator
                 >
-                  <SectionHeader label="App" />
+                  <SectionHeader label="App"/>
                   <MenuItem
                     label="Accessibility"
                     onPress={onAccessibility}
@@ -292,7 +300,7 @@ export default function SettingsOverlay({
               </SafeAreaView>
             </Animated.View>
           </GestureDetector>
-        </Pressable>
+        </View>
       </GestureHandlerRootView>
     </Modal>
   );

@@ -48,10 +48,16 @@ export default function WelcomePage (){
         <View style={[styles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
             <View style={styles.contentContainer}>
                 <Text style={styles.welcomeText}>Welcome to LoopedIn</Text>
-                <Pressable style={styles.buttons} onPress={() => router.push("/signup")}>
+                <Pressable style={styles.buttons} onPress={() => router.push("/signup")}
+                    accessible={true}
+                    accessibilityHint={"Double tap to sign up for a LoopedIn account."}
+                    accessibilityRole={"button"}>
                     <Text style={styles.buttonText}> Sign Up </Text>
                 </Pressable>
-                <Pressable style={styles.buttons} onPress={() => router.push("/login")}>
+                <Pressable style={styles.buttons} onPress={() => router.push("/login")}
+                        accessible={true}
+                        accessibilityHint={"Double tap to navigate to the log in page."}
+                        accessibilityRole={"button"}>
                     <Text style={styles.buttonText}> Login </Text>
                 </Pressable>
             </View>
