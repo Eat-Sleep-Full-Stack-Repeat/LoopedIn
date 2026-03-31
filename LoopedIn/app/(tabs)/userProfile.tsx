@@ -147,12 +147,11 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
       <View style={s.headerBg} />
       <View style={s.headerInner}>
         <View style={s.topAccountManagement}>
-          <Pressable style={s.iconCol} onPress={() => router.push("/dms")}>
-            <Feather name="message-circle" size={24} color={colors.text} />
-            <Text style={[s.iconLabel, { color: colors.text }]}>DMs</Text>
-          </Pressable>
-
-          <Pressable style={s.iconCol} onPress={() => setSettingsOpen(true)}>
+          <Pressable style={s.iconCol} onPress={() => setSettingsOpen(true)}
+            accessible={true}
+            accessibilityLabel={"Settings"}
+            accessibilityHint={"Click to view account settings"}
+            accessibilityRole={"button"}>
             <Feather name="settings" size={24} color={colors.text} />
             <Text style={[s.iconLabel, { color: colors.text }]}>Settings</Text>
           </Pressable>
@@ -167,6 +166,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
               style={({ pressed }) => [
                 { opacity: editing && pressed ? 0.8 : 1 },
               ]}
+              accessible={true}
+              accessibilityHint={editing ? "Double tap to change your profile picture" : "Your profile picture."}
+              accessibilityRole={"imagebutton"}
             >
               <Image
                 source={effectiveAvatarSource}
@@ -184,6 +186,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
               <Pressable
                 style={s.pencilBadge}
                 onPress={editing ? chooseAvatar : undefined}
+                accessible={true}
+                accessibilityHint={"Double tap to change your profile picture"}
+                accessibilityRole={"button"}
               >
                 <Feather name="edit-2" size={14} color={colors.badgeIcon} />
               </Pressable>
@@ -204,6 +209,8 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                     params: { id: originalUser?.userID },
                   })
                 }
+                accessible={true}
+                accessibilityHint={"Double tap to view all accounts that are following you."}
               >
                 <View style={s.countCircles}>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>
@@ -223,6 +230,8 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                     params: { id: originalUser?.userID },
                   })
                 }
+                accessible={true}
+                accessibilityHint={"Double tap to view all accounts you are following."}
               >
                 <View style={s.countCircles}>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>
@@ -238,8 +247,12 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         </View>
 
         {/* bio */}
-        <View style={s.bioContainer}>
-          <Text style={[s.bioTitle, { color: colors.text }]}>Bio</Text>
+        <View style={s.bioContainer}
+          accessible={true}
+          accessibilityHint={editing ? "Double tap to edit your bio" : ""}>
+          <Text style={[s.bioTitle, { color: colors.text }]}>
+            Bio
+          </Text>
           {editing ? (
             <TextInput
               value={draftBio}
@@ -261,6 +274,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         {editing ? (
           <View style={s.editRow}>
             <Pressable
+              accessible={true}
+              accessibilityHint={"Double tap to save profile changes."}
+              accessibilityRole={"button"}
               onPress={
                 saving
                   ? undefined
@@ -280,17 +296,28 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             <Pressable
               onPress={saving ? undefined : discardChanges}
               style={[s.secondaryBtn, saving && { opacity: 0.6 }]}
+              accessible={true}
+              accessibilityHint={"Double tap to cancel profile changes"}
+              accessibilityRole={"button"}
             >
               <Text style={s.secondaryBtnText}>Discard</Text>
             </Pressable>
           </View>
         ) : (
           <View style={s.actionsColumn}>
-            <Pressable style={s.editProfileButton} onPress={startEditing}>
+            <Pressable style={s.editProfileButton}
+              accessible={true}
+              accessibilityHint={"Double tap to edit your profile picture or bio."} 
+              accessibilityRole={"button"}
+              onPress={startEditing}>
               <Text style={s.editProfileButtonText}>Edit Profile</Text>
             </Pressable>
 
-            <TouchableOpacity style={s.logoutButton} onPress={onLogout}>
+            <TouchableOpacity style={s.logoutButton} 
+              accessible={true}
+              accessibilityHint={"Double tap to log out of your LoopedIn account."}
+              accessibilityRole={"button"}
+              onPress={onLogout}>
               <Text style={s.logoutButtonText}>Logout</Text>
             </TouchableOpacity>
           </View>
@@ -299,19 +326,33 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         {/* Post tab navigation */}
         {activeTab === "posts" ? (
           <View style={s.postTabs}>
-            <View style={s.postTabText}>
+            <View style={s.postTabText}
+              accessible={true}
+              accessibilityHint={"Displays all created explore posts."}
+              accessibilityState={{selected:true}}>
               <Text style={{ color: colors.decorativeText }}>My Posts</Text>
             </View>
-            <Pressable onPress={handleSavedPress} style={{ padding: 10 }}>
+            <Pressable onPress={handleSavedPress} style={{ padding: 10 }}
+              accessible={true}
+              accessibilityHint={"Double tap to view all of your saved posts."}
+              accessibilityState={{selected:false}}
+              accessibilityRole={"button"}>
               <Text style={{ color: colors.text }}>Saved Posts</Text>
             </Pressable>
           </View>
         ) : (
           <View style={s.postTabs}>
-            <Pressable onPress={handlePostPress} style={{ padding: 10 }}>
+            <Pressable onPress={handlePostPress} style={{ padding: 10 }}
+              accessible={true}
+              accessibilityHint={"Double tap to view all of your explore posts."}
+              accessibilityState={{selected:false}}
+              accessibilityRole={"button"}>
               <Text style={{ color: colors.text }}>My Posts</Text>
             </Pressable>
-            <View style={s.postTabText}>
+            <View style={s.postTabText}
+              accessible={true}
+              accessibilityHint={"Displays all saved explore posts."}
+              accessibilityState={{selected:true}}>
               <Text style={{ color: colors.decorativeText }}>Saved Posts</Text>
             </View>
           </View>
@@ -791,6 +832,9 @@ export default function UserProfile() {
                   params: { id, tab: activeTab },
                 })
               }
+              accessible={true}
+              accessibilityLabel={"Explore post"}
+              accessibilityHint={"Double tap to view this explore post"}
             >
               <Image
                 source={thumbSource}
@@ -824,6 +868,10 @@ export default function UserProfile() {
 
       <Pressable
         style={[s.floatingButton, { bottom: insets.bottom }]}
+        accessible={true}
+        accessibilityLabel={"Create Explore Post"}
+        accessibilityHint={"Navigates to the create explore post screen. Double Tap to create an explore post."}
+        accessibilityRole={"button"}
         onPress={handleCreatePost}
       >
         <Feather name="plus" size={28} color={colors.decorativeText} />

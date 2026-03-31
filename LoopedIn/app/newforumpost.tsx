@@ -376,10 +376,17 @@ export default function Newformpost() {
         keyboardShouldPersistTaps="handled"
       >
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable style={styles.backButton} onPress={() => router.back()}
+          accessible={true}
+          accessibilityLabel={"Go Back"}
+          accessibilityHint={"Navigates back to the previous page."}
+          accessibilityRole={"button"}>
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
-        <Text style={styles.title}>New Forum Post</Text>
+        <Text style={styles.title}
+          accessible={true}
+          accessibilityRole={"header"}
+        >New Forum Post</Text>
       </View>
 
       <View style={styles.refineSection}>
@@ -392,6 +399,10 @@ export default function Newformpost() {
                 key={option.id}
                 onPress={() => setSelectedFilter(option.id)}
                 style={styles.craftOption}
+                accessible={true}
+                accessibilityHint={"Selects " + option.label + " as explore post craft type."}
+                accessibilityRole={"button"}
+                accessibilityState={selectedFilter === option.id ? {selected: true} : {selected: false}}
               >
                 <View
                   style={[
@@ -425,7 +436,10 @@ export default function Newformpost() {
       <View style={styles.formSection}>
         <View style={styles.sectionLabelRow}>
           <Text style={styles.sectionLabel}>Title</Text>
-          <Text style={styles.characterCounter}>{`${postTitle.length}/150`}</Text>
+          <Text style={styles.characterCounter}
+            accessible={true}
+            accessibilityLabel={`${postTitle.length} out of 150 characters are used.`}
+          >{`${postTitle.length}/150`}</Text>
         </View>
         <TextInput
           value={postTitle}
@@ -440,7 +454,10 @@ export default function Newformpost() {
       <View style={styles.formSection}>
         <View style={styles.sectionLabelRow}>
           <Text style={styles.sectionLabel}>Content</Text>
-          <Text style={styles.characterCounter}>{`${postContent.length}/10000`}</Text>
+          <Text style={styles.characterCounter}
+            accessible={true}
+            accessibilityLabel={`${postContent.length} out of 10000 characters are used.`}
+          >{`${postContent.length}/10000`}</Text>
         </View>
         <TextInput
           value={postContent}
@@ -453,30 +470,6 @@ export default function Newformpost() {
         />
       </View>
 
-      <View style={[styles.formSection, styles.mediaSection]}>
-        <Text style={styles.sectionLabel}>Upload Media</Text>
-        <View style={styles.mediaBlockRow}>
-          <Pressable style={styles.mediaBlock}>
-            <View style={styles.mediaIconCircle}>
-              <Feather name="image" size={46} style={styles.mediaIcon} />
-            </View>
-            <Text style={styles.mediaBlockLabel}>Upload From Cameraroll</Text>
-          </Pressable>
-          <Pressable style={styles.mediaBlock}>
-            <View style={styles.mediaIconCircle}>
-              <Feather name="camera" size={46} style={styles.mediaIcon} />
-            </View>
-            <Text style={styles.mediaBlockLabel}>Camera</Text>
-          </Pressable>
-          <Pressable style={styles.mediaBlock}>
-            <View style={styles.mediaIconCircle}>
-              <Feather name="upload" size={46} style={styles.mediaIcon} />
-            </View>
-            <Text style={styles.mediaBlockLabel}>Upload File</Text>
-          </Pressable>
-        </View>
-      </View>
-
       <View style={[styles.formSection, styles.tagSection]}>
         <Text style={styles.sectionLabel}>Tag (Up to 5)</Text>
         <View style={styles.tagList}>
@@ -485,6 +478,9 @@ export default function Newformpost() {
               key={tag}
               style={styles.tagChip}
               onPress={() => handleRemoveTag(tag)}
+              accessible={true}
+              accessibilityLabel={"Remove tag"}
+              accessibilityHint={"Double tap to remove " + tag}
             >
               <Text style={styles.tagChipText}>#{tag}</Text>
             </Pressable>
@@ -505,6 +501,10 @@ export default function Newformpost() {
             ]}
             onPress={handleAddTag}
             disabled={tags.length >= 5 || !newTag.trim()}
+            accessible={true}
+            accessibilityLabel={"Add Tag"}
+            accessibilityHint={tags.length >= 5 || !newTag.trim() ? "Cannot add more tags. Ensure tag text field is filled out, and number of tags is under 5." 
+              : "Double tap to add tag"}
           >
             <Feather
               name="plus"
@@ -520,7 +520,9 @@ export default function Newformpost() {
 
       <Pressable style={styles.createButton} 
         onPress={handleCreatePost} 
-        disabled={pressed}>
+        disabled={pressed}
+          accessible={true}
+          accessibilityHint={"Post to forum feed."}>
         <Text style={styles.createButtonText}>Create Post</Text>
       </Pressable>
     </ScrollView>

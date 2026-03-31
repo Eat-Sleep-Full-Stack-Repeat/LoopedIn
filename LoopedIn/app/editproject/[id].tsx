@@ -438,23 +438,36 @@ export default function EditProject() {
         >
           <View style={styles.headerRow}>
             <View style={styles.headerSide}>
-              <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Pressable style={styles.backButton} onPress={() => router.back()}
+                accessible={true}
+                accessibilityLabel={"Go Back"}
+                accessibilityHint={"Navigates back to the previous page."}
+                accessibilityRole={"button"}>
                 <Feather name="arrow-left" size={22} color={colors.text} />
               </Pressable>
             </View>
-            <View style={styles.headerCenter}>
+            <View style={styles.headerCenter}
+              accessible={true}
+              accessibilityRole={"header"}
+            >
               <Text style={styles.title}>Edit Project</Text>
             </View>
             <View style={styles.headerSide} />
           </View>
 
           {loading ? (
-            <View style={{ alignItems: "center", paddingVertical: 12 }}>
+            <View style={{ alignItems: "center", paddingVertical: 12 }}
+              accessible={true}
+              accessibilityLabel={"loading"}>
               <ActivityIndicator size="small" color={colors.text} />
             </View>
           ) : null}
 
-          <View style={styles.mainPhotoPlaceholder}>
+          <View style={styles.mainPhotoPlaceholder}
+            accessible={true}
+            accessibilityLabel={mainImageUri ? "Primary Project Photo" : "No Project Photo"}
+            accessibilityRole={mainImageUri ? "image" : "none"}
+            >
             {mainImageUri ? (
               <Image
                 source={{ uri: mainImageUri }}
@@ -483,6 +496,9 @@ export default function EditProject() {
                     styles.thumbCard,
                     selectedThumb === index && styles.thumbCardSelected,
                   ]}
+                  accessible={true}
+                  accessibilityLabel={photo.altText}
+                  accessibilityRole={"image"}
                 >
                   <Image
                     source={{ uri: photo.pic }}
@@ -496,7 +512,10 @@ export default function EditProject() {
 
           <View style={styles.noteHeaderRow}>
             <Text style={styles.dateLabel}>Title</Text>
-            <Text style={styles.countText}>{titleText.length}/40</Text>
+            <Text style={styles.countText}
+              accessible={true}
+              accessibilityLabel={`${titleText.length} out of  40 characters are used.`}
+            >{titleText.length}/40</Text>
           </View>
           <View style={styles.noteTitleBox}>
             <TextInput
@@ -529,6 +548,10 @@ export default function EditProject() {
               setTempDate(baseDate);
               setIsDatePickerVisible(true);
             }}
+            accessible={true}
+            accessibilityLabel={"Edit Start Date"}
+            accessibilityHint={"Double tap to edit project start date."}
+            accessibilityRole={"spinbutton"}
           >
             <Text style={styles.dateInput}>{formattedStartDate}</Text>
           </Pressable>
@@ -572,7 +595,10 @@ export default function EditProject() {
 
           <View style={styles.noteHeaderRow}>
             <Text style={styles.dateLabel}>Note</Text>
-            <Text style={styles.countText}>{noteText.length}/5000</Text>
+            <Text style={styles.countText}
+              accessible={true}
+              accessibilityLabel={`${noteText.length} out of 5000 characters are used.`}
+            >{noteText.length}/5000</Text>
           </View>
           <View style={styles.notePlaceholder}>
             <TextInput
@@ -585,7 +611,11 @@ export default function EditProject() {
             />
           </View>
 
-          <Pressable style={styles.addProjectButton} onPress={handleSaveChanges}>
+          <Pressable style={styles.addProjectButton} onPress={handleSaveChanges}
+            accessible={true}
+            accessibilityRole={"button"}
+            accessibilityHint={"Double tap to save edits to project"}
+            >
             <Text style={styles.addProjectButtonText}>Save Changes</Text>
           </Pressable>
         </ScrollView>

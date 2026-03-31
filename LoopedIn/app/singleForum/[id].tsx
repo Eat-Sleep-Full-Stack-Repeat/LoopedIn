@@ -894,6 +894,14 @@ export default function ForumPostDetail() {
       color: colors.decorativeText,
     },
     divider: { height: 10 },
+    cancelBtn: {
+      marginTop: 10,
+      padding: 8,
+      backgroundColor: colors.blockedBackground,
+      borderRadius: 12,
+      width: "100%",
+      alignItems: "center",
+    },
   });
 
   const PostCard = () => {
@@ -950,6 +958,8 @@ export default function ForumPostDetail() {
                 params: { id: post.creator },
               })
             }
+            accessible={true}
+            accessibilityHint={"Double tap to view " + post.username + " profile"}
           >
             {post.profileuri ? (
               <Image
@@ -1020,7 +1030,12 @@ export default function ForumPostDetail() {
         null}
 
         <View style={styles.actionRow}>
-          <Pressable  disabled={isSaving} style={[styles.actionBtn, isSaved && styles.actionBtnSaved, isSaving && { opacity: 0.5 }]} onPress={handleSavePress}>
+          <Pressable  disabled={isSaving} style={[styles.actionBtn, isSaved && styles.actionBtnSaved, isSaving && { opacity: 0.5 }]} onPress={handleSavePress}
+            accessible={true}
+            accessibilityLabel={isSaved ? "unsave post" : "save post"}
+            accessibilityHint={isSaved ? "double tap to unsave this post" : "double tap to save this post"}
+            accessibilityState={isSaved ? {checked: true} : {checked: false}}
+            accessibilityRole={"button"}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             {isSaving ? (
             <ActivityIndicator size="small" color={colors.text} />) : (
@@ -1037,6 +1052,10 @@ export default function ForumPostDetail() {
           <Pressable
             style={styles.actionBtn}
             onPress={() => handleReplyPress(post)}
+              accessible={true}
+              accessibilityLabel={"Reply"}
+              accessibilityHint={"double tap to reply to this forum post"}
+              accessibilityRole={"button"}
           >
             <Feather name="message-circle" size={18} color={colors.text} />
             <Text style={styles.actionText}>Reply</Text>
@@ -1124,6 +1143,8 @@ export default function ForumPostDetail() {
                       params: { id: node.commenterid },
                     })
                   }
+                  accessible={true}
+                  accessibilityHint={"Double tap to view " + node.username + " profile"}
                 >
                   <View style={{ flexDirection: "row" }}>
                     {node.profileuri ? (
@@ -1166,10 +1187,13 @@ export default function ForumPostDetail() {
                       setShowEditDeleteModal(true);
                       setNodeToDelete(node);
                     }}
+                    accessibilityLabel={"Forum Reply Menu"}
+                    accessibilityHint={"Double tap to edit or delete this reply"}
+                    accessibilityRole={"button"}
                   >
                     <Entypo
                       name="dots-three-vertical"
-                      size={20}
+                      size={22}
                       color={colors.text}
                     />
                   </Pressable>
@@ -1183,6 +1207,10 @@ export default function ForumPostDetail() {
                   <Pressable
                     style={styles.smallAction}
                     onPress={() => handleReplyPress(node)}
+                    accessible={true}
+                    accessibilityLabel={"Reply"}
+                    accessibilityHint={"double tap to reply to this comment"}
+                    accessibilityRole={"button"}
                   >
                     <Feather
                       name="message-circle"
@@ -1257,7 +1285,11 @@ export default function ForumPostDetail() {
 
   return (
     <View style={styles.screen}>
-      <Pressable style={styles.backFab} onPress={() => router.back()}>
+      <Pressable style={styles.backFab} onPress={() => router.back()}
+        accessible={true}
+        accessibilityLabel={"Go Back"}
+        accessibilityHint={"Navigates back to the previous page."}
+        accessibilityRole={"button"}>
         <Feather name="chevron-left" size={22} color={colors.text} />
       </Pressable>
 
@@ -1330,6 +1362,7 @@ export default function ForumPostDetail() {
           <TouchableOpacity
             onPressIn={() => setShowEditDeleteModal(false)}
             style={{ flex: 1 }}
+            accessible={false}
           >
             <View
               style={{
@@ -1339,7 +1372,8 @@ export default function ForumPostDetail() {
                 justifyContent: "center",
               }}
             >
-              <TouchableWithoutFeedback>
+              <TouchableWithoutFeedback
+               accessible={false}>
                 <View
                   style={{
                     backgroundColor: "white",
@@ -1350,8 +1384,12 @@ export default function ForumPostDetail() {
                     padding: 15,
                     borderRadius: 20,
                   }}
+                  accessible={false}
                 >
-                  <Pressable onPress={() => handleEditReply(nodeToDelete)}>
+                  <Pressable onPress={() => handleEditReply(nodeToDelete)}
+                    accessible={true}
+                    accessibilityLabel={"Edit"}
+                    accessibilityHint={"Navigates to the edit forum reply screen. Double tap to edit this reply."}>
                     <View style={{ flexDirection: "row" }}>
                       <EvilIcons name="pencil" size={35} color={"black"} />
                       <Text style={{ color: "black", fontSize: 20 }}>
@@ -1368,7 +1406,10 @@ export default function ForumPostDetail() {
                       width: "90%",
                     }}
                   />
-                  <Pressable onPress={() => handleDeleteReply(nodeToDelete)}>
+                  <Pressable onPress={() => handleDeleteReply(nodeToDelete)}
+                    accessible={true}
+                    accessibilityLabel={"Delete"}
+                    accessibilityHint={"Double tap to delete this reply."}>
                     <View style={{ flexDirection: "row" }}>
                       <Ionicons
                         name="trash-outline"
@@ -1381,6 +1422,16 @@ export default function ForumPostDetail() {
                       </Text>
                     </View>
                   </Pressable>
+                  <TouchableOpacity
+                    onPress={() => setShowEditDeleteModal(false)}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close menu"
+                    accessibilityHint="Double tap to exit forum reply menu"
+                    style={styles.cancelBtn}
+                  >
+                    <Text style={{ color: colors.text, fontSize: 20}}>Close</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
             </View>

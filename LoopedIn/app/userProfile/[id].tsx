@@ -666,6 +666,14 @@ export default function OtherUserProfile() {
       alignItems: "center",
       zIndex: 10,
     },
+    cancelBtn: {
+      marginTop: 10,
+      padding: 8,
+      backgroundColor: colors.blockedBackground,
+      borderRadius: 12,
+      width: "100%",
+      alignItems: "center",
+    },
   });
 
   const renderHeader = () => (
@@ -678,7 +686,11 @@ export default function OtherUserProfile() {
         }}
       >
         <View style={styles.headerArrowDiv}>
-          <Pressable style={styles.backFab} onPress={() => router.back()}>
+          <Pressable style={styles.backFab} onPress={() => router.back()}
+            accessible={true}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}>
             <Feather name="chevron-left" size={22} color={colors.text} />
           </Pressable>
         </View>
@@ -691,10 +703,14 @@ export default function OtherUserProfile() {
               justifyContent: "center",
             }}
           >
-            <TouchableOpacity onPress={() => openMenu()}>
+            <TouchableOpacity onPress={() => openMenu()}
+              accessible={true}
+              accessibilityLabel={"User Menu"}
+              accessibilityHint={"Double tap to view options in user menu"}
+              accessibilityRole={"button"}>
               <Entypo
                 name="dots-three-vertical"
-                size={18}
+                size={22}
                 color={colors.text}
               />
             </TouchableOpacity>
@@ -717,7 +733,9 @@ export default function OtherUserProfile() {
               style={[
                 { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 },
               ]}
-            />
+              accessible={true}
+              accessibilityLabel={"Profile picture of " + userData?.userName}
+              accessibilityRole={"image"}></Image>
             <View>
               <Text style={{ fontSize: 20, color: colors.text }}>
                 {userData?.userName ?? "User"}
@@ -731,6 +749,8 @@ export default function OtherUserProfile() {
                     alignItems: "center",
                     justifyContent: "flex-start",
                   }}
+                  accessible={true}
+                  accessibilityHint={"Double tap to view all accounts following " + userData?.userName}
                   onPress={() => {
                     if (!userData?.userID) {
                       alert("Still fetching userdata... try again later");
@@ -765,6 +785,8 @@ export default function OtherUserProfile() {
                       params: { id: userData?.userID },
                     });
                   }}
+                  accessible={true}
+                  accessibilityHint={"Double tap to view all accounts " + userData?.userName + " is following."}
                 >
                   <View style={styles.countCircles}>
                     <Text
@@ -816,6 +838,12 @@ export default function OtherUserProfile() {
                   isFollowed && styles.isFollowedBtn,
                   (isBlockedUser || isBlocked) && styles.isBlockedBtn,
                 ]}
+                  accessible={true}
+                  accessibilityHint={isFollowed ? "Currently following " + userData?.userName + ". Double tap to unfollow."
+                    : !isFollowed && !isBlocked && !isBlockedUser ? "Double tap to follow " + userData?.userName
+                    : "Cannot follow " + userData?.userName + " because at least one account is blocked."
+                  }
+                  accessibilityState={isFollowed ? {checked: true} : {checked: false}}
                 onPress={handleFollowPress}
               >
                 {isLoading ? (
@@ -878,6 +906,9 @@ export default function OtherUserProfile() {
                   params: { id },
                 })
               }
+              accessible={true}
+              accessibilityLabel={"Explore post created by " + userData?.userName}
+              accessibilityHint={"Double tap to view this explore post"}
             >
               <Image
                 source={thumbSource}
@@ -920,7 +951,8 @@ export default function OtherUserProfile() {
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPressOut={() => setMenuVisible(false)}
+          onPress={() => setMenuVisible(false)}
+          accessible={false}
         >
           <View
             style={[
@@ -933,6 +965,10 @@ export default function OtherUserProfile() {
               disabled={isBlocking}
               onPress={handleBlock}
               style={styles.menuOption}
+              accessible={true}
+              accessibilityLabel={isBlockedUser ? "Unblock" : "Block"}
+              accessibilityHint={isBlockedUser ? "Double tap to unblock " + userData?.userName : 
+                "Double tap to block " + userData?.userName}
             >
               {isBlockedUser ? (
                 <Feather name="smile" size={18} color={colors.text} />
@@ -942,6 +978,16 @@ export default function OtherUserProfile() {
               <Text style={[styles.menuText, { color: colors.text }]}>
                 {isBlockedUser ? "Unblock" : "Block"}
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit user menu"
+              style={styles.cancelBtn}
+            >
+              <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -332,13 +332,20 @@ export default function SingleProject() {
       >
         <View style={styles.headerRow}>
           <View style={styles.headerSide}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}
+              accessible={true}
+              accessibilityLabel={"Go Back"}
+              accessibilityHint={"Navigates back to the previous page."}
+              accessibilityRole={"button"}>
               <Feather name="arrow-left" size={22} color={colors.text} />
             </Pressable>
           </View>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={styles.title} numberOfLines={1}
+              accessible={true}
+              accessibilityHint={"Project title"}
+              accessibilityRole={"header"}>
               {titleText}
             </Text>
           </View>
@@ -347,12 +354,16 @@ export default function SingleProject() {
         </View>
 
         {loading && !project ? (
-          <View style={{ paddingTop: 12, alignItems: "center" }}>
+          <View style={{ paddingTop: 12, alignItems: "center" }}
+            accessible={true}
+            accessibilityLabel={"loading"}>
             <ActivityIndicator size="small" color={colors.text} />
           </View>
         ) : null}
 
-        <View style={styles.statusPill}>
+        <View style={styles.statusPill}
+          accessible={true}
+          accessibilityLabel={"Project status: " + statusText}>
           <Text style={styles.statusText}>{statusText}</Text>
         </View>
 
@@ -367,10 +378,12 @@ export default function SingleProject() {
               style={styles.mainImage}
               resizeMode="cover"
               accessible
-              accessibilityLabel="Project image"
+              accessibilityLabel="Project Image"
             />
           ) : (
-            <View style={{ alignItems: "center", justifyContent: "center" }}>
+            <View style={{ alignItems: "center", justifyContent: "center" }}
+              accessible={true}
+              accessibilityLabel={"No pictures yet... Edit this project to add up to 5 pictures!"}>
               <Feather name="image" size={40} color={colors.decorativeText} />
               <Text style={styles.mainPhotoText}>No pictures yet...</Text>
               <Text style={styles.mainPhotoText}>Edit this project to add up to 5 pictures!</Text>
@@ -393,6 +406,8 @@ export default function SingleProject() {
                       styles.thumbCard,
                       selectedThumb === index && styles.thumbCardSelected,
                     ]}
+                    accessible={true}
+                    accessibilityRole={"image"}
                   >
                     <Image
                       source={{ uri: photo.pic }}
@@ -407,7 +422,9 @@ export default function SingleProject() {
           </ScrollView>
         </View>
 
-        <View style={styles.notePlaceholder}>
+        <View style={styles.notePlaceholder}
+          accessible={true}
+          accessibilityLabel={"Note: " + notesText}>
           <Text style={styles.noteText}>{notesText}</Text>
         </View>
       </ScrollView>

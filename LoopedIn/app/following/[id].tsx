@@ -264,10 +264,18 @@ export default function FollowingScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()}
+          accessible={true}
+          accessibilityLabel={"Go Back"}
+          accessibilityHint={"Navigates back to the previous page."}
+          accessibilityRole={"button"}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}>Following</Text>
+        <Text style={styles.headerText}
+          accessible={true}
+          accessibilityRole={"header"}>
+          Following
+        </Text>
       </View>
 
       {/* Search Bar */}
@@ -289,7 +297,11 @@ export default function FollowingScreen() {
               <TouchableOpacity onPress={() => router.replace({
                   pathname: "/userProfile/[id]",
                   params: { id: item.id },
-                })}>
+                })}
+                accessible={true}
+                accessibilityLabel={item.username + " profile picture."}
+                accessibilityHint={"Double tap to view profile"}
+                accessibilityRole={"image"}>
               <Image source={item.image} style={styles.avatar} />
               </TouchableOpacity>
               <View style={{flexShrink: 1, minWidth: 0}}>
@@ -301,12 +313,18 @@ export default function FollowingScreen() {
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
                 onPress={() => unfollow(item.id)}
+                accessible={true}
+                accessibilityHint={"Double tap to unfollow this account"}
+                accessibilityRole={"button"}
               >
                 <Text style={styles.buttonText}>Unfollow</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: "#6C757D" }]}
                 onPress={() => blockUser(item.id)}
+                accessible={true}
+                accessibilityHint={"Double tap to block this account"}
+                accessibilityRole={"button"}
               >
                 <Text style={styles.buttonText}>Block</Text>
               </TouchableOpacity>

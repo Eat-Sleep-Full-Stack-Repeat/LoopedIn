@@ -412,12 +412,20 @@ export default function WishlistFolderScreen() {
     >
       <View style={styles.headerRow}>
         <View style={styles.headerSide}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}
+            accessible={true}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}>
             <Feather name="arrow-left" size={22} color={colors.text} />
           </Pressable>
         </View>
         <View style={styles.headerCenter}>
-          <Text style={[styles.title, { color: colors.text }]}>Wishlist</Text>
+          <Text style={[styles.title, { color: colors.text }]}
+            accessible={true}
+            accessibilityRole={"header"}>
+            Wishlist
+          </Text>
         </View>
         <View style={styles.headerSide}>
           <Pressable
@@ -436,6 +444,11 @@ export default function WishlistFolderScreen() {
               setIsAddingCategory(false);
               setIsAddingItem(false);
             }}
+            accessible={true}
+            accessibilityLabel={isCategoryEditMode ? "Stop editing" : "Edit"}
+            accessibilityHint={isCategoryEditMode ? "Double tap to disable editing mode." : "Double tap to delete and edit wishlist categories and items."}
+            accessibilityRole={"button"}
+            accessibilityState={isCategoryEditMode ? {checked:true} : {checked:false}}
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
@@ -464,6 +477,10 @@ export default function WishlistFolderScreen() {
               },
             ]}
             onPress={() => setSelectedCategory("All")}
+            accessible={true}
+            accessibilityHint={selectedCategory === "All" ? "Shows all wishlist items." : "Double tap to show all wishlist items."}
+            accessibilityRole={"tab"}
+            accessibilityState={selectedCategory === "All" ? {checked:true} : {checked:false}}
           >
             <Text
               style={[
@@ -509,8 +526,7 @@ export default function WishlistFolderScreen() {
             }
 
             return (
-              <Pressable
-                key={category.id}
+              <View
                 style={[
                   styles.categoryTab,
                   {
@@ -519,27 +535,36 @@ export default function WishlistFolderScreen() {
                       : colors.boxBackground,
                     borderColor: colors.topBackground,
                   },
-                ]}
-                onPress={() => setSelectedCategory(category.name)}
-                onLongPress={() => {
-                  if (!isCategoryEditMode) {
-                    return;
-                  }
-                  setEditingCategory(category.name);
-                  setEditedCategoryName(category.name);
-                }}
-              >
+                ]}>
                 <View style={styles.categoryTabContent}>
-                  <Text
-                    style={[
-                      styles.categoryTabText,
-                      {
-                        color: isSelected ? colors.decorativeText : colors.text,
-                      },
-                    ]}
-                  >
-                    {category.name}
-                  </Text>
+                  <Pressable
+                  key={category.id}
+                  onPress={() => setSelectedCategory(category.name)}
+                  onLongPress={() => {
+                    if (!isCategoryEditMode) {
+                      return;
+                    }
+                    setEditingCategory(category.name);
+                    setEditedCategoryName(category.name);
+                  }}
+                  accessible={true}
+                  accessibilityHint={selectedCategory === category.name ? "Shows wishlist items within the " + category.name + " category" :
+                    "Double tap to show wishlist items within the " + category.name + " category"
+                  }
+                  accessibilityRole={"tab"}
+                  accessibilityState={selectedCategory === category.name ? {checked:true} : {checked:false}}
+                >
+                    <Text
+                      style={[
+                        styles.categoryTabText,
+                        {
+                          color: isSelected ? colors.decorativeText : colors.text,
+                        },
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </Pressable>
                   {isCategoryEditMode && (
                     <Pressable
                       onPress={(event) => {
@@ -548,16 +573,20 @@ export default function WishlistFolderScreen() {
                       }}
                       hitSlop={6}
                       style={styles.categoryDeleteButton}
+                      accessible={true}
+                      accessibilityLabel={"Delete"}
+                      accessibilityHint={"Delete " + category.name + " category and its wishlist items"}
+                      accessibilityRole={"button"}
                     >
                       <Feather
                         name="x"
-                        size={12}
+                        size={22}
                         color={isSelected ? colors.decorativeText : colors.text}
                       />
                     </Pressable>
                   )}
                 </View>
-              </Pressable>
+              </View>
             );
           })}
 
@@ -598,13 +627,17 @@ export default function WishlistFolderScreen() {
               }
               setIsAddingCategory(true);
             }}
+            accessible={true}
+            accessibilityLabel={"Add category"}
+            accessibilityHint={"Add a craft category to hold wishlist items"}
+            accessibilityRole={"button"}
           >
             <Feather name="plus" size={14} color={colors.text} />
           </Pressable>
         </ScrollView>
 
         <View style={[styles.searchBar, { borderColor: colors.topBackground }]}>
-          <Feather name="search" size={16} color={colors.settingsText} />
+          <Feather name="search" size={16} color={colors.settingsText} accessible={false}/>
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -616,8 +649,12 @@ export default function WishlistFolderScreen() {
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}>
-              <Feather name="x" size={16} color={colors.settingsText} />
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+              accessible={true}
+              accessibilityLabel={"Exit"}
+              accessibilityHint={"Cancels and exits search"}
+              accessibilityRole={"button"}>
+              <Feather name="x" size={22} color={colors.settingsText} />
             </Pressable>
           )}
         </View>
@@ -729,8 +766,12 @@ export default function WishlistFolderScreen() {
                   onPress={() => handleDeleteItem(item.id)}
                   hitSlop={8}
                   style={styles.itemDeleteButton}
+                  accessible={true}
+                  accessibilityLabel={"Delete"}
+                  accessibilityHint={"Delete " + item.name + " category and its wishlist items"}
+                  accessibilityRole={"button"}
                 >
-                  <Feather name="x" size={16} color={colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </Pressable>
               ) : (
                 <Feather
@@ -738,6 +779,9 @@ export default function WishlistFolderScreen() {
                   size={18}
                   color={colors.settingsText}
                   style={styles.cardMenuIcon}
+                  accessible={true}
+                  accessibilityLabel={"Item Menu"}
+                  accessiblilityHint={"Double tap to see more."}
                 />
               )}
             </View>
@@ -755,6 +799,10 @@ export default function WishlistFolderScreen() {
             },
           ]}
           onPress={() => setIsAddingItem(true)}
+          accessible={true}
+          accessibilityLabel={"Add Wishlist Item"}
+          accessibilityHint={"Double tap to add a wishlist item under " + selectedCategory + " category."}
+          accessibilityRole={"button"}
         >
           <Feather name="plus" size={24} color={colors.decorativeText} />
         </Pressable>

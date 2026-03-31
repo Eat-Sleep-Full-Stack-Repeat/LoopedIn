@@ -359,10 +359,16 @@ export default function SinglePost() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={router.back} hitSlop={10}>
+        <Pressable onPress={router.back} hitSlop={10}
+          accessible={true}
+          accessibilityLabel={"Go Back"}
+          accessibilityHint={"Navigates back to the previous page."}
+          accessibilityRole={"button"}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}
+          accessible={true}
+          accessibilityRole={"header"}>
           More About This Post
         </Text>
         {/* spacer so title stays centered */}
@@ -395,6 +401,8 @@ export default function SinglePost() {
                   params: { id: post.creatorID },
                 })
               }
+              accessible={true}
+              accessibilityHint={"Double tap to view " + post.username + " profile"}
             >
               <View>
                 <Image
@@ -423,10 +431,14 @@ export default function SinglePost() {
 
             <View style={{ flex: 1 }} />
 
-            <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}>
+            <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}
+              accessible={true}
+              accessibilityLabel={"Explore Post Menu"}
+              accessibilityHint={"Double tap to view the explore post menu options."}
+              accessibilityRole={"button"}>
               <Entypo
                 name="dots-three-vertical"
-                size={18}
+                size={22}
                 color={colors.text}
               />
             </Pressable>
@@ -537,7 +549,12 @@ export default function SinglePost() {
 
           {/* Action row (like / comment / save) */}
           <View style={styles.actionsRow}>
-            <Pressable style={styles.actionButton} onPress={handleLikePress}>
+            <Pressable style={styles.actionButton} onPress={handleLikePress}
+              accessible={true}
+              accessibilityLabel={"Like"}
+              accessibilityHint={liked? "double tap to unlike this post" : "double tap to like this post"}
+              accessibilityState={liked? {checked: true} : {checked: false}}
+              accessibilityRole={"button"}>
               <Feather
                 name="heart"
                 size={24}
@@ -558,6 +575,10 @@ export default function SinglePost() {
             <Pressable
               onPress={() => showComments(post)}
               style={styles.actionButton}
+              accessible={true}
+              accessibilityLabel={"Comment feed"}
+              accessibilityHint={"Double tap to open comment section on this post"}
+              accessibilityRole={"button"}
             >
               <Feather name="message-circle" size={24} color={colors.text} />
               <Text style={[styles.actionText, { color: colors.text }]}>
@@ -567,7 +588,12 @@ export default function SinglePost() {
 
             <View style={{ flex: 1 }} />
 
-            <Pressable style={styles.actionButton} onPress={handleSavePress}>
+            <Pressable style={styles.actionButton} onPress={handleSavePress}
+              accessible={true}
+              accessibilityLabel={"Save"}
+              accessibilityHint={saved ? "double tap to unsave this post" : "double tap to save this post"}
+              accessibilityState={saved ? {checked: true} : {checked: false}}
+              accessibilityRole={"button"}>
               <Feather
                 name="bookmark"
                 size={24}
@@ -631,6 +657,7 @@ export default function SinglePost() {
           style={styles.modalOverlay}
           activeOpacity={1}
           onPressOut={() => setMenuVisible(false)}
+          accessible={false}
         >
           <View
             style={[
@@ -644,6 +671,9 @@ export default function SinglePost() {
                 <TouchableOpacity
                   onPress={handleEdit}
                   style={styles.menuOption}
+                  accessible={true}
+                  accessibilityLabel={"Edit"}
+                  accessibilityHint={"Navigates to the edit explore post screen. Double tap to edit this post."}
                 >
                   <Feather name="edit" size={18} color={colors.text} />
                   <Text style={[styles.menuText, { color: colors.text }]}>
@@ -654,6 +684,9 @@ export default function SinglePost() {
                 <TouchableOpacity
                   onPress={handleDelete}
                   style={styles.menuOption}
+                  accessible={true}
+                  accessibilityLabel={"Delete"}
+                  accessibilityHint={"Double tap to delete this explore post."}
                 >
                   <Feather name="trash-2" size={18} color={colors.warning} />
                   <Text style={[styles.menuText, { color: colors.warning }]}>
@@ -669,6 +702,9 @@ export default function SinglePost() {
                   console.log("Report pressed (not implemented yet)");
                 }}
                 style={styles.menuOption}
+                accessible={true}
+                accessibilityLabel={"Report"}
+                accessibilityHint={"Double tap to report this explore post to LoopedIn moderators."}
               >
                 <Feather name="flag" size={18} color={colors.warning} />
                 <Text style={[styles.menuText, { color: colors.warning }]}>
@@ -676,6 +712,17 @@ export default function SinglePost() {
                 </Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => setMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit explore post menu"
+              style={{marginTop: 10, padding: 8, backgroundColor: colors.blockedBackground, borderRadius: 12, width: "100%",
+                      alignItems: "center"}}
+            >
+              <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>

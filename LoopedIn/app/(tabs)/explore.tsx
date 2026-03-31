@@ -463,6 +463,8 @@ export default function ExplorePage() {
               params: { id: item.userID },
             })
           }
+          accessible={true}
+          accessibilityHint={"Double tap to view " + item.username + " profile"}
         >
           <Image
             style={styles.profilePic}
@@ -482,6 +484,9 @@ export default function ExplorePage() {
               params: { id: item.id },
             })
           }
+          accessible={true}
+          accessibilityHint={"Double tap to read more about this explore post."}
+
         >
           <Image
             style={[styles.postImage, { height: imageHeight }]}
@@ -526,6 +531,11 @@ export default function ExplorePage() {
           <Pressable
             style={styles.postAction}
             onPress={() => handleLikePress(item)}
+            accessible={true}
+            accessibilityLabel={"Like"}
+            accessibilityHint={item.isLiked? "double tap to unlike the post" : "double tap to like this post"}
+            accessibilityState={item.isLiked? {checked: true} : {checked: false}}
+            accessibilityRole={"button"}
           >
             <Image
               style={[
@@ -543,6 +553,10 @@ export default function ExplorePage() {
             <Pressable
               onPress={() => showComments(item)}
               style={{ alignItems: "center" }}
+              accessible={true}
+              accessibilityLabel={"Comment feed"}
+              accessibilityHint={"Double tap to open comment section on this post"}
+              accessibilityRole={"button"}
             >
               <Image
                 style={[styles.actionIcon, { tintColor: colors.text }]}
@@ -563,6 +577,11 @@ export default function ExplorePage() {
           <Pressable
             style={styles.postAction}
             onPress={() => handleSavePress(item)}
+            accessible={true}
+            accessibilityLabel={"Save"}
+            accessibilityHint={item.isSaved? "double tap to unsave this post" : "double tap to save this post"}
+            accessibilityState={item.isSaved? {checked: true} : {checked: false}}
+            accessibilityRole={"button"}
           >
             <Image
               style={[
@@ -605,11 +624,17 @@ export default function ExplorePage() {
 
       <View style={styles.container}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Text style={styles.pageTitle}>Explore</Text>
+          <Text style={styles.pageTitle}
+            accessible={true}
+            accessibilityRole={"header"}  
+          >Explore</Text>
 
           <Pressable
             onPress={() => router.push("/exploreSearch")}
             style={{ marginHorizontal: 20 }}
+            accessible={true}
+            accessibilityHint={"Allows to search for specific content from the Explore page"}
+            accessibilityRole={"search"}
           >
             <View pointerEvents="none">
               <TextInput
@@ -626,6 +651,11 @@ export default function ExplorePage() {
               <Pressable
                 key={filterOption}
                 onPress={() => setSelectedFilter(filterOption)}
+                accessible={true}
+                accessibilityHint={filterOption == "All" ? "Shows all posts" : "Shows posts sorted by " + filterOption + " craft type"}
+                accessibilityRole={"tab"}
+                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
+
                 style={[
                   styles.filterTag,
                   selectedFilter === filterOption && styles.filterTagSelected,

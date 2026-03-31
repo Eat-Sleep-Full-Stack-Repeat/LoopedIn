@@ -686,10 +686,18 @@ export default function NewPost() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}
+              accessible={true}
+              accessibilityLabel={"Go Back"}
+              accessibilityHint={"Navigates back to the previous page."}
+              accessibilityRole={"button"}>
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
-          <Text style={styles.title}>New Post</Text>
+          <Text style={styles.title}
+            accessible={true}
+            accessibilityRole={"header"}>
+            New Post
+          </Text>
         </View>
 
         <View style={styles.uploadContainer}>
@@ -721,6 +729,10 @@ export default function NewPost() {
                     <Pressable
                       style={styles.removePhotoButton}
                       onPress={() => handleRemovePhotoCard(card.id)}
+                      accessible={true}
+                      accessibilityLabel={"Delete photo."}
+                      accessibilityHint={`Removes photo ${index + 1} from selection.`}
+                      accessibilityRole={"button"}
                     >
                       <Feather
                         name="trash-2"
@@ -736,6 +748,10 @@ export default function NewPost() {
                         ? undefined
                         : () => handleUploadPress(card.id)
                     }
+                    accessible={true}
+                    accessibilityLabel={card.hasImage ? "Uploaded Photo" : "Upload a photo"}
+                    accessibilityHint={card.hasImage ? "" : "Double tap to choose from your library or camera."}
+                    accessibilityRole={card.hasImage ? "image" : "button"}
                     disabled={card.hasImage}
                   >
                     {card.hasImage && card.localUri ? (
@@ -770,7 +786,9 @@ export default function NewPost() {
                       multiline
                       maxLength={CARD_ALT_TEXT_LIMIT}
                     />
-                    <Text style={styles.cardCounterText}>
+                    <Text style={styles.cardCounterText}
+                      accessible={true}
+                      accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}>
                       {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
                     </Text>
                   </View>
@@ -782,7 +800,9 @@ export default function NewPost() {
             Add up to 5 cards. Each card holds one photo with its own alt text.
           </Text>
           <View style={styles.addCardRow}>
-            <Text style={styles.photoCountText}>
+            <Text style={styles.photoCountText}
+              accessible={true}
+              accessibilityLabel={`${photoCards.length} out of ${PHOTO_LIMIT} cards are taken.`}>
               {photoCards.length}/{PHOTO_LIMIT}
             </Text>
             <Pressable
@@ -792,6 +812,10 @@ export default function NewPost() {
                   styles.addPhotoFabDisabled,
               ]}
               onPress={handleAddPhotoCard}
+              accessible={true}
+              accessibilityLabel={"Add Card"}
+              accessibilityHint={photoCards.length >= PHOTO_LIMIT ? "Cannot add more cards. Reached 5 card maximum." 
+                : "Double tap to add another card"}
               disabled={photoCards.length >= PHOTO_LIMIT}
             >
               <Feather
@@ -817,6 +841,10 @@ export default function NewPost() {
                   key={option.id}
                   onPress={() => setSelectedCraft(option.id)}
                   style={styles.craftOption}
+                  accessible={true}
+                  accessibilityHint={"Selects " + option.label + " as explore post craft type."}
+                  accessibilityRole={"button"}
+                  accessibilityState={selectedCraft === option.id ? {selected: true} : {selected: false}}
                 >
                   <View
                     style={[
@@ -855,7 +883,10 @@ export default function NewPost() {
         >
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>Caption</Text>
-            <Text style={styles.counterText}>
+            <Text style={styles.counterText}
+              accessible={true}
+              accessibilityLabel={`${caption.length} out of ${CAPTION_LIMIT} characters are used.`}
+            >
               {caption.length}/{CAPTION_LIMIT}
             </Text>
           </View>
@@ -885,6 +916,9 @@ export default function NewPost() {
                 key={tag}
                 style={styles.tagChip}
                 onPress={() => handleRemoveTag(tag)}
+                accessible={true}
+                accessibilityLabel={"Remove tag"}
+                accessibilityHint={"Double tap to remove " + tag}
               >
                 <Text style={styles.tagChipText}>#{tag}</Text>
               </Pressable>
@@ -904,6 +938,10 @@ export default function NewPost() {
             <Pressable
               onPress={handleAddTag}
               disabled={tags.length >= 5 || !newTag.trim()}
+              accessible={true}
+              accessibilityLabel={"Add Tag"}
+              accessibilityHint={tags.length >= 5 || !newTag.trim() ? "Cannot add more tags. Ensure tag text field is filled out, and number of tags is under 5." 
+                : "Double tap to add tag"}
               style={[ 
                 styles.addTagButton,
                 (tags.length >= 5 || !newTag.trim()) &&
@@ -932,6 +970,11 @@ export default function NewPost() {
                 styles.postOptionButtonSelected,
             ]}
             onPress={() => setPostVisibility("public")}
+            accessible={true}
+            accessibilityLabel={"Public Post"}
+            accessibilityHint={"Make explore post viewable to everyone"}
+            accessibilityState={postVisibility === "public" ? {selected: true} : {selected: false}}
+            accessibilityRole={"button"}
           >
             <Feather
               name="globe"
@@ -960,6 +1003,11 @@ export default function NewPost() {
                 styles.postOptionButtonSelected,
             ]}
             onPress={() => setPostVisibility("private")}
+            accessible={true}
+            accessibilityLabel={"Private Post"}
+            accessibilityHint={"Make explore post viewable to only yourself"}
+            accessibilityState={postVisibility === "private" ? {selected: true} : {selected: false}}
+            accessibilityRole={"button"}
           >
             <Feather
               name="lock"
@@ -986,6 +1034,9 @@ export default function NewPost() {
           style={styles.submitButton}
           onPress={handleSubmit}
           disabled={submitting}
+          accessible={true}
+          accessibilityHint={"Post explore post."}
+          accessibilityRole={"button"}
         >
           <Text style={styles.submitButtonText}>Submit</Text>
         </Pressable>

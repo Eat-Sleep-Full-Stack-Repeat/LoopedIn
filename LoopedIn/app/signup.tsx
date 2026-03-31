@@ -151,6 +151,8 @@ export default function Login() {
           marginBottom: 40,
           color: colors.welcomeText,
         }}
+        accessible={true}
+        accessibilityRole={"header"}
       >
         Welcome to LoopedIn
       </Text>
@@ -269,7 +271,10 @@ export default function Login() {
           autoCorrect={false}
           autoCapitalize="none"
           />
-          <Pressable onPress={() => setPasswordVisible(!passwordVisible)}>
+          <Pressable onPress={() => setPasswordVisible(!passwordVisible)}
+            accessible={true}
+            accessibilityLabel={passwordVisible ? "Stop viewing password" : "View password"}
+            accessibilityRole={"button"}>
             <Text><Ionicons 
             name={passwordVisible ? "eye-off" : "eye"}
             size={22}
@@ -294,6 +299,9 @@ export default function Login() {
           alignItems: "center",
           justifyContent: "center",
         }}
+        accessible={true}
+        accessibilityHint={"Double tap to create your LoopedIn account."}
+        accessibilityRole={"button"}
       >
         <Text
           style={{
@@ -316,7 +324,10 @@ export default function Login() {
       >
         {/*Login*/}
         <Text style={{ color: colors.text }}> Already have an account? </Text>
-        <TouchableOpacity onPress={() => router.push("/login")}>
+        <TouchableOpacity onPress={() => router.push("/login")}
+          accessible={true}
+          accessibilityHint={"Double tap to navigate to the log in page."}
+          accessibilityRole={"button"}>
           <Text
             style={{
               color: colors.linkText,
@@ -359,6 +370,9 @@ export default function Login() {
           style={{
             alignSelf: "center",
           }}
+          accessible={true}
+          accessibilityHint={"Double tap to sign up to LoopedIn using Google."}
+          accessibilityRole={"button"}
         >
           <Image
             source={require("../assets/images/googleicon/netural_sign_in.png")}

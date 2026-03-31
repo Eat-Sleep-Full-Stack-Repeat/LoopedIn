@@ -368,6 +368,9 @@ export default function ExploreSearch() {
           params: { id: item.userID },
         })
       }
+      accessible={true}
+      accessibilityHint={"Double tap to view " + item.username + " profile"}
+      accessibilityRole={"button"}
     >
       <Image
         style={styles(colors, isTablet).userAvatar}
@@ -393,6 +396,9 @@ export default function ExploreSearch() {
               params: { id: item.userID },
             })
           }
+          accessible={true}
+          accessibilityHint={"Double tap to view " + item.username + " profile"}
+          accessibilityRole={"button"}
         >
           <Image
             style={styles(colors, isTablet).profilePic}
@@ -412,6 +418,8 @@ export default function ExploreSearch() {
               params: { id: item.id },
             })
           }
+          accessible={true}
+          accessibilityHint={"Double tap to read more about this explore post."}
         >
           <Image
             style={styles(colors, isTablet).postImage}
@@ -453,6 +461,11 @@ export default function ExploreSearch() {
           <Pressable
             style={styles(colors, isTablet).postAction}
             onPress={() => handleLikePress(item)}
+            accessible={true}
+            accessibilityLabel={"Like"}
+            accessibilityHint={item.isLiked? "double tap to unlike the post" : "double tap to like this post"}
+            accessibilityState={item.isLiked? {checked: true} : {checked: false}}
+            accessibilityRole={"button"}
           >
             <Image
               style={[
@@ -470,6 +483,10 @@ export default function ExploreSearch() {
             <Pressable
               onPress={() => showComments(item)}
               style={{ alignItems: "center" }}
+              accessible={true}
+              accessibilityLabel={"Comment feed"}
+              accessibilityHint={"Double tap to open comment section on this post"}
+              accessibilityRole={"button"}
             >
               <Image
                 style={[
@@ -503,6 +520,11 @@ export default function ExploreSearch() {
           <Pressable
             style={styles(colors, isTablet).postAction}
             onPress={() => handleSavePress(item)}
+            accessible={true}
+            accessibilityLabel={"Save"}
+            accessibilityHint={item.isSaved? "double tap to unsave this post" : "double tap to save this post"}
+            accessibilityState={item.isSaved? {checked: true} : {checked: false}}
+            accessibilityRole={"button"}
           >
             <Image
               style={[
@@ -556,10 +578,18 @@ export default function ExploreSearch() {
                 onPress={goBack}
                 style={styles(colors, isTablet).backBtn}
                 hitSlop={10}
+                accessible={true}
+                accessibilityLabel={"Go Back"}
+                accessibilityHint={"Navigates back to the previous page."}
+                accessibilityRole={"button"}
               >
                 <Feather name="arrow-left" size={26} color={colors.text} />
               </Pressable>
-              <Text style={styles(colors, isTablet).headerText}>Search</Text>
+              <Text style={styles(colors, isTablet).headerText}
+                accessible={true}
+                accessibilityRole={"header"}>
+                Search
+              </Text>
             </View>
 
             <View style={styles(colors, isTablet).searchRow}>
@@ -579,6 +609,10 @@ export default function ExploreSearch() {
                 onPress={() => runSearch(true)}
                 style={styles(colors, isTablet).iconBtn}
                 hitSlop={10}
+                accessible={true}
+                accessibilityLabel={"Search"}
+                accessibilityHint={"double tap to enter search query"}
+                accessibilityRole={"button"}
               >
                 <Feather
                   name="search"
@@ -603,6 +637,10 @@ export default function ExploreSearch() {
                           : colors.boxBackground,
                       },
                     ]}
+                    accessible={true}
+                    accessibilityHint={"Searches forum posts by " + t}
+                    accessibilityRole={"tab"}
+                    accessibilityState={active ? {selected: true} : {selected: false}}
                   >
                     <Text
                       style={{

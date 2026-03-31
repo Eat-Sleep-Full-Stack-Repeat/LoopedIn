@@ -1,7 +1,7 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
-import { useRouter, router, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useMemo, useState, useEffect, useRef } from "react";
 import {
   FlatList,
@@ -659,11 +659,17 @@ export default function SingleFolderScreen() {
     >
       <View style={styles.headerRow}>
         <View style={styles.headerSide}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}
+            accessible={true}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}>
             <Feather name="arrow-left" size={22} color={colors.text} />
           </Pressable>
         </View>
-        <View style={styles.headerCenter}>
+        <View style={styles.headerCenter}
+            accessible={true}
+            accessibilityRole={"header"}>
           <Text style={[styles.title, { color: colors.text }]}>Inventory</Text>
         </View>
         <View style={styles.headerSide}>
@@ -688,6 +694,11 @@ export default function SingleFolderScreen() {
               setIsAddingCategory(false);
               setIsAddingItem(false);
             }}
+            accessible={true}
+            accessibilityLabel={isCategoryEditMode ? "Stop editing" : "Edit"}
+            accessibilityHint={isCategoryEditMode ? "Double tap to disable editing mode." : "Double tap to delete, and edit inventory categories and items."}
+            accessibilityRole={"button"}
+            accessibilityState={isCategoryEditMode ? {checked:true} : {checked:false}}
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
@@ -716,6 +727,10 @@ export default function SingleFolderScreen() {
               },
             ]}
             onPress={() => setSelectedCategory("All")}
+            accessible={true}
+            accessibilityHint={selectedCategory === "All" ? "Shows all inventory items." : "Double tap to show all inventory items."}
+            accessibilityRole={"tab"}
+            accessibilityState={selectedCategory === "All" ? {checked:true} : {checked:false}}
           >
             <Text
               style={[
@@ -758,8 +773,7 @@ export default function SingleFolderScreen() {
             }
 
             return (
-              <Pressable
-                key={category.name}
+              <View
                 style={[
                   styles.categoryTab,
                   {
@@ -768,17 +782,24 @@ export default function SingleFolderScreen() {
                       : colors.boxBackground,
                     borderColor: colors.topBackground,
                   },
-                ]}
-                onPress={() => {
-                  if (isCategoryEditMode) {
-                    setEditingCategory(category.id);
-                    setEditedCategoryName(category.name);
-                    return;
-                  }
-                  setSelectedCategory(category.name);
-                }}
-              >
+                ]}>
                 <View style={styles.categoryTabContent}>
+                  <Pressable
+                    key={category.name}
+                    onPress={() => {
+                      if (isCategoryEditMode) {
+                        setEditingCategory(category.id);
+                        setEditedCategoryName(category.name);
+                        return;
+                      }
+                      setSelectedCategory(category.name);
+                    }}
+                    accessible={true}
+                    accessibilityHint={selectedCategory === category.name ? "Shows inventory items within the " + category.name + " category" :
+                      "Double tap to show inventory items within the " + category.name + " category"
+                    }
+                    accessibilityRole={"tab"}
+                    accessibilityState={selectedCategory === category.name ? {checked:true} : {checked:false}}>
                   <View
                     style={[
                       styles.editableCategoryBox,
@@ -801,6 +822,7 @@ export default function SingleFolderScreen() {
                       {category.name}
                     </Text>
                   </View>
+                  </Pressable>
                   {isCategoryEditMode && (
                     <Pressable
                       onPress={(event) => {
@@ -809,16 +831,20 @@ export default function SingleFolderScreen() {
                       }}
                       hitSlop={6}
                       style={styles.categoryDeleteButton}
+                      accessible={true}
+                      accessibilityLabel={"Delete"}
+                      accessibilityHint={"Delete " + category.name + " category and its inventory items"}
+                      accessibilityRole={"button"}
                     >
                       <Feather
                         name="x"
-                        size={12}
+                        size={22}
                         color={isSelected ? colors.decorativeText : colors.text}
                       />
                     </Pressable>
                   )}
                 </View>
-              </Pressable>
+              </View>
             );
           })}
 
@@ -859,13 +885,17 @@ export default function SingleFolderScreen() {
               }
               setIsAddingCategory(true);
             }}
+            accessible={true}
+            accessibilityLabel={"Add category"}
+            accessibilityHint={"Add a craft category to hold inventory items"}
+            accessibilityRole={"button"}
           >
             <Feather name="plus" size={14} color={colors.text} />
           </Pressable>
         </ScrollView>
 
         <View style={[styles.searchBar, { borderColor: colors.topBackground }]}>
-          <Feather name="search" size={16} color={colors.settingsText} />
+          <Feather name="search" size={16} color={colors.settingsText} accessible={false}/>
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -877,8 +907,12 @@ export default function SingleFolderScreen() {
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}>
-              <Feather name="x" size={16} color={colors.settingsText} />
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+              accessible={true}
+              accessibilityLabel={"Exit"}
+              accessibilityHint={"Cancels and exits search"}
+              accessibilityRole={"button"}>
+              <Feather name="x" size={22} color={colors.settingsText} />
             </Pressable>
           )}
         </View>
@@ -947,6 +981,7 @@ export default function SingleFolderScreen() {
                   setEditedItemName(item.name);
                   setEditedItemCount(String(item.itemCount));
                 }}
+                  accessible={true}
               >
                 {editingItemId === item.id ? (
                   <View>
@@ -1020,8 +1055,12 @@ export default function SingleFolderScreen() {
                   onPress={() => handleDeleteItem(item.id)}
                   hitSlop={8}
                   style={styles.itemDeleteButton}
+                  accessible={true}
+                  accessibilityLabel={"Delete"}
+                  accessibilityHint={"Delete " + item.name + " category and its inventory items"}
+                  accessibilityRole={"button"}
                 >
-                  <Feather name="x" size={16} color={colors.text} />
+                  <Feather name="x" size={22} color={colors.text} />
                 </Pressable>
               ) : (
                 <></>
@@ -1049,6 +1088,10 @@ export default function SingleFolderScreen() {
             },
           ]}
           onPress={() => setIsAddingItem(true)}
+          accessible={true}
+          accessibilityLabel={"Add Inventory Item"}
+          accessibilityHint={"Double tap to add an inventory item under " + selectedCategory + " category."}
+          accessibilityRole={"button"}
         >
           <Feather name="plus" size={24} color={colors.decorativeText} />
         </Pressable>

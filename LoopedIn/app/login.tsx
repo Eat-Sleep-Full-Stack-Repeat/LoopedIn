@@ -125,7 +125,9 @@ const [password, onChangePassword] = useState('');
         fontSize: 32,
         fontWeight: "500",
         marginBottom: 40,
-        color: colors.welcomeText}}>
+        color: colors.welcomeText}}
+        accessible={true}
+        accessibilityRole={"header"}>
         Welcome Back!
         </Text>
         
@@ -192,7 +194,10 @@ const [password, onChangePassword] = useState('');
             autoCorrect={false}
             autoCapitalize="none"
             />
-            <Pressable onPress={() => setPasswordVisible(!passwordVisible)}>
+            <Pressable onPress={() => setPasswordVisible(!passwordVisible)}
+              accessible={true}
+              accessibilityLabel={passwordVisible ? "Stop viewing password" : "View password"}
+              accessibilityRole={"button"}>
               <Text><Ionicons 
               name={passwordVisible ? "eye-off" : "eye"}
               size={22}
@@ -207,7 +212,10 @@ const [password, onChangePassword] = useState('');
               marginTop: 5,
           }}>
             {/* Forgot Password*/}
-            <TouchableOpacity onPress ={() => console.log("Forgot Password tapped")}>
+            <TouchableOpacity onPress ={() => console.log("Forgot Password tapped")}
+              accessible={true}
+              accessibilityHint={"Double tap if password is forgotten."}
+              accessibilityRole={"button"}>
                 <Text style=
                 {{ 
                     color: colors.linkText,
@@ -219,18 +227,22 @@ const [password, onChangePassword] = useState('');
         </View>
         {/* Login button*/}
         <TouchableOpacity onPress={onPressSignIn}
-        style={{
-            width: "80%",
-            height: 55,
-            borderColor: colors.decorativeBackground,
-            backgroundColor: colors.decorativeBackground,
-            borderWidth: 1,
-            marginTop: 40,
-            borderRadius: 25,
-            paddingHorizontal: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            }}>
+          accessible={true}
+          accessibilityHint={"Double tap to log into your LoopedIn account."}
+          accessibilityRole={"button"}
+          style={{
+              width: "80%",
+              height: 55,
+              borderColor: colors.decorativeBackground,
+              backgroundColor: colors.decorativeBackground,
+              borderWidth: 1,
+              marginTop: 40,
+              borderRadius: 25,
+              paddingHorizontal: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              
+              }}>
                 <Text style={{
                     fontSize: 25,
                     fontWeight: "600",
@@ -246,7 +258,10 @@ const [password, onChangePassword] = useState('');
         }}>
             {/* Sign-up*/}
             <Text style={{ color: colors.text}}> Don't have an account? </Text>
-            <TouchableOpacity onPress ={() => router.push("/signup")}> 
+            <TouchableOpacity onPress ={() => router.push("/signup")}
+              accessible={true}
+              accessibilityHint={"Double tap to sign up for a LoopedIn account."}
+              accessibilityRole={"button"}> 
                 <Text style=
                 {{ 
                     color: colors.linkText,
@@ -278,10 +293,13 @@ const [password, onChangePassword] = useState('');
                     backgroundColor: "#F2F0EF",
                 }}> 
                 <TouchableOpacity onPress={()=> console.log ("Google Login tapped")}
-                style ={{
-                    alignSelf:"center",
-                }}
-            >
+                  accessible={true}
+                  accessibilityHint={"Double tap to log into LoopedIn using Google."}
+                  accessibilityRole={"button"}
+                  style ={{
+                      alignSelf:"center",
+                  }}
+                >
                 <Image
                 source ={require("../assets/images/googleicon/netural_log_in.png")}
                     style={{ 

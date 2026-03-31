@@ -551,19 +551,29 @@ const fetchData = async () => {
         >
             <View style={styles.header}>
             <Pressable style={styles.backButton} onPress={() =>
-            router.replace({
-              pathname: "/singlePost/[id]",
-              params: { id: id },
-            })
-          }>
+              router.replace({
+                pathname: "/singlePost/[id]",
+                params: { id: id },
+              })}
+              accessible={true}
+              accessibilityLabel={"Go Back"}
+              accessibilityHint={"Navigates back to the previous page."}
+              accessibilityRole={"button"}
+            >
                 <Text style={styles.backArrow}>←</Text>
             </Pressable>
-            <Text style={styles.title}>Edit Post</Text>
+            <Text style={styles.title}
+              accessible={true}
+              accessibilityRole={"header"}
+            >Edit Post</Text>
             </View>
 
             <View style={styles.section}>
             <Text style={styles.sectionLabel}>Associated Craft</Text>
-            <View style={styles.lockedCraftCard}>
+            <View style={styles.lockedCraftCard}
+              accessible={true}
+              accessibilityLabel={"Locked Craft Type: " + lockedCraft?.label}
+              accessibilityHint={"Craft Type cannot be swapped."}>
                 {lockedCraft?.icon ? (
                 <View style={styles.craftIconWrapper}>
                     <Image
@@ -610,7 +620,11 @@ const fetchData = async () => {
                         Photo {index + 1}
                     </Text>
 
-                    <View style={[styles.uploadArea, styles.uploadAreaDisabled]}>
+                    <View style={[styles.uploadArea, styles.uploadAreaDisabled]}
+                    accessible={true}
+                    accessibilityLabel={"Uploaded photo"}
+                    accessibilityHint={"Photo updates are disabled. Update alt text below."}
+                    accessibilityRole={"image"}>
                     {/* bg image */}
                         {card.image && (
                         <Image
@@ -647,7 +661,10 @@ const fetchData = async () => {
                         multiline
                         maxLength={CARD_ALT_TEXT_LIMIT}
                         />
-                        <Text style={styles.cardCounterText}>
+                        <Text style={styles.cardCounterText}
+                          accessible={true}
+                          accessibilityLabel={`${caption.length} out of ${CAPTION_LIMIT} characters are used.`}
+                        >
                         {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
                         </Text>
                     </View>
@@ -663,7 +680,9 @@ const fetchData = async () => {
             >
             <View style={styles.inputHeaderRow}>
                 <Text style={styles.inputLabel}>Caption</Text>
-                <Text style={styles.counterText}>
+                <Text style={styles.counterText}
+                  accessible={true}
+                  accessibilityLabel={`${caption.length} out of ${CAPTION_LIMIT} characters are used.`}>
                 {caption.length}/{CAPTION_LIMIT}
                 </Text>
             </View>
@@ -683,6 +702,11 @@ const fetchData = async () => {
             <Pressable
                 style={[styles.postOptionButton, postVisibility === "public" && styles.postOptionButtonSelected]}
                 onPress={() => setPostVisibility("public")}
+                accessible={true}
+                accessibilityLabel={"Public Post"}
+                accessibilityHint={"Make explore post viewable to everyone"}
+                accessibilityState={postVisibility === "public" ? {selected: true} : {selected: false}}
+                accessibilityRole={"button"}
             >
                 <Feather
                 name="globe"
@@ -702,6 +726,11 @@ const fetchData = async () => {
             <Pressable
                 style={[styles.postOptionButton, postVisibility === "private" && styles.postOptionButtonSelected]}
                 onPress={() => setPostVisibility("private")}
+                accessible={true}
+                accessibilityLabel={"Private Post"}
+                accessibilityHint={"Make explore post viewable to only yourself"}
+                accessibilityState={postVisibility === "private" ? {selected: true} : {selected: false}}
+                accessibilityRole={"button"}
             >
                 <Feather
                 name="lock"
@@ -719,7 +748,10 @@ const fetchData = async () => {
             </Pressable>
             </View>
 
-            <Pressable style={styles.submitButton} onPress={saveChangedHandler}>
+            <Pressable style={styles.submitButton} onPress={saveChangedHandler}
+              accessible={true}
+              accessibilityHint={"Save changes to explore post."}
+              accessibilityRole={"button"}>
             <Text style={styles.submitButtonText}>Submit</Text>
             </Pressable>
 
