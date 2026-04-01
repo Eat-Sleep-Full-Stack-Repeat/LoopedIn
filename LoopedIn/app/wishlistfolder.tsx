@@ -64,9 +64,6 @@ export default function WishlistFolderScreen() {
     });
 
     if (selectedCategory === "All") {
-      // return [...result].sort((a, b) =>
-      //   a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      // );
       return [...result];
     }
 
@@ -274,7 +271,7 @@ export default function WishlistFolderScreen() {
   }
 
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const trimmed = newCategoryName.trim();
     if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
       return;
@@ -294,33 +291,128 @@ export default function WishlistFolderScreen() {
       return;
     }
 
+    const token = await Storage.getItem("token");
+    const res = await fetch(
+      `${API_URL}/api/new-w-folder`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          name: trimmed,
+        })
+      }
+    );
+
+    if (res.status == 404) {
+      if (!alreadyAlerted.current) {
+        alreadyAlerted.current = true;
+        alert(`Endpoint does not exist. Please try again later.`);
+      }
+      router.back();
+      return;
+    }
+
+    else if (!res.ok) {
+      if (!alreadyAlerted.current) {
+        alreadyAlerted.current = true;
+        alert("Whoops! Something went wrong... please try again later.");
+      }
+      router.back();
+      return;
+    }
+
+    const data = await res.json();
+
+    const mappedFolder: Folder = {
+      id: data.fID,
+      name: data.fName,
+    };
+
     setCategories((prev) => [
       ...prev,
-      { id: Date.now().toString(), name: trimmed },
+      mappedFolder,
     ]);
     setNewCategoryName("");
     setIsAddingCategory(false);
   };
 
-  const handleDeleteCategory = (categoryToDelete: string) => {
-    setCategories((prev) =>
-      prev.filter((category) => category.name !== categoryToDelete)
-    );
-    setItems((prev) => prev.filter((item) => item.category !== categoryToDelete));
+  const handleDeleteCategory = async (categoryToDelete: string) => {
+    const token = await Storage.getItem("token");
+    const categoryObj = categories.find((category) => category.name === categoryToDelete);
 
-    if (selectedCategory === categoryToDelete) {
-      setSelectedCategory("All");
+    if (!categoryObj) {
+      return;
     }
 
-    if (editingCategory === categoryToDelete) {
-      setEditingCategory(null);
-      setEditedCategoryName("");
+    try {
+      const res = await fetch(
+        `${API_URL}/api/delete-w-folder/${categoryObj.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        return;
+      }
+
+      setCategories((prev) =>
+        prev.filter((category) => category.name !== categoryToDelete)
+      );
+      setItems((prev) => prev.filter((item) => item.category !== categoryToDelete));
+
+      if (selectedCategory === categoryToDelete) {
+        setSelectedCategory("All");
+      }
+
+      if (editingCategory === categoryObj.id) {
+        setEditingCategory(null);
+        setEditedCategoryName("");
+      }
+    }
+    catch(error) {
+      console.log("Error when trying to delete folder:", error)
     }
   };
 
-  const handleRenameCategory = (categoryId: string) => {
+  const handleRenameCategory = async (categoryId: string) => {
     const trimmed = editedCategoryName.trim();
     if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
+      return;
+    }
+
+    if (trimmed.length > 20) {
+      alert("Name is too long! Please use 20 characters or less.");
       return;
     }
 
@@ -341,25 +433,73 @@ export default function WishlistFolderScreen() {
       return;
     }
 
-    setCategories((prev) =>
-      prev.map((category) =>
-        category.id === categoryId ? { ...category, name: trimmed } : category
-      )
-    );
-    setItems((prev) =>
-      prev.map((item) =>
-        item.category === previousCategory.name
-          ? { ...item, category: trimmed }
-          : item
-      )
-    );
+    const token = await Storage.getItem("token");
 
-    if (selectedCategory === previousCategory.name) {
-      setSelectedCategory(trimmed);
+    try {
+      const res = await fetch(
+        `${API_URL}/api/rename-w-folder`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            folderId: categoryId,
+            name: trimmed,
+          }),
+        }
+      );
+
+      if (res.status == 403) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Access denied, please log in and try again.");
+        }
+        router.replace("/");
+        return;
+      }
+
+      else if (res.status == 404) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert(`Folder does not exist. Please try again later.`);
+        }
+        return;
+      }
+
+      else if (!res.ok) {
+        if (!alreadyAlerted.current) {
+          alreadyAlerted.current = true;
+          alert("Whoops! Something went wrong... please try again later.");
+        }
+        return;
+      }
+
+      setCategories((prev) =>
+        prev.map((category) =>
+          category.id === categoryId ? { ...category, name: trimmed } : category
+        )
+      );
+      setItems((prev) =>
+        prev.map((item) =>
+          item.category === previousCategory.name
+            ? { ...item, category: trimmed }
+            : item
+        )
+      );
+
+      if (selectedCategory === previousCategory.name) {
+        setSelectedCategory(trimmed);
+      }
+
+      setEditingCategory(null);
+      setEditedCategoryName("");
     }
-
-    setEditingCategory(null);
-    setEditedCategoryName("");
+    catch(error) {
+      console.log("Error when trying to rename folder:", error)
+    }
   };
 
   const handleAddItem = () => {
@@ -431,6 +571,10 @@ export default function WishlistFolderScreen() {
           <Pressable
             style={styles.headerActionButton}
             onPress={() => {
+              if (isCategoryEditMode && editingCategory) {
+                handleRenameCategory(editingCategory);
+              }
+
               setIsCategoryEditMode((prev) => {
                 const next = !prev;
                 if (!next) {
@@ -500,7 +644,7 @@ export default function WishlistFolderScreen() {
           {categories.map((category) => {
             const isSelected = selectedCategory === category.name;
 
-            if (editingCategory === category.name) {
+            if (editingCategory === category.id) {
               return (
                 <TextInput
                   key={`${category.id}-edit`}
@@ -515,11 +659,9 @@ export default function WishlistFolderScreen() {
                   autoCapitalize="words"
                   autoCorrect={false}
                   returnKeyType="done"
+                  maxLength={20}
                   onSubmitEditing={() => handleRenameCategory(category.id)}
-                  onBlur={() => {
-                    setEditingCategory(null);
-                    setEditedCategoryName("");
-                  }}
+                  onBlur={() => handleRenameCategory(category.id)}
                   autoFocus
                 />
               );
@@ -527,11 +669,12 @@ export default function WishlistFolderScreen() {
 
             return (
               <View
+                key={category.id}
                 style={[
                   styles.categoryTab,
                   {
-                    backgroundColor: isSelected
-                      ? colors.decorativeBackground
+                   backgroundColor: isSelected
+                     ? colors.decorativeBackground
                       : colors.boxBackground,
                     borderColor: colors.topBackground,
                   },
@@ -539,13 +682,13 @@ export default function WishlistFolderScreen() {
                 <View style={styles.categoryTabContent}>
                   <Pressable
                   key={category.id}
-                  onPress={() => setSelectedCategory(category.name)}
-                  onLongPress={() => {
-                    if (!isCategoryEditMode) {
+                  onPress={() => {
+                    if (isCategoryEditMode) {
+                      setEditingCategory(category.id);
+                      setEditedCategoryName(category.name);
                       return;
                     }
-                    setEditingCategory(category.name);
-                    setEditedCategoryName(category.name);
+                    setSelectedCategory(category.name);
                   }}
                   accessible={true}
                   accessibilityHint={selectedCategory === category.name ? "Shows wishlist items within the " + category.name + " category" :
@@ -554,16 +697,26 @@ export default function WishlistFolderScreen() {
                   accessibilityRole={"tab"}
                   accessibilityState={selectedCategory === category.name ? {checked:true} : {checked:false}}
                 >
-                    <Text
+                    <View
                       style={[
-                        styles.categoryTabText,
+                        styles.editableCategoryBox,
                         {
-                          color: isSelected ? colors.decorativeText : colors.text,
+                          borderWidth: isCategoryEditMode ? 1 : 0,
+                          borderColor: colors.text,
                         },
                       ]}
                     >
-                      {category.name}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.categoryTabText,
+                          {
+                            color: isSelected ? colors.decorativeText : colors.text,
+                          },
+                        ]}
+                      >
+                        {category.name}
+                      </Text>
+                    </View>
                   </Pressable>
                   {isCategoryEditMode && (
                     <Pressable
@@ -603,6 +756,7 @@ export default function WishlistFolderScreen() {
               autoCapitalize="words"
               autoCorrect={false}
               returnKeyType="done"
+              maxLength={20}
               onSubmitEditing={handleAddCategory}
               onBlur={() => {
                 if (newCategoryName.trim().length === 0) {
@@ -873,6 +1027,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  editableCategoryBox: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   categoryDeleteButton: {
     alignItems: "center",
