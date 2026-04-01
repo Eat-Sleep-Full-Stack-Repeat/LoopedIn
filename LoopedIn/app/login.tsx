@@ -1,17 +1,39 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Image, Text, TextInput, TouchableOpacity, View, Pressable } from "react-native";
-import { useState } from "react";
+import { Text, TextInput, TouchableOpacity, View, Pressable } from "react-native";
+import { useEffect, useState } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from '../utils/config';
 import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
+
+const REMEMBERED_EMAIL_KEY = "rememberedEmail";
 
 export default function Login() {
   const {currentTheme} = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(true);
+  const [text, onChangeText] = useState('');
+  const [password, onChangePassword] = useState('');
+  const [rememberEmail, setRememberEmail] = useState(false);
+
+  useEffect(() => {
+    const loadRememberedEmail = async () => {
+      try {
+        const savedEmail = await Storage.getItem(REMEMBERED_EMAIL_KEY);
+
+        if (savedEmail) {
+          onChangeText(savedEmail);
+          setRememberEmail(true);
+        }
+      } catch (error) {
+        console.log("Error loading remembered email:", error);
+      }
+    };
+
+    loadRememberedEmail();
+  }, []);
 
   //---------------------------------------------------------------------------------
 
@@ -87,6 +109,12 @@ export default function Login() {
         const data = await response.json();
         
         if (data.token) {
+          if (rememberEmail) {
+            await Storage.setItem(REMEMBERED_EMAIL_KEY, text.trim());
+          } else {
+            await Storage.removeItem(REMEMBERED_EMAIL_KEY);
+          }
+
           await Storage.setItem('token', data.token); //store jwt info
           router.push("/userProfile"); // Redirect on success
         } else {
@@ -100,11 +128,6 @@ export default function Login() {
     }
 
   };
-
-//for login
-const [text, onChangeText] = useState('');
-const [password, onChangePassword] = useState('');
-// const [user, onChangeUser] = useState('');
 
 
 
@@ -156,6 +179,7 @@ const [password, onChangePassword] = useState('');
             color: colors.text
         }}
         onChangeText={onChangeText}
+        value={text}
         autoCorrect={false}
         autoCapitalize="none"
         />
@@ -191,6 +215,7 @@ const [password, onChangePassword] = useState('');
                 color: colors.text
             }}
             onChangeText={onChangePassword}
+            value={password}
             autoCorrect={false}
             autoCapitalize="none"
             />
@@ -206,11 +231,34 @@ const [password, onChangePassword] = useState('');
               /> {/* The eye emoji in the password section */} </Text>
             </Pressable>
           </View>
-          <View style={{
+          <View
+            style={{
               width: "100%",
-              alignItems: "flex-end",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
               marginTop: 5,
-          }}>
+            }}
+          >
+            <Pressable
+              onPress={() => setRememberEmail((previous) => !previous)}
+              accessible={true}
+              accessibilityRole={"checkbox"}
+              accessibilityState={{ checked: rememberEmail }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name={rememberEmail ? "checkbox" : "square-outline"}
+                size={22}
+                color={colors.text}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={{ color: colors.text, fontSize: 16 }}>Remember email</Text>
+            </Pressable>
+
             {/* Forgot Password*/}
             <TouchableOpacity onPress ={() => console.log("Forgot Password tapped")}
               accessible={true}
@@ -222,7 +270,7 @@ const [password, onChangePassword] = useState('');
                     marginRight: 5,
                     }}> Forgot Password?</Text>
             </TouchableOpacity>
-        </View>
+          </View>
 
         </View>
         {/* Login button*/}
@@ -267,47 +315,6 @@ const [password, onChangePassword] = useState('');
                     color: colors.linkText,
                     marginRight: 5,
                     }}> Sign Up</Text>
-            </TouchableOpacity>
-        </View>
-        {/* Divider OR */}
-        <View style={{
-            flexDirection: "row",
-            alignItems: "center",
-            width: "80%",
-            marginTop: 30,
-            }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: colors.text }} />
-                <Text style={{ marginHorizontal: 10, color: colors.text }}>or</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: colors.text }} />
-            </View>
-
-            <View
-                style={{
-                    borderWidth: 1,
-                    borderColor: colors.decorativeBackground,
-                    borderRadius: 25,
-                    padding: 5,
-                    width: "80%",
-                    alignItems: "center",
-                    marginTop: 40,
-                    backgroundColor: "#F2F0EF",
-                }}> 
-                <TouchableOpacity onPress={()=> console.log ("Google Login tapped")}
-                  accessible={true}
-                  accessibilityHint={"Double tap to log into LoopedIn using Google."}
-                  accessibilityRole={"button"}
-                  style ={{
-                      alignSelf:"center",
-                  }}
-                >
-                <Image
-                source ={require("../assets/images/googleicon/netural_log_in.png")}
-                    style={{ 
-                        width:220,
-                        height: 44,
-                        resizeMode: "contain"
-                     }}
-                    />
             </TouchableOpacity>
         </View>
     </View>

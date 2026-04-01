@@ -1,7 +1,7 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Image, Text, TextInput, TouchableOpacity, View, Pressable} from "react-native";
+import { Text, TextInput, TouchableOpacity, View, Pressable} from "react-native";
 import { useState } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from "@/utils/config";
@@ -337,51 +337,6 @@ export default function Login() {
             {" "}
             Login
           </Text>
-        </TouchableOpacity>
-      </View>
-      {/* Divider OR */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          width: "80%",
-          marginTop: 30,
-        }}
-      >
-        <View style={{ flex: 1, height: 1, backgroundColor: colors.text }} />
-        <Text style={{ marginHorizontal: 10, color: colors.text }}>or</Text>
-        <View style={{ flex: 1, height: 1, backgroundColor: colors.text }} />
-      </View>
-
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: colors.decorativeBackground,
-          borderRadius: 25,
-          padding: 5,
-          width: "80%",
-          alignItems: "center",
-          marginTop: 40,
-          backgroundColor: "#F2F0EF",
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => console.log("Google Login tapped")}
-          style={{
-            alignSelf: "center",
-          }}
-          accessible={true}
-          accessibilityHint={"Double tap to sign up to LoopedIn using Google."}
-          accessibilityRole={"button"}
-        >
-          <Image
-            source={require("../assets/images/googleicon/netural_sign_in.png")}
-            style={{
-              width: 220,
-              height: 44,
-              resizeMode: "contain",
-            }}
-          />
         </TouchableOpacity>
       </View>
     </View>
