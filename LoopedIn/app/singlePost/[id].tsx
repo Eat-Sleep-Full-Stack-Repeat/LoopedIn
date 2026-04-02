@@ -23,6 +23,7 @@ import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
+import reasons from "@/components/reportReasons";
 
 type PhotoCard = {
   pic: string;
@@ -73,6 +74,9 @@ export default function SinglePost() {
   const [modalImageUri, setModalImageUri] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
+
+  //for report menu handling
+  const [reportMenuVisible, setReportMenuVisible] = useState(false);
 
   //for triple-dot handling
   const [menuVisible, setMenuVisible] = useState(false);
@@ -344,6 +348,42 @@ export default function SinglePost() {
       router.back();
     }
   };
+
+
+  //handle post reporting
+  const handleReport = async (reason: string) => {
+    console.log("reason chosen:", reason)
+
+    setReportMenuVisible(false)
+    const token = await Storage.getItem("token")
+
+    try {
+      const response = await fetch(`${API_URL}/api/report/posts/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({reason: reason}),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(`Error: ${data.message}`)
+        return;
+      }
+
+      alert("Post successfully reported!")
+
+    }
+    catch(error) {
+      alert(`Error reporting post: ${error}`)
+      return
+    }
+  }
+
 
   //begin the REAL UI
   const thisIsMyPost = currentUser === post.creatorID;
@@ -699,7 +739,7 @@ export default function SinglePost() {
               <TouchableOpacity
                 onPress={() => {
                   setMenuVisible(false);
-                  console.log("Report pressed (not implemented yet)");
+                  setReportMenuVisible(true);
                 }}
                 style={styles.menuOption}
                 accessible={true}
@@ -736,6 +776,66 @@ export default function SinglePost() {
         currentPost={currentPost.current}
         postCreator={creatorID.current}
       ></ExploreCommentsModal>
+
+      {/*report modal */}
+      <Modal
+        transparent
+        visible={reportMenuVisible}
+        animationType="fade"
+        onRequestClose={() => setReportMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          accessible={false}
+        >
+          <View
+            style={[
+              styles.reportMenuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
+          >
+            <View style={{paddingBottom: 20}}>
+              <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+            </View>
+
+            <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+            {reasons.map((reason) => (
+              <View style={{flexDirection: "column"}} key={reason}>
+                <TouchableOpacity
+                  onPress={() => handleReport(reason)}
+                  style={styles.menuOption}
+                  key={reason}
+                  accessible={true}
+                  accessibilityLabel={`Reason option: ${reason}`}
+                  accessibilityHint={"Double tap to report post for this reason."}
+                >
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    {reason}
+                  </Text>
+                </TouchableOpacity>
+                {/*line separator guy */}
+                <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              onPress={() => setReportMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit explore post menu"
+              style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
+                      alignItems: "center"}}
+            >
+              <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+
+
     </SafeAreaView>
   );
 }
@@ -861,4 +961,15 @@ const styles = StyleSheet.create({
   imageCountText: {
     fontSize: 14,
   },
+  reportMenuContainer: {
+    width: 320,
+    borderRadius: 12,
+    paddingTop: 30,
+    paddingBottom: 15,
+    paddingHorizontal: 15,
+  },
+  reportHeaderText: {
+    fontSize: 24,
+    textAlign: "center",
+  }
 });
