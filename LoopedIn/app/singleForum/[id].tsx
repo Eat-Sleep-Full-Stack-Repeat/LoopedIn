@@ -32,6 +32,7 @@ import { Storage } from "../../utils/storage";
 import { TextInput } from "react-native-gesture-handler";
 import ForumReplyModal from "@/components/forumReply";
 import EditForumReplyModal from "@/components/editForumReply";
+import reasons from "@/components/reportReasons"
 
 type Comment = {
   id: string;
@@ -119,6 +120,11 @@ export default function ForumPostDetail() {
   const lastTimeStamp = useRef<string | null>(null);
   const lastCommentID = useRef<number | null>(null);
 
+  //menu variables
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [reportMenuVisible, setReportMenuVisible] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
+
   //reply variables
   const [isReplyVisible, setIsReplyVisible] = useState(false);
   const [replyInformation, setReplyInformation] = useState<
@@ -151,6 +157,44 @@ export default function ForumPostDetail() {
       fetchSaved();
     }
   }, [post]);
+
+  //handle post reporting
+  const handleReport = async (reason: string) => {
+    console.log("reason chosen:", reason)
+    setReportSending(true)
+
+    setReportMenuVisible(false)
+    const token = await Storage.getItem("token")
+
+    try {
+      const response = await fetch(`${API_URL}/api/report/forums/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({reason: reason}),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(`Error: ${data.message}`)
+        return;
+      }
+
+      alert("Post successfully reported!")
+
+    }
+    catch(error) {
+      alert(`Error reporting post: ${error}`)
+      return
+    }
+    finally {
+      setReportSending(false)
+    }
+  }
 
   const handleRefresh = async () => {
     if (refreshing) {
@@ -902,6 +946,38 @@ export default function ForumPostDetail() {
       width: "100%",
       alignItems: "center",
     },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+    },
+    menuContainer: {
+      width: 180,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+    },
+    menuOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 8,
+    },
+    menuText: {
+      fontSize: 16,
+    },
+    reportMenuContainer: {
+      width: 320,
+      borderRadius: 12,
+      paddingTop: 30,
+      paddingBottom: 15,
+      paddingHorizontal: 15,
+    },
+    reportHeaderText: {
+      fontSize: 24,
+      textAlign: "center",
+    }
   });
 
   const PostCard = () => {
@@ -988,7 +1064,20 @@ export default function ForumPostDetail() {
               )}
             </View>
           </View>
+          <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}
+            accessible={true}
+            accessibilityLabel={"Forum Post Menu"}
+            accessibilityHint={"Double tap to view the forum post menu options."}
+            accessibilityRole={"button"}>
+            <Entypo
+              name="dots-three-vertical"
+              size={22}
+              color={colors.text}
+            />
+          </Pressable>
         </View>
+
+        
 
         <Text style={styles.postBody}>{post.content}</Text>
 
@@ -1061,6 +1150,113 @@ export default function ForumPostDetail() {
             <Text style={styles.actionText}>Reply</Text>
           </Pressable>
         </View>
+
+        {/* modal for triple-dot pop-up */}
+        <Modal
+          transparent
+          visible={menuVisible}
+          animationType="fade"
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPressOut={() => setMenuVisible(false)}
+            accessible={false}
+          >
+            <View
+              style={[
+                styles.menuContainer,
+                { backgroundColor: colors.exploreCardBackground },
+              ]}>
+              <TouchableOpacity
+                onPress={() => {
+                  setMenuVisible(false);
+                  setReportMenuVisible(true);
+                }}
+                style={styles.menuOption}
+                accessible={true}
+                accessibilityLabel={"Report"}
+                accessibilityHint={"Double tap to report this forum post to LoopedIn moderators."}
+              >
+                <Feather name="flag" size={18} color={colors.warning} />
+                <Text style={[styles.menuText, { color: colors.warning }]}>
+                  Report
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setMenuVisible(false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Close menu"
+                accessibilityHint="Double tap to exit forum post menu"
+                style={{marginTop: 10, padding: 8, backgroundColor: colors.blockedBackground, borderRadius: 12, width: "100%",
+                        alignItems: "center"}}
+              >
+                <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+
+        {/*report modal */}
+        <Modal
+          transparent
+          visible={reportMenuVisible}
+          animationType="fade"
+          onRequestClose={() => setReportMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            accessible={false}
+          >
+            <View
+              style={[
+                styles.reportMenuContainer,
+                { backgroundColor: colors.exploreCardBackground },
+              ]}
+            >
+              <View style={{paddingBottom: 20}}>
+                <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+              </View>
+
+              <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+              {reasons.map((reason) => (
+                <View style={{flexDirection: "column"}} key={reason}>
+                  <TouchableOpacity
+                    onPress={() => handleReport(reason)}
+                    style={styles.menuOption}
+                    key={reason}
+                    disabled={reportSending}
+                    accessible={true}
+                    accessibilityLabel={`Reason option: ${reason}`}
+                    accessibilityHint={"Double tap to report forum post for this reason."}
+                  >
+                    <Text style={[styles.menuText, { color: colors.text }]}>
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                  {/*line separator guy */}
+                  <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                onPress={() => setReportMenuVisible(false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Close menu"
+                accessibilityHint="Double tap to exit report menu"
+                style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
+                        alignItems: "center"}}
+              >
+                <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </View>
     );
   };

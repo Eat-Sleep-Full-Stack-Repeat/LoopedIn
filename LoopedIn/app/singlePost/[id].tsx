@@ -77,6 +77,7 @@ export default function SinglePost() {
 
   //for report menu handling
   const [reportMenuVisible, setReportMenuVisible] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
 
   //for triple-dot handling
   const [menuVisible, setMenuVisible] = useState(false);
@@ -354,6 +355,8 @@ export default function SinglePost() {
   const handleReport = async (reason: string) => {
     console.log("reason chosen:", reason)
 
+    setReportSending(true)
+
     setReportMenuVisible(false)
     const token = await Storage.getItem("token")
 
@@ -381,6 +384,9 @@ export default function SinglePost() {
     catch(error) {
       alert(`Error reporting post: ${error}`)
       return
+    }
+    finally {
+      setReportSending(false)
     }
   }
 
@@ -806,6 +812,7 @@ export default function SinglePost() {
                   onPress={() => handleReport(reason)}
                   style={styles.menuOption}
                   key={reason}
+                  disabled={reportSending}
                   accessible={true}
                   accessibilityLabel={`Reason option: ${reason}`}
                   accessibilityHint={"Double tap to report post for this reason."}
@@ -824,7 +831,7 @@ export default function SinglePost() {
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Close menu"
-              accessibilityHint="Double tap to exit explore post menu"
+              accessibilityHint="Double tap to exit report menu"
               style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
                       alignItems: "center"}}
             >
@@ -833,9 +840,6 @@ export default function SinglePost() {
           </View>
         </TouchableOpacity>
       </Modal>
-
-
-
     </SafeAreaView>
   );
 }

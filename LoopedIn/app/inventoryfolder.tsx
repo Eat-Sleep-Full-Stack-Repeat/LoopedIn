@@ -796,8 +796,8 @@ export default function SingleFolderScreen() {
                       setSelectedCategory(category.name);
                     }}
                     accessible={true}
-                    accessibilityHint={selectedCategory === category.name ? "Shows inventory items within the " + category.name + " category" :
-                      "Double tap to show inventory items within the " + category.name + " category"
+                    accessibilityHint={selectedCategory === category.name && !isCategoryEditMode ? "Shows inventory items within the " + category.name + " category" : 
+                      !isCategoryEditMode ? "Double tap to show inventory items within the " + category.name + " category" : "Double tap to edit " + category.name + " category"
                     }
                     accessibilityRole={"tab"}
                     accessibilityState={selectedCategory === category.name ? {checked:true} : {checked:false}}>
@@ -888,7 +888,7 @@ export default function SingleFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={"Add category"}
-            accessibilityHint={"Add a craft category to hold inventory items"}
+            accessibilityHint={isCategoryEditMode? "Disable editing to add a category." : "Add a craft category to hold inventory items"}
             accessibilityRole={"button"}
           >
             <Feather name="plus" size={14} color={colors.text} />

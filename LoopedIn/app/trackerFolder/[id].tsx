@@ -521,13 +521,7 @@ export default function TrackerFolderView() {
           accessibilityRole={"button"}>
           <Feather name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Pressable
-          accessible={true}
-          accessibilityLabel={"Search"}
-          accessibilityRole={"button"}
-          accessibilityHint={"Allows to search for projects within this folder."}>
-          <Feather name="search" size={24} color={colors.text} />
-        </Pressable>
+        <View/>
       </View>
 
       {/*Folder Name title*/}
