@@ -774,10 +774,11 @@ export default function SingleFolderScreen() {
 
             return (
               <View
+                key={category.id}
                 style={[
                   styles.categoryTab,
                   {
-                    backgroundColor: isSelected
+                      backgroundColor: isSelected
                       ? colors.decorativeBackground
                       : colors.boxBackground,
                     borderColor: colors.topBackground,
