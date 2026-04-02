@@ -41,6 +41,123 @@ router.get("/get-w-folders", authenticateToken, async (req, res) => {
 });
 
 
+//create new wishlist folder
+router.post("/new-w-folder", authenticateToken, async (req, res) => {
+  try{
+    const curr_user = req.userID.trim();
+    const newName = req.body.name || "";
+
+    console.log("newname is", newName);
+    const query = `
+        INSERT INTO folders.tbl_folder(fld_f_name, fld_creator, fld_type)
+        VALUES ($1, $2, 'W');
+    `;
+    await pool.query(query, [newName, curr_user]);
+
+    //check to confirm it was added
+    const query2= `
+        SELECT fld_folder_pk, fld_f_name
+        FROM folders.tbl_folder
+        WHERE fld_f_name = $1 AND fld_creator = $2 AND fld_type = 'W';
+    `;
+    const returnFeed = await pool.query(query2, [newName, curr_user]);
+
+    if (returnFeed.rowCount === 0) {
+      console.log("[wishlist]: error during folder creation.");
+      res.status(404).json({ message: "Folder does not exist." });
+      return;
+    }
+    else if (returnFeed.rowCount > 1){
+      console.log("[wishlist]: error during folder creation.");
+      res.status(404).json({ message: "Error during folder upload. Perhaps a duplicate name?" });
+      return;
+    }
+
+    //else, the folder was successfully created
+    //return the new id
+    res.status(200).json({fID: returnFeed.rows[0].fld_folder_pk, fName: returnFeed.rows[0].fld_f_name});
+    return;
+
+  } catch (error){
+    console.log("[Wishlist]: Server error when making folder:", error);
+    res.status(500).json(error);
+  }
+});
+
+
+//rename wishlist folder
+router.put("/rename-w-folder", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim();
+    const folderId = req.body.folderId;
+    const newName = req.body.name || "";
+
+    const duplicateQuery = `
+      SELECT fld_folder_pk
+      FROM folders.tbl_folder
+      WHERE fld_creator = $1
+        AND fld_type = 'W'
+        AND LOWER(fld_f_name) = LOWER($2)
+        AND fld_folder_pk != $3;
+    `;
+    const duplicateFeed = await pool.query(duplicateQuery, [curr_user, newName, folderId]);
+
+    if (duplicateFeed.rowCount > 0) {
+      res.status(409).json({ message: "Duplicate folder name." });
+      return;
+    }
+
+    const query = `
+      UPDATE folders.tbl_folder
+      SET fld_f_name = $1
+      WHERE fld_folder_pk = $2 AND fld_creator = $3 AND fld_type = 'W'
+      RETURNING fld_folder_pk, fld_f_name;
+    `;
+    const returnFeed = await pool.query(query, [newName, folderId, curr_user]);
+
+    if (returnFeed.rowCount === 0) {
+      res.status(404).json({ message: "Folder does not exist." });
+      return;
+    }
+
+    res.status(200).json({fID: returnFeed.rows[0].fld_folder_pk, fName: returnFeed.rows[0].fld_f_name});
+    return;
+
+  } catch (error) {
+    console.log("[Wishlist]: Server error when renaming folder:", error);
+    res.status(500).json(error);
+  }
+});
+
+
+//delete wishlist folder
+router.delete("/delete-w-folder/:folderId", authenticateToken, async (req, res) => {
+  try {
+    const curr_user = req.userID.trim();
+    const folderId = req.params.folderId;
+
+    const query = `
+      DELETE FROM folders.tbl_folder
+      WHERE fld_folder_pk = $1 AND fld_creator = $2 AND fld_type = 'W'
+      RETURNING fld_folder_pk;
+    `;
+    const returnFeed = await pool.query(query, [folderId, curr_user]);
+
+    if (returnFeed.rowCount === 0) {
+      res.status(404).json({ message: "Folder does not exist." });
+      return;
+    }
+
+    res.status(200).json({ message: "Folder deleted successfully." });
+    return;
+
+  } catch (error) {
+    console.log("[Wishlist]: Server error when deleting folder:", error);
+    res.status(500).json(error);
+  }
+});
+
+
 //------------------------ INVENTORY ITEM WORK -------------------------------
 
 //fetching all items 
