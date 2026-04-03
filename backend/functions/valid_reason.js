@@ -5,7 +5,7 @@ const reasons = [
     "Bullying, harassment, or hateful speech",
     "Fraud, scam, or misinformation",
     "Sexual Content",
-    "Prompoting illegal activities or items",
+    "Promoting illegal activities or items",
 ]
 
 

@@ -845,13 +845,12 @@ export default function WishlistFolderScreen() {
                     }}
                     accessible={true}
                     accessibilityHint={
-                      selectedCategory === category.name
+                      selectedCategory === category.name && !isCategoryEditMode
                         ? "Shows wishlist items within the " +
-                          category.name +
-                          " category"
-                        : "Double tap to show wishlist items within the " +
-                          category.name +
-                          " category"
+                          category.name + " category" : !isCategoryEditMode ?
+                         "Double tap to show wishlist items within the " +
+                          category.name + " category" :
+                          "Double tap to edit " + category.name + " category"
                     }
                     accessibilityRole={"tab"}
                     accessibilityState={
@@ -952,7 +951,7 @@ export default function WishlistFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={"Add category"}
-            accessibilityHint={"Add a craft category to hold wishlist items"}
+            accessibilityHint={isCategoryEditMode ? "Disable editing to add a category." : "Add a craft category to hold wishlist items"}
             accessibilityRole={"button"}
           >
             <Feather name="plus" size={14} color={colors.text} />
