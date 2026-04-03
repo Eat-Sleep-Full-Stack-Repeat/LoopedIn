@@ -752,8 +752,8 @@ export default function SinglePost() {
                 accessibilityLabel={"Report"}
                 accessibilityHint={"Double tap to report this explore post to LoopedIn moderators."}
               >
-                <Feather name="flag" size={18} color={colors.warning} />
-                <Text style={[styles.menuText, { color: colors.warning }]}>
+                <Feather name="flag" size={18} color={colors.text} />
+                <Text style={[styles.menuText, { color: colors.text }]}>
                   Report
                 </Text>
               </TouchableOpacity>
@@ -764,10 +764,10 @@ export default function SinglePost() {
               accessibilityRole="button"
               accessibilityLabel="Close menu"
               accessibilityHint="Double tap to exit explore post menu"
-              style={{marginTop: 10, padding: 8, backgroundColor: colors.blockedBackground, borderRadius: 12, width: "100%",
+              style={{marginTop: 10, padding: 8, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
                       alignItems: "center"}}
             >
-              <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+              <Text style={[styles.menuText, { color: colors.cancel}]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
