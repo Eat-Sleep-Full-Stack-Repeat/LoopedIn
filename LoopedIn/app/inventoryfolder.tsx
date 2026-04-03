@@ -395,6 +395,13 @@ export default function SingleFolderScreen() {
       (category) => category.name === categoryToDelete
     );
 
+    //check if the folder is empty:
+    const checkEmpty = items.find((item) => item.category === categoryToDelete);
+    if (checkEmpty !== undefined) {
+      alert("This category must be empty to delete");
+      return;
+    }
+
     if (!categoryObj) {
       return;
     }
