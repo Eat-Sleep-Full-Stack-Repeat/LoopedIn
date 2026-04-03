@@ -669,7 +669,8 @@ export default function OtherUserProfile() {
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      backgroundColor: colors.blockedBackground,
+      borderColor: colors.cancel, 
+      borderWidth: 1,
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
@@ -987,7 +988,7 @@ export default function OtherUserProfile() {
               accessibilityHint="Double tap to exit user menu"
               style={styles.cancelBtn}
             >
-              <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+              <Text style={[styles.menuText, { color: colors.warning}]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

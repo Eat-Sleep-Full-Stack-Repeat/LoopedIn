@@ -488,7 +488,8 @@ export default function MyPosts() {
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      backgroundColor: colors.blockedBackground,
+      borderColor: colors.cancel, 
+      borderWidth: 1,
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
@@ -659,7 +660,7 @@ export default function MyPosts() {
                 accessibilityHint="Double tap to exit forum post menu"
                 style={styles.cancelBtn}
               >
-                <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+                <Text style={[styles.menuText, { color: colors.cancel}]}>Close</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>

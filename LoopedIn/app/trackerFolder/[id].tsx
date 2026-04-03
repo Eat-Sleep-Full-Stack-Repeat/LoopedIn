@@ -503,7 +503,8 @@ export default function TrackerFolderView() {
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      backgroundColor: colors.blockedBackground,
+      borderColor: colors.cancel, 
+      borderWidth: 1,
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
@@ -521,13 +522,7 @@ export default function TrackerFolderView() {
           accessibilityRole={"button"}>
           <Feather name="arrow-left" size={22} color={colors.text} />
         </Pressable>
-        <Pressable
-          accessible={true}
-          accessibilityLabel={"Search"}
-          accessibilityRole={"button"}
-          accessibilityHint={"Allows to search for projects within this folder."}>
-          <Feather name="search" size={24} color={colors.text} />
-        </Pressable>
+        <View/>
       </View>
 
       {/*Folder Name title*/}
@@ -755,7 +750,7 @@ export default function TrackerFolderView() {
               accessibilityHint="Double tap to exit project menu"
               style={styles.cancelBtn}
             >
-              <Text style={[styles.menuActionText, { color: colors.text}]}>Close</Text>
+              <Text style={[styles.menuActionText, { color: colors.cancel}]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -630,6 +630,10 @@ export default function FolderScreen() {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+              accessible={true}
+              accessibilityLabel={"Cancel"}
+              accessibilityHint={"Double tap to cancel search."}
+              accessibilityRole={"button"}
             >
               <Feather name="x" size={16} color="#888" />
             </Pressable>
