@@ -187,7 +187,7 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
-            color: colors.text
+            color: colors.text,
           }}
           onChangeText={onChangeUser}
           autoCorrect={false}
@@ -225,7 +225,7 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
-            color: colors.text
+            color: colors.text,
           }}
           onChangeText={onChangeText}
           autoCorrect={false}
@@ -250,37 +250,48 @@ export default function Login() {
         >
           Password
         </Text>
-        <View style={{ flexDirection: "row",
-              alignItems: "center",
-              width: "100%",
-              height: 50,
-              borderColor: colors.decorativeBackground,
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderRadius: 25,
-              paddingHorizontal: 10,}}>
-          <TextInput
-          placeholder="Password"
-          placeholderTextColor={colors.text}
-          secureTextEntry={passwordVisible}
+        <View
           style={{
-              flex: 1,
-              color: colors.text
+            flexDirection: "row",
+            alignItems: "center",
+            width: "100%",
+            height: 50,
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.background,
+            borderWidth: 1,
+            borderRadius: 25,
+            paddingHorizontal: 10,
           }}
-          onChangeText={onChangePassword}
-          autoCorrect={false}
-          autoCapitalize="none"
+        >
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={colors.text}
+            secureTextEntry={passwordVisible}
+            style={{
+              flex: 1,
+              color: colors.text,
+            }}
+            onChangeText={onChangePassword}
+            autoCorrect={false}
+            autoCapitalize="none"
           />
-          <Pressable onPress={() => setPasswordVisible(!passwordVisible)}
+          <Pressable
+            onPress={() => setPasswordVisible(!passwordVisible)}
             accessible={true}
-            accessibilityLabel={passwordVisible ? "Stop viewing password" : "View password"}
-            accessibilityRole={"button"}>
-            <Text><Ionicons 
-            name={passwordVisible ? "eye-off" : "eye"}
-            size={22}
-            color={colors.text}
-            style={{marginHorizontal: 10,}}
-            /> {/* The eye emoji in the password section */} </Text>
+            accessibilityLabel={
+              passwordVisible ? "View password" : "Stop viewing password"
+            }
+            accessibilityRole={"button"}
+          >
+            <Text>
+              <Ionicons
+                name={passwordVisible ? "eye-off" : "eye"}
+                size={22}
+                color={colors.text}
+                style={{ marginHorizontal: 10 }}
+              />{" "}
+              {/* The eye emoji in the password section */}{" "}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -294,6 +305,7 @@ export default function Login() {
           backgroundColor: colors.decorativeBackground,
           borderWidth: 1,
           marginTop: 40,
+          marginBottom: 5,
           borderRadius: 25,
           paddingHorizontal: 10,
           alignItems: "center",
@@ -324,10 +336,12 @@ export default function Login() {
       >
         {/*Login*/}
         <Text style={{ color: colors.text }}> Already have an account? </Text>
-        <TouchableOpacity onPress={() => router.push("/login")}
+        <TouchableOpacity
+          onPress={() => router.push("/login")}
           accessible={true}
           accessibilityHint={"Double tap to navigate to the log in page."}
-          accessibilityRole={"button"}>
+          accessibilityRole={"button"}
+        >
           <Text
             style={{
               color: colors.linkText,

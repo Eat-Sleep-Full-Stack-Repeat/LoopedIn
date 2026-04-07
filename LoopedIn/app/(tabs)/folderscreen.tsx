@@ -317,7 +317,6 @@ export default function FolderScreen() {
     }
   };
 
-
   useEffect(() => {
     if (!tokenOkay) return;
 
@@ -471,14 +470,15 @@ export default function FolderScreen() {
   const createFolder = async () => {
     if (!folderName.trim()) return;
     if (createOrSaving) return;
-    try{
+    try {
       setCreateOrSaving(true);
       const trimmed = folderName.trim();
       if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
         return;
-      }
-      else if(trimmed.length > 20){
-        alert("Name is too long! Please try again with a folder name of 20 characters or less.");
+      } else if (trimmed.length > 20) {
+        alert(
+          "Name is too long! Please try again with a folder name of 20 characters or less."
+        );
         return;
       }
 
@@ -499,21 +499,18 @@ export default function FolderScreen() {
 
       //if no duplicate
       const token = await Storage.getItem("token");
-      const res = await fetch(
-        `${API_URL}/api/new-t-folder`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            name: trimmed,
-            type: craftType,
-          })
-        }
-      );
+      const res = await fetch(`${API_URL}/api/new-t-folder`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          name: trimmed,
+          type: craftType,
+        }),
+      });
 
       if (res.status == 404) {
         if (!alreadyAlerted.current) {
@@ -522,9 +519,7 @@ export default function FolderScreen() {
         }
         router.back();
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -542,32 +537,179 @@ export default function FolderScreen() {
         icon: selectedIcon,
       };
 
-      setFolders((prev) => [
-        ...prev,
-        mappedFolder,
-      ]);
-      
+      setFolders((prev) => [...prev, mappedFolder]);
+
       setFolderName("");
       setCreateOpen(false);
       setRefreshing(true);
     } catch (e) {
       console.log("Encountered an error:", e);
-    }
-    finally{
+    } finally {
       setCreateOrSaving(false);
     }
-    };
+  };
 
   const enterFolder = async (fid: string) => {
     //save folderID in local storage
-    await Storage.setItem('folderID', fid);
+    await Storage.setItem("folderID", fid);
 
     //move
     router.push({
       pathname: "/trackerFolder/[id]",
       params: { id: fid },
-    })
-  }
+    });
+  };
+
+  /* ---------------- styles ---------------- */
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "700",
+      textAlign: "center",
+      marginBottom: 15,
+      marginTop: 18,
+      color: colors.text,
+    },
+    searchBar: {
+      marginHorizontal: 20,
+      marginBottom: 20,
+      backgroundColor: colors.searchBarContainer,
+      borderRadius: 14,
+      padding: 12,
+      flexDirection: "row",
+      gap: 8,
+      alignItems: "center",
+    },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      paddingVertical: 0,
+    },
+    folderCard: {
+      width: "47%",
+      backgroundColor: colors.exploreCardBackground,
+      borderRadius: 18,
+      padding: 16,
+      alignItems: "center",
+    },
+    icon: {
+      width: 42,
+      height: 42,
+      marginBottom: 10,
+    },
+    folderName: {
+      fontWeight: "600",
+      fontSize: 14,
+      color: colors.text,
+    },
+    count: {
+      fontSize: 12,
+      color: colors.decorativeText,
+      marginBottom: 6,
+    },
+    editText: {
+      color: colors.decorativeBackground,
+      fontWeight: "600",
+    },
+    fab: {
+      position: "absolute",
+      right: 20,
+      backgroundColor: colors.decorativeBackground,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    modalOverlay: {
+      position: "absolute",
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.45)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modal: {
+      width: "85%",
+      backgroundColor: colors.exploreBackground,
+      borderRadius: 20,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 12,
+      textAlign: "center",
+      color: colors.text,
+    },
+    label: {
+      fontSize: 13,
+      marginBottom: 6,
+      color: colors.text,
+    },
+    subLabel: {
+      fontSize: 13,
+      marginBottom: 10,
+      color: colors.text,
+    },
+    input: {
+      backgroundColor: colors.inputContainer,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 15,
+    },
+    iconRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    iconChoice: {
+      alignItems: "center",
+      padding: 8,
+      borderRadius: 14,
+    },
+    iconSelected: {
+      backgroundColor: colors.decorativeBackground,
+    },
+    choiceIcon: {
+      width: 32,
+      height: 32,
+      marginBottom: 6,
+    },
+    choiceText: {
+      fontSize: 11,
+      color: colors.exploreBackground,
+    },
+    modalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 10,
+    },
+    cancelBtn: {
+      padding: 10,
+      borderRadius: 12,
+      width: "45%",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.warning,
+    },
+    createBtn: {
+      padding: 10,
+      backgroundColor: colors.decorativeBackground,
+      borderRadius: 12,
+      width: "45%",
+      alignItems: "center",
+    },
+    deleteText: {
+      color: colors.warning,
+      textAlign: "center",
+      fontWeight: "600",
+      marginTop: 10,
+    },
+  });
 
   /* ---------------- render component ---------------- */
   //need component to render folder items one by one
@@ -578,7 +720,11 @@ export default function FolderScreen() {
           onPress={() => enterFolder(item.id)}
           style={{ width: "100%", alignItems: "center" }}
           accessible={true}
-          accessibilityHint={"Navigates inside the " + item.name + " folder, allowing to view projects within."}
+          accessibilityHint={
+            "Navigates inside the " +
+            item.name +
+            " folder, allowing to view projects within."
+          }
           accessibilityRole={"button"}
         >
           <Image source={item.icon} style={styles.icon} />
@@ -593,9 +739,13 @@ export default function FolderScreen() {
             setSelectedIcon(item.icon);
           }}
           accessible={true}
-          accessibilityHint={"Navigates to the edit project folder screen. Click to edit "+ item.name + " project folder."}
+          accessibilityHint={
+            "Navigates to the edit project folder screen. Click to edit " +
+            item.name +
+            " project folder."
+          }
           accessibilityRole={"button"}
-          style={{width: "100%", alignItems: "center"}}
+          style={{ width: "100%", alignItems: "center" }}
         >
           <Text style={styles.editText}>Edit</Text>
         </Pressable>
@@ -608,34 +758,49 @@ export default function FolderScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Text style={styles.title}
+        <Text
+          style={styles.title}
           accessible={true}
           accessibilityRole={"header"}
-        >My Folders</Text>
+        >
+          My Folders
+        </Text>
 
         {/* search */}
         <View style={styles.searchBar}>
-          <Feather name="search" size={16} color="#888" />
+          <Feather
+            name="search"
+            size={16}
+            color={colors.inputContainerPlaceholderText}
+          />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search folders"
-            placeholderTextColor="#888"
+            placeholderTextColor={colors.inputContainerPlaceholderText}
             style={styles.searchInput}
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
             accessible={true}
-            accessibilityHint={"Allows to search for specific folders from the Project Folder page"}
+            accessibilityHint={
+              "Allows to search for specific folders from the Project Folder page"
+            }
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+            <Pressable
+              onPress={() => setSearchQuery("")}
+              hitSlop={10}
               accessible={true}
               accessibilityLabel={"Cancel"}
               accessibilityHint={"Double tap to cancel search."}
               accessibilityRole={"button"}
             >
-              <Feather name="x" size={16} color="#888" />
+              <Feather
+                name="x"
+                size={16}
+                color={colors.inputContainerPlaceholderText}
+              />
             </Pressable>
           )}
         </View>
@@ -673,9 +838,16 @@ export default function FolderScreen() {
               );
             } else if (noFolders) {
               return (
-                <View style={{paddingVertical: 10}}>
-                  <Text style={{color: colors.settingsText, textAlign: "center", lineHeight: 24}}> 
-                    Nothing to see here... {"\n"} Create a project folder now! </Text>
+                <View style={{ paddingVertical: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      textAlign: "center",
+                      lineHeight: 24,
+                    }}
+                  >
+                    Nothing to see here... {"\n"} Create a project folder now!{" "}
+                  </Text>
                 </View>
               );
             }
@@ -715,14 +887,16 @@ export default function FolderScreen() {
         style={[styles.fab, { bottom: insets.bottom }]}
         accessible={true}
         accessibilityLabel={"Create Project Folder"}
-        accessibilityHint={"Navigates to the create project folder screen. Click to create project folder."}
+        accessibilityHint={
+          "Navigates to the create project folder screen. Click to create project folder."
+        }
         accessibilityRole={"button"}
         onPress={() => {
           setCreateOpen(true);
           setSelectedIcon(require("@/assets/images/misc.png"));
         }}
       >
-        <Feather name="plus" size={26} color="#000" />
+        <Feather name="plus" size={26} color={colors.text} />
       </Pressable>
 
       {/* CREATE / EDIT MODAL */}
@@ -766,9 +940,15 @@ export default function FolderScreen() {
                   ]}
                   onPress={() => setSelectedIcon(item.icon)}
                   accessible={true}
-                  accessibilityHint={"Selects " + item.label + " as Project Folder craft type."}
+                  accessibilityHint={
+                    "Selects " + item.label + " as Project Folder craft type."
+                  }
                   accessibilityRole={"button"}
-                  accessibilityState={selectedIcon === item.icon ? {selected: true} : {selected: false}}
+                  accessibilityState={
+                    selectedIcon === item.icon
+                      ? { selected: true }
+                      : { selected: false }
+                  }
                 >
                   <Image source={item.icon} style={styles.choiceIcon} />
                   <Text style={styles.choiceText}>{item.label}</Text>
@@ -788,7 +968,7 @@ export default function FolderScreen() {
                   setFolderName("");
                 }}
               >
-                <Text>Cancel</Text>
+                <Text style={{ color: colors.warning }}>Cancel</Text>
               </Pressable>
 
               <Pressable
@@ -799,18 +979,25 @@ export default function FolderScreen() {
                 accessibilityHint={"Creates a Project Folder"}
                 accessibilityRole={"button"}
               >
-                <Text style={{ color: "#fff" }}>
-                  {createOrSaving ? "Please Wait..." : (editingFolder ? "Save" : "Create →")}
+                <Text style={{ color: colors.text }}>
+                  {createOrSaving
+                    ? "Please Wait..."
+                    : editingFolder
+                    ? "Save"
+                    : "Create →"}
                 </Text>
               </Pressable>
             </View>
 
             {editingFolder && (
-              <Pressable onPress={deleteFolder}
+              <Pressable
+                onPress={deleteFolder}
                 accessible={true}
-                accessibilityHint={"Deletes " + editingFolder.name + " project folder."}
+                accessibilityHint={
+                  "Deletes " + editingFolder.name + " project folder."
+                }
                 accessibilityRole={"button"}
-                >
+              >
                 <Text style={styles.deleteText}>Delete folder</Text>
               </Pressable>
             )}
@@ -820,152 +1007,3 @@ export default function FolderScreen() {
     </View>
   );
 }
-
-/* ---------------- styles ---------------- */
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F2EA",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 15,
-    marginTop: 18,
-    color: "#111",
-  },
-  searchBar: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
-  searchInput: {
-    flex: 1,
-    color: "#111",
-    paddingVertical: 0,
-  },
-  folderCard: {
-    width: "47%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    alignItems: "center",
-  },
-  icon: {
-    width: 42,
-    height: 42,
-    marginBottom: 10,
-  },
-  folderName: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#111",
-  },
-  count: {
-    fontSize: 12,
-    color: "#777",
-    marginBottom: 6,
-  },
-  editText: {
-    color: "#7B61FF",
-    fontWeight: "600",
-  },
-  fab: {
-    position: "absolute",
-    right: 20,
-    backgroundColor: "#C9B6F2",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalOverlay: {
-    position: "absolute",
-    inset: 0,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modal: {
-    width: "85%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  label: {
-    fontSize: 13,
-    marginBottom: 6,
-    color: "#444",
-  },
-  subLabel: {
-    fontSize: 13,
-    marginBottom: 10,
-    color: "#444",
-  },
-  input: {
-    backgroundColor: "#EFEFEF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 15,
-  },
-  iconRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  iconChoice: {
-    alignItems: "center",
-    padding: 8,
-    borderRadius: 14,
-  },
-  iconSelected: {
-    backgroundColor: "#E6DDF9",
-  },
-  choiceIcon: {
-    width: 32,
-    height: 32,
-    marginBottom: 6,
-  },
-  choiceText: {
-    fontSize: 11,
-    color: "#333",
-  },
-  modalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  cancelBtn: {
-    padding: 10,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 12,
-    width: "45%",
-    alignItems: "center",
-  },
-  createBtn: {
-    padding: 10,
-    backgroundColor: "#C9B6F2",
-    borderRadius: 12,
-    width: "45%",
-    alignItems: "center",
-  },
-  deleteText: {
-    color: "red",
-    textAlign: "center",
-    fontWeight: "600",
-    marginTop: 10,
-  },
-});

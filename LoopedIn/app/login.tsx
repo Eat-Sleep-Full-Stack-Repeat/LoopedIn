@@ -144,30 +144,41 @@ export default function Login() {
         backgroundColor: colors.background,
       }}
     >
-      <Text style={{
-        fontSize: 32,
-        fontWeight: "500",
-        marginBottom: 40,
-        color: colors.welcomeText}}
-        accessible={true}
-        accessibilityRole={"header"}>
-        Welcome Back!
-        </Text>
-        
-        {/* Email*/}
-        <View style={{
-            width: "80%",
-            alignItems: "flex-start"
-        }}>
-        <Text style={{
-            marginLeft: 10,
-            marginBottom:5,
-            fontSize: 18,
-            color: colors.text}}> Email </Text>
-        <TextInput
-        placeholder="example@email.com"
-        placeholderTextColor={colors.text}
+      <Text
         style={{
+          fontSize: 32,
+          fontWeight: "500",
+          marginBottom: 40,
+          color: colors.welcomeText,
+        }}
+        accessible={true}
+        accessibilityRole={"header"}
+      >
+        Welcome Back!
+      </Text>
+
+      {/* Email*/}
+      <View
+        style={{
+          width: "80%",
+          alignItems: "flex-start",
+        }}
+      >
+        <Text
+          style={{
+            marginLeft: 10,
+            marginBottom: 5,
+            fontSize: 18,
+            color: colors.text,
+          }}
+        >
+          {" "}
+          Email{" "}
+        </Text>
+        <TextInput
+          placeholder="example@email.com"
+          placeholderTextColor={colors.text}
+          style={{
             width: "100%",
             height: 50,
             backgroundColor: colors.background,
@@ -176,147 +187,184 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
-            color: colors.text
-        }}
-        onChangeText={onChangeText}
-        value={text}
-        autoCorrect={false}
-        autoCapitalize="none"
+            color: colors.text,
+          }}
+          onChangeText={onChangeText}
+          value={text}
+          autoCorrect={false}
+          autoCapitalize="none"
         />
-        </View>
+      </View>
 
-        {/* Password*/}
-        <View style={{
-            width: "80%",
-            alignItems: "flex-start"
-        }}>
-        <Text style={{
+      {/* Password*/}
+      <View
+        style={{
+          width: "80%",
+          alignItems: "flex-start",
+        }}
+      >
+        <Text
+          style={{
             marginLeft: 10,
-            marginBottom:5,
+            marginBottom: 5,
             fontSize: 18,
-            color: colors.text}}>
-        Password
+            color: colors.text,
+          }}
+        >
+          Password
         </Text>
-        <View style={{ flexDirection: "row",
-                alignItems: "center",
-                width: "100%",
-                height: 50,
-                borderColor: colors.decorativeBackground,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderRadius: 25,
-                paddingHorizontal: 10,}}>
-            <TextInput
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "100%",
+            height: 50,
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.background,
+            borderWidth: 1,
+            borderRadius: 25,
+            paddingHorizontal: 10,
+          }}
+        >
+          <TextInput
             placeholder="Password"
             placeholderTextColor={colors.text}
             secureTextEntry={passwordVisible}
             style={{
-                flex: 1,
-                color: colors.text
+              flex: 1,
+              color: colors.text,
             }}
             onChangeText={onChangePassword}
             value={password}
             autoCorrect={false}
             autoCapitalize="none"
-            />
-            <Pressable onPress={() => setPasswordVisible(!passwordVisible)}
-              accessible={true}
-              accessibilityLabel={passwordVisible ? "Stop viewing password" : "View password"}
-              accessibilityRole={"button"}>
-              <Text><Ionicons 
-              name={passwordVisible ? "eye-off" : "eye"}
-              size={22}
-              color={colors.text}
-              style={{marginHorizontal: 10,}}
-              /> {/* The eye emoji in the password section */} </Text>
-            </Pressable>
-          </View>
-          <View
-            style={{
-              width: "100%",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: 5,
-            }}
+          />
+          <Pressable
+            onPress={() => setPasswordVisible(!passwordVisible)}
+            accessible={true}
+            accessibilityLabel={
+              passwordVisible ? "View password" : "Stop viewing password"
+            }
+            accessibilityRole={"button"}
           >
-            <Pressable
-              onPress={() => setRememberEmail((previous) => !previous)}
-              accessible={true}
-              accessibilityRole={"checkbox"}
-              accessibilityState={{ checked: rememberEmail }}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
+            <Text>
               <Ionicons
-                name={rememberEmail ? "checkbox" : "square-outline"}
+                name={passwordVisible ? "eye-off" : "eye"}
                 size={22}
                 color={colors.text}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={{ color: colors.text, fontSize: 16 }}>Remember email</Text>
-            </Pressable>
-
-            {/* Forgot Password*/}
-            <TouchableOpacity onPress ={() => console.log("Forgot Password tapped")}
-              accessible={true}
-              accessibilityHint={"Double tap if password is forgotten."}
-              accessibilityRole={"button"}>
-                <Text style=
-                {{ 
-                    color: colors.linkText,
-                    marginRight: 5,
-                    }}> Forgot Password?</Text>
-            </TouchableOpacity>
-          </View>
-
+                style={{ marginHorizontal: 10 }}
+              />{" "}
+              {/* The eye emoji in the password section */}{" "}
+            </Text>
+          </Pressable>
         </View>
-        {/* Login button*/}
-        <TouchableOpacity onPress={onPressSignIn}
-          accessible={true}
-          accessibilityHint={"Double tap to log into your LoopedIn account."}
-          accessibilityRole={"button"}
+        <View
           style={{
-              width: "80%",
-              height: 55,
-              borderColor: colors.decorativeBackground,
-              backgroundColor: colors.decorativeBackground,
-              borderWidth: 1,
-              marginTop: 40,
-              borderRadius: 25,
-              paddingHorizontal: 10,
-              alignItems: "center",
-              justifyContent: "center",
-              
-              }}>
-                <Text style={{
-                    fontSize: 25,
-                    fontWeight: "600",
-                    color: colors.decorativeText
-                }}>Login</Text>
-            </TouchableOpacity>
-
-            <View style={{
-            width: "80%",
-            alignItems: "flex-start",
+            width: "100%",
             flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
             marginTop: 5,
-        }}>
-            {/* Sign-up*/}
-            <Text style={{ color: colors.text}}> Don't have an account? </Text>
-            <TouchableOpacity onPress ={() => router.push("/signup")}
-              accessible={true}
-              accessibilityHint={"Double tap to sign up for a LoopedIn account."}
-              accessibilityRole={"button"}> 
-                <Text style=
-                {{ 
-                    color: colors.linkText,
-                    marginRight: 5,
-                    }}> Sign Up</Text>
-            </TouchableOpacity>
+          }}
+        >
+          <Pressable
+            onPress={() => setRememberEmail((previous) => !previous)}
+            accessible={true}
+            accessibilityRole={"checkbox"}
+            accessibilityState={{ checked: rememberEmail }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons
+              name={rememberEmail ? "checkbox" : "square-outline"}
+              size={22}
+              color={colors.text}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={{ color: colors.text, fontSize: 16 }}>
+              Remember email
+            </Text>
+          </Pressable>
+
+          {/* Forgot Password*/}
+          <TouchableOpacity
+            onPress={() => console.log("Forgot Password tapped")}
+            accessible={true}
+            accessibilityHint={"Double tap if password is forgotten."}
+            accessibilityRole={"button"}
+          >
+            <Text
+              style={{
+                color: colors.linkText,
+                marginRight: 5,
+              }}
+            >
+              {" "}
+              Forgot Password?
+            </Text>
+          </TouchableOpacity>
         </View>
+      </View>
+      {/* Login button*/}
+      <TouchableOpacity
+        onPress={onPressSignIn}
+        accessible={true}
+        accessibilityHint={"Double tap to log into your LoopedIn account."}
+        accessibilityRole={"button"}
+        style={{
+          width: "80%",
+          height: 55,
+          borderColor: colors.decorativeBackground,
+          backgroundColor: colors.decorativeBackground,
+          borderWidth: 1,
+          marginTop: 40,
+          marginBottom: 5,
+          borderRadius: 25,
+          paddingHorizontal: 10,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 25,
+            fontWeight: "600",
+            color: colors.decorativeText,
+          }}
+        >
+          Login
+        </Text>
+      </TouchableOpacity>
+
+      <View
+        style={{
+          width: "80%",
+          alignItems: "flex-start",
+          flexDirection: "row",
+          marginTop: 5,
+        }}
+      >
+        {/* Sign-up*/}
+        <Text style={{ color: colors.text }}> Don't have an account? </Text>
+        <TouchableOpacity
+          onPress={() => router.push("/signup")}
+          accessible={true}
+          accessibilityHint={"Double tap to sign up for a LoopedIn account."}
+          accessibilityRole={"button"}
+        >
+          <Text
+            style={{
+              color: colors.linkText,
+              marginRight: 5,
+            }}
+          >
+            {" "}
+            Sign Up
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

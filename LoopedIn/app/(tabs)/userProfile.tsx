@@ -111,7 +111,6 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
   chooseAvatar: () => void;
   router: any;
   avatarSize: number;
-  onLogout: () => void;
 }) {
   const {
     insetsTop,
@@ -132,7 +131,6 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
     chooseAvatar,
     router,
     avatarSize,
-    onLogout,
   } = props;
 
   const s = themedStyles(colors);
@@ -147,11 +145,14 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
       <View style={s.headerBg} />
       <View style={s.headerInner}>
         <View style={s.topAccountManagement}>
-          <Pressable style={s.iconCol} onPress={() => setSettingsOpen(true)}
+          <Pressable
+            style={s.iconCol}
+            onPress={() => setSettingsOpen(true)}
             accessible={true}
             accessibilityLabel={"Settings"}
             accessibilityHint={"Click to view account settings"}
-            accessibilityRole={"button"}>
+            accessibilityRole={"button"}
+          >
             <Feather name="settings" size={24} color={colors.text} />
             <Text style={[s.iconLabel, { color: colors.text }]}>Settings</Text>
           </Pressable>
@@ -167,7 +168,11 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                 { opacity: editing && pressed ? 0.8 : 1 },
               ]}
               accessible={true}
-              accessibilityHint={editing ? "Double tap to change your profile picture" : "Your profile picture."}
+              accessibilityHint={
+                editing
+                  ? "Double tap to change your profile picture"
+                  : "Your profile picture."
+              }
               accessibilityRole={"imagebutton"}
             >
               <Image
@@ -210,7 +215,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                   })
                 }
                 accessible={true}
-                accessibilityHint={"Double tap to view all accounts that are following you."}
+                accessibilityHint={
+                  "Double tap to view all accounts that are following you."
+                }
               >
                 <View style={s.countCircles}>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>
@@ -231,7 +238,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                   })
                 }
                 accessible={true}
-                accessibilityHint={"Double tap to view all accounts you are following."}
+                accessibilityHint={
+                  "Double tap to view all accounts you are following."
+                }
               >
                 <View style={s.countCircles}>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>
@@ -247,12 +256,12 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         </View>
 
         {/* bio */}
-        <View style={s.bioContainer}
+        <View
+          style={s.bioContainer}
           accessible={true}
-          accessibilityHint={editing ? "Double tap to edit your bio" : ""}>
-          <Text style={[s.bioTitle, { color: colors.text }]}>
-            Bio
-          </Text>
+          accessibilityHint={editing ? "Double tap to edit your bio" : ""}
+        >
+          <Text style={[s.bioTitle, { color: colors.text }]}>Bio</Text>
           {editing ? (
             <TextInput
               value={draftBio}
@@ -304,55 +313,51 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
             </Pressable>
           </View>
         ) : (
-          <View style={s.actionsColumn}>
-            <Pressable style={s.editProfileButton}
-              accessible={true}
-              accessibilityHint={"Double tap to edit your profile picture or bio."} 
-              accessibilityRole={"button"}
-              onPress={startEditing}>
-              <Text style={s.editProfileButtonText}>Edit Profile</Text>
-            </Pressable>
-
-            <TouchableOpacity style={s.logoutButton} 
-              accessible={true}
-              accessibilityHint={"Double tap to log out of your LoopedIn account."}
-              accessibilityRole={"button"}
-              onPress={onLogout}>
-              <Text style={s.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
+          <></>
         )}
 
         {/* Post tab navigation */}
         {activeTab === "posts" ? (
           <View style={s.postTabs}>
-            <View style={s.postTabText}
+            <View
+              style={s.postTabText}
               accessible={true}
               accessibilityHint={"Displays all created explore posts."}
-              accessibilityState={{selected:true}}>
+              accessibilityState={{ selected: true }}
+            >
               <Text style={{ color: colors.decorativeText }}>My Posts</Text>
             </View>
-            <Pressable onPress={handleSavedPress} style={{ padding: 10 }}
+            <Pressable
+              onPress={handleSavedPress}
+              style={{ padding: 10 }}
               accessible={true}
               accessibilityHint={"Double tap to view all of your saved posts."}
-              accessibilityState={{selected:false}}
-              accessibilityRole={"button"}>
+              accessibilityState={{ selected: false }}
+              accessibilityRole={"button"}
+            >
               <Text style={{ color: colors.text }}>Saved Posts</Text>
             </Pressable>
           </View>
         ) : (
           <View style={s.postTabs}>
-            <Pressable onPress={handlePostPress} style={{ padding: 10 }}
+            <Pressable
+              onPress={handlePostPress}
+              style={{ padding: 10 }}
               accessible={true}
-              accessibilityHint={"Double tap to view all of your explore posts."}
-              accessibilityState={{selected:false}}
-              accessibilityRole={"button"}>
+              accessibilityHint={
+                "Double tap to view all of your explore posts."
+              }
+              accessibilityState={{ selected: false }}
+              accessibilityRole={"button"}
+            >
               <Text style={{ color: colors.text }}>My Posts</Text>
             </Pressable>
-            <View style={s.postTabText}
+            <View
+              style={s.postTabText}
               accessible={true}
               accessibilityHint={"Displays all saved explore posts."}
-              accessibilityState={{selected:true}}>
+              accessibilityState={{ selected: true }}
+            >
               <Text style={{ color: colors.decorativeText }}>Saved Posts</Text>
             </View>
           </View>
@@ -816,7 +821,6 @@ export default function UserProfile() {
             chooseAvatar={chooseAvatar}
             router={router}
             avatarSize={AVATAR}
-            onLogout={handleLogout}
           />
         }
         renderItem={({ item }) => {
@@ -859,7 +863,6 @@ export default function UserProfile() {
           width: "100%",
           maxWidth: CONTENT_MAX,
           paddingBottom: insets.bottom,
-          paddingTop: 10,
           backgroundColor: colors.background,
         }}
         keyboardShouldPersistTaps="always"
@@ -870,7 +873,9 @@ export default function UserProfile() {
         style={[s.floatingButton, { bottom: insets.bottom }]}
         accessible={true}
         accessibilityLabel={"Create Explore Post"}
-        accessibilityHint={"Navigates to the create explore post screen. Double Tap to create an explore post."}
+        accessibilityHint={
+          "Navigates to the create explore post screen. Double Tap to create an explore post."
+        }
         accessibilityRole={"button"}
         onPress={handleCreatePost}
       >
@@ -881,6 +886,10 @@ export default function UserProfile() {
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onLogout={handleLogout}
+        onEditProfile={() => {
+          setSettingsOpen(false);
+          startEditing();
+        }}
       />
     </View>
   );
@@ -905,6 +914,7 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      margin: 0,
     },
     centerFill: {
       flex: 1,
@@ -939,7 +949,6 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       flexDirection: "row",
       justifyContent: "flex-end",
       gap: 20,
-      marginTop: 20,
       marginBottom: 20,
       marginRight: 4,
     },
@@ -951,7 +960,7 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       justifyContent: "center",
       gap: 16,
     },
-    userName: { fontSize: 20, fontWeight: "600" },
+    userName: { fontSize: 20, fontWeight: "600", paddingBottom: 5 },
     avatar: { backgroundColor: colors.boxBackground },
     pencilBadge: {
       position: "absolute",
@@ -1065,8 +1074,14 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       borderRadius: 12,
       minWidth: 110,
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.warning,
     },
-    secondaryBtnText: { fontSize: 14, fontWeight: "600", color: colors.text },
+    secondaryBtnText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.warning,
+    },
     floatingButton: {
       position: "absolute",
       right: 20,

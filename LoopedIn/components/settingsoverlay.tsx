@@ -34,6 +34,7 @@ type SettingsOverlayProps = {
   onAccessibility?: () => void;
   onAppearance?: () => void;
   onLogout?: () => void;
+  onEditProfile: () => void;
   title?: string;
 };
 
@@ -43,6 +44,7 @@ export default function SettingsOverlay({
   onAccessibility,
   onAppearance,
   onLogout,
+  onEditProfile,
   title = "Settings",
 }: SettingsOverlayProps) {
   const { width: screenW } = useWindowDimensions();
@@ -126,6 +128,9 @@ export default function SettingsOverlay({
           pressed && onPress ? styles.menuItemPressed : null,
           !onPress && styles.menuItemDisabled,
         ]}
+        accessible={true}
+        accessibilityHint={`Double tap to ${label}`}
+        accessibilityRole={"button"}
       >
         <Text
           style={[
@@ -160,7 +165,7 @@ export default function SettingsOverlay({
       shadowRadius: 12,
       elevation: 8,
       overflow: "hidden",
-      paddingTop: insets.top
+      paddingTop: insets.top,
     },
     safeArea: {
       flex: 1,
@@ -177,7 +182,7 @@ export default function SettingsOverlay({
     headerTitle: {
       fontSize: 20,
       fontWeight: "700",
-      color: colors.text
+      color: colors.text,
     },
     closeBtn: {
       width: 36,
@@ -221,7 +226,11 @@ export default function SettingsOverlay({
     },
     menuItemPressed: { backgroundColor: "rgba(0,0,0,0.04)" },
     menuItemDisabled: { opacity: 0.6 },
-    menuItemText: { fontSize: 16, color: colors.settingsMenuText, fontWeight: "500" },
+    menuItemText: {
+      fontSize: 16,
+      color: colors.settingsMenuText,
+      fontWeight: "500",
+    },
     menuItemTextDestructive: { color: colors.warning, fontWeight: "700" },
     menuItemChevron: {
       fontSize: 18,
@@ -255,10 +264,12 @@ export default function SettingsOverlay({
               <SafeAreaView style={styles.safeArea}>
                 {/* Header Row */}
                 <View style={styles.headerRow}>
-                  <Text style={styles.headerTitle}
+                  <Text
+                    style={styles.headerTitle}
                     accessible={true}
                     accessibilityRole={"header"}
-                  >{title}
+                  >
+                    {title}
                   </Text>
                   <Pressable
                     onPress={animateClose}
@@ -281,7 +292,7 @@ export default function SettingsOverlay({
                   contentContainerStyle={styles.scrollContent}
                   showsVerticalScrollIndicator
                 >
-                  <SectionHeader label="App"/>
+                  <SectionHeader label="App" />
                   <MenuItem
                     label="Accessibility"
                     onPress={onAccessibility}
@@ -295,6 +306,7 @@ export default function SettingsOverlay({
                   />
 
                   <SectionHeader label=" " />
+                  <MenuItem label="Edit Profile" onPress={onEditProfile} />
                   <MenuItem label="Log Out" destructive onPress={onLogout} />
                 </ScrollView>
               </SafeAreaView>
