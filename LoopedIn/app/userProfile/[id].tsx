@@ -1043,7 +1043,7 @@ export default function OtherUserProfile() {
               style={styles.menuOption}
               accessible={true}
               accessibilityLabel={"Report"}
-              accessibilityHint={"Double tap to report this explore post to LoopedIn moderators."}
+              accessibilityHint={"Double tap to report this user to LoopedIn moderators."}
             >
               <Feather name="flag" size={18} color={colors.text} />
               <Text style={[styles.menuText, { color: colors.text }]}>
