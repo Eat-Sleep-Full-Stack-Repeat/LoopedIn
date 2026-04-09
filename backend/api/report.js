@@ -7,7 +7,7 @@ const { pool } = require('../backend_connection');
 //jwt-checker before revealing any sensitive info
 const authenticateToken = require('../middleware/authenticate');
 
-const { valid_reason } = require("../functions/valid_reason")
+const { validReason, validUserReason } = require("../functions/valid_reason")
 
 //------------------------ FORUM REPORT -------------------------------
 router.post("/report/forums/:id", authenticateToken, async (req, res) => {
@@ -61,7 +61,7 @@ router.post("/report/forums/:id", authenticateToken, async (req, res) => {
 
         //check if reason is valid (within our list of reasons - doing this instead of checking
         //if within x number of characters)
-        if (!valid_reason(reason)) {
+        if (!validReason(reason)) {
             console.log("[report-forum]: Invalid report reason")
             res.status(401).json({message: "Could not send report."})
             return
@@ -135,7 +135,7 @@ router.post("/report/posts/:id", authenticateToken, async (req, res) => {
 
         //check if reason is valid (within our list of reasons - doing this instead of checking
         //if within x number of characters)
-        if (!valid_reason(reason)) {
+        if (!validReason(reason)) {
             console.log("[report-post]: Invalid report reason")
             res.status(401).json({message: "Could not send report"})
             return
@@ -165,6 +165,80 @@ router.post("/report/posts/:id", authenticateToken, async (req, res) => {
     }
     catch(error) {
         console.log("[report-post]: Error occured:", error)
+        res.status(500).json(error)
+        return
+    }
+})
+
+
+
+//------------------------ USER REPORT -------------------------------
+router.post("/report/users/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params //user reported id
+        const { reason } = req.body
+        const userID = req.userID.trim() //user who reported id
+
+        //ensure valid post id
+        let query = `
+        SELECT fld_user_pk
+        FROM login.tbl_user
+        WHERE fld_user_pk = $1;`
+
+        const check_id = await pool.query(query, [id])
+
+        if (check_id.rowCount === 0) {
+            console.log("[report-user]: Invalid user id")
+            res.status(400).json({message: "Could not send report"})
+            return
+        }
+
+        //verify user hasn't made report for post already
+        query = `
+        SELECT fld_report_pk
+        FROM report.tbl_user_report
+        WHERE fld_reportee_fk = $1 AND fld_reported_user_fk = $2;`
+
+        const check_reported = await pool.query(query, [userID, id])
+
+        if (check_reported.rowCount > 0) {
+            console.log("[report-user]: user already reported this account")
+            res.status(403).json({message: "You already sent a report for this user!"})
+            return
+        }
+
+        //check if reason is valid (within our list of reasons - doing this instead of checking
+        //if within x number of characters)
+        if (!validReason(reason) && !validUserReason(reason)) {
+            console.log("[report-user]: Invalid report reason")
+            res.status(401).json({message: "Could not send report"})
+            return
+        }
+
+        //if not, create a report for this account
+        const now = new Date()
+        const date = now.toISOString()
+
+        query = `
+        INSERT INTO report.tbl_user_report(fld_reportee_fk, fld_reported_user_fk, fld_report_reason, fld_date_reported)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *;
+        `
+
+       const report = await pool.query(query, [userID, id, reason, date])
+
+       if (report.rowCount === 0) {
+        console.log("[report-user]: failed to insert report")
+        res.status(400).json({message: "Failed to submit report. Please try again later."})
+        return
+       }
+
+       //successfully submission
+       res.status(201).json({message: "Report successfully submitted!"})
+
+    }
+    catch(error) {
+        console.log("[report-user]: Error occured:", error)
         res.status(500).json(error)
         return
     }

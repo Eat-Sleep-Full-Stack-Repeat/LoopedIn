@@ -32,7 +32,7 @@ import { Storage } from "../../utils/storage";
 import { TextInput } from "react-native-gesture-handler";
 import ForumReplyModal from "@/components/forumReply";
 import EditForumReplyModal from "@/components/editForumReply";
-import reasons from "@/components/reportReasons"
+import { reasons } from "@/components/reportReasons"
 
 type Comment = {
   id: string;
@@ -1064,17 +1064,19 @@ export default function ForumPostDetail() {
               )}
             </View>
           </View>
-          <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}
-            accessible={true}
-            accessibilityLabel={"Forum Post Menu"}
-            accessibilityHint={"Double tap to view the forum post menu options."}
-            accessibilityRole={"button"}>
-            <Entypo
-              name="dots-three-vertical"
-              size={22}
-              color={colors.text}
-            />
-          </Pressable>
+          {currentUser !== post.creator && (
+            <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}
+              accessible={true}
+              accessibilityLabel={"Forum Post Menu"}
+              accessibilityHint={"Double tap to view the forum post menu options."}
+              accessibilityRole={"button"}>
+              <Entypo
+                name="dots-three-vertical"
+                size={22}
+                color={colors.text}
+              />
+            </Pressable>
+          )}
         </View>
 
         
@@ -1200,7 +1202,6 @@ export default function ForumPostDetail() {
         </Modal>
 
 
-        {/*report modal */}
         <Modal
           transparent
           visible={reportMenuVisible}
