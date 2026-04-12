@@ -3,10 +3,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
-import {
-  Pressable,
-  View,
-} from "react-native";
+import { Pressable, View, useWindowDimensions, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 //variable to store the size of icons
@@ -21,16 +18,51 @@ type IconProps = {
 
 //array of objects for the nav bar icons
 const icons: Record<string, IconProps> = {
-  userProfile: { name: "account", size: ICONSIZE + 2, label: "Profile", hint: "account page" },
-  forumFeed: { name: "forum", size: ICONSIZE, label: "Forums", hint: "forum feed" },
-  mystuff: { name: "bag-personal", size: ICONSIZE, label: "My Stuff", hint: "inventory and wishlist page" },
-  explore: { name: "home", size: ICONSIZE + 3, label: "Explore", hint: "posts feed" },
-  folderscreen: { name: "notebook", size: ICONSIZE, label: "Project Tracker", hint: "project folder page" },
-  index: { name: "cake", size: ICONSIZE, label: "Dev Screen yippee", hint: "this will be deleted page" },
+  userProfile: {
+    name: "account",
+    size: ICONSIZE + 2,
+    label: "Profile",
+    hint: "account page",
+  },
+  forumFeed: {
+    name: "forum",
+    size: ICONSIZE,
+    label: "Forums",
+    hint: "forum feed",
+  },
+  mystuff: {
+    name: "bag-personal",
+    size: ICONSIZE,
+    label: "My Stuff",
+    hint: "inventory and wishlist page",
+  },
+  explore: {
+    name: "home",
+    size: ICONSIZE + 3,
+    label: "Explore",
+    hint: "posts feed",
+  },
+  folderscreen: {
+    name: "notebook",
+    size: ICONSIZE,
+    label: "Project Tracker",
+    hint: "project folder page",
+  },
+  index: {
+    name: "cake",
+    size: ICONSIZE,
+    label: "Dev Screen",
+    hint: "this will be deleted page",
+  },
 };
 
 // Bottom tab bar style
-function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function CustomTabBar({
+  state,
+  descriptors,
+  navigation,
+  isLargeScreen,
+}: BottomTabBarProps & { isLargeScreen: boolean }) {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
@@ -38,17 +70,34 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View
       style={{
-        flexDirection: "row",
-        justifyContent: "space-evenly",
-        paddingTop: 10,
-        backgroundColor: colors.background,
-        borderTopColor: colors.topBackground,
-        borderTopWidth: 1,
+        flexDirection: isLargeScreen ? "column" : "row",
+        justifyContent: isLargeScreen ? "flex-start" : "space-evenly",
+        paddingTop: isLargeScreen ? insets.top + 30 : 10,
+        backgroundColor: colors.topBackground,
+        borderTopColor: colors.secondaryButton,
+        borderTopWidth: isLargeScreen ? 0 : 1,
+        borderRightWidth: isLargeScreen ? 1 : 0,
+        borderRightColor: colors.secondaryButton,
         paddingHorizontal: 10,
         alignContent: "center",
-        paddingBottom: insets.bottom,
+        paddingBottom: isLargeScreen ? 12 : insets.bottom,
+        width: isLargeScreen ? 260 : "100%",
       }}
     >
+      {isLargeScreen ? (
+        <Text
+          style={{
+            fontSize: 30,
+            marginBottom: 25,
+            fontWeight: "700",
+            color: colors.decorativeBackground,
+            marginLeft: 10,
+          }}
+        >
+          LoopedIn
+        </Text>
+      ) : null}
+
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
@@ -59,26 +108,41 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             onPress={() => {
               if (!isFocused) navigation.navigate(route.name);
             }}
-            style={{ alignItems: "center", flex: 1 }}
+            style={{
+              alignItems: "center",
+              flex: isLargeScreen ? 0 : 1,
+              backgroundColor: isFocused
+                ? colors.secondaryButton
+                : "transparent",
+              borderRadius: 15,
+              justifyContent: isLargeScreen ? "flex-start" : "center",
+              paddingHorizontal: 20,
+            }}
             accessible={true}
             accessibilityLabel={icons[route.name].label}
             accessibilityHint={"Navigates to the " + icons[route.name].hint}
-            accessibilityState={isFocused ? { selected: true } : { selected: false }}
+            accessibilityState={
+              isFocused ? { selected: true } : { selected: false }
+            }
             accessibilityRole={"menuitem"}
           >
             <View
               style={{
                 alignItems: "center",
-                justifyContent: "center",
-                // marginTop: 5,
+                justifyContent: isLargeScreen ? "flex-start" : "center",
                 height: ICONSIZE + 15,
-                width: ICONSIZE + 15,
+                width: isLargeScreen ? "100%" : ICONSIZE + 15,
+                paddingHorizontal: isLargeScreen ? 10 : undefined,
+                paddingVertical: isLargeScreen ? 5 : undefined,
+                flexDirection: isLargeScreen ? "row" : "column",
+                marginVertical: isLargeScreen ? 5 : undefined,
               }}
             >
+              {/* TODO: delete this
               {isFocused ? (
                 <View
                   style={{
-                    backgroundColor: colors.topBackground,
+                    backgroundColor: colors.secondaryButton,
                     height: "100%",
                     width: "100%",
                     position: "absolute",
@@ -87,12 +151,28 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 ></View>
               ) : (
                 <></>
-              )}
+              )} */}
+
               <MaterialCommunityIcons
                 name={icons[route.name].name}
                 size={icons[route.name].size}
-                color={colors.text}
+                color={isFocused ? colors.decorativeBackground : colors.text}
               />
+
+              {isLargeScreen ? (
+                <Text
+                  style={{
+                    color: isFocused
+                      ? colors.decorativeBackground
+                      : colors.text,
+                    paddingHorizontal: 10,
+                    fontSize: 18,
+                    fontWeight: "500",
+                  }}
+                >
+                  {icons[route.name].label}
+                </Text>
+              ) : null}
             </View>
           </Pressable>
         );
@@ -102,12 +182,17 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 }
 
 export default function TabLayout() {
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= 768; //using 768 as a default break between phone and tablet
   return (
     <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={(props) => (
+        <CustomTabBar {...props} isLargeScreen={isLargeScreen} />
+      )}
       screenOptions={{
         headerShown: false,
         animation: "none",
+        tabBarPosition: isLargeScreen ? "left" : "bottom",
       }}
     >
       {/* Link to the developers screen */}
@@ -116,7 +201,6 @@ export default function TabLayout() {
         options={{ title: "Dev", tabBarAccessibilityLabel: "Development" }}
       />
 
-      {/* Link to the profile screen */}
       <Tabs.Screen
         name="userProfile"
         options={{ title: "Profile", tabBarAccessibilityLabel: "Profile page" }}

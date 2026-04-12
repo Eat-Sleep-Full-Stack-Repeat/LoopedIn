@@ -6,6 +6,9 @@ import { Colors } from "@/Styles/colors";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
 import { jwtDecode } from "jwt-decode";
+import { useAppSize } from "@/Hooks/useSize";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 
 // User type
 type User = {
@@ -19,14 +22,15 @@ interface Payload {
 }
 
 export default function FollowingScreen() {
-  const {currentTheme} = useTheme();
+  const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [following, setFollowing] = useState<User[]>([]);
   const { id } = useLocalSearchParams();
-  const [currentUser, setCurrentUser] = useState<string>("")
-
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const size = useAppSize();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     //get followed people for current user logged in
@@ -34,33 +38,38 @@ export default function FollowingScreen() {
       //obtain token
       const token = await Storage.getItem("token");
       if (!token) {
-        alert("Token does not exist")
-        router.replace("/")
-        return
+        alert("Token does not exist");
+        router.replace("/");
+        return;
       }
 
-      const decoded = jwtDecode<Payload>(token)
-      setCurrentUser(decoded.userID)
+      const decoded = jwtDecode<Payload>(token);
+      setCurrentUser(decoded.userID);
 
       if (!id) {
-        alert(`Cannot fetch followings at this time. User ID does not exist: ${id}`)
-        return
+        alert(
+          `Cannot fetch followings at this time. User ID does not exist: ${id}`
+        );
+        return;
       }
 
-      console.log("getting following")
+      console.log("getting following");
 
       //obtain the followed dudes
       try {
-        const response = await fetch(`${API_URL}/api/follow/get-following/${id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${API_URL}/api/follow/get-following/${id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        );
 
-        console.log("got following")
+        console.log("got following");
 
         if (!response.ok) {
           alert("Error fetching users followed. Try again later.");
@@ -75,39 +84,38 @@ export default function FollowingScreen() {
           id: row.fld_user_pk ?? row.id,
           username: row.fld_username ?? row.username,
           image:
-            typeof row.avatarUrl === "string" && /^https?:\/\//i.test(row.avatarUrl)
+            typeof row.avatarUrl === "string" &&
+            /^https?:\/\//i.test(row.avatarUrl)
               ? { uri: row.avatarUrl }
               : require("@/assets/images/icons8-cat-profile-100.png"),
         }));
 
-        setFollowing(format_followers)
-
-      }
-      catch(error) {
-        console.log("Error while fetching followers:", (error as Error).message);
+        setFollowing(format_followers);
+      } catch (error) {
+        console.log(
+          "Error while fetching followers:",
+          (error as Error).message
+        );
         alert("Server error, please try again later.");
       }
+    };
 
-    }
-    
-    getFollowing()
+    getFollowing();
+  }, []);
 
-  }, [])
-
-
-  const filteredFollowing = following.filter(f =>
+  const filteredFollowing = following.filter((f) =>
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const unfollow = (id: string) => {
-    setFollowing(prev => prev.filter(f => f.id !== id));
+    setFollowing((prev) => prev.filter((f) => f.id !== id));
 
     //get followed people for current user logged in
     const unfollowUserAPI = async () => {
       //obtain token
       const token = await Storage.getItem("token");
 
-      console.log("unfollow user")
+      console.log("unfollow user");
 
       //obtain the followed dudes
       try {
@@ -121,32 +129,27 @@ export default function FollowingScreen() {
           body: JSON.stringify({ followingID: parseInt(id) }),
         });
 
-
         if (!response.ok) {
           alert("Error while unfollowing. Try again later.");
           router.replace("/userProfile");
           return;
         }
-
-      }
-      catch(error) {
+      } catch (error) {
         console.log("Error while unfollowing:", (error as Error).message);
         alert("Server error, please try again later.");
       }
+    };
 
-    }
-    
-    unfollowUserAPI()
-
+    unfollowUserAPI();
   };
 
   const blockUser = (id: string) => {
-    setFollowing(prev => prev.filter(f => f.id !== id));
-    
+    setFollowing((prev) => prev.filter((f) => f.id !== id));
+
     const blockFollowing = async () => {
       const token = await Storage.getItem("token");
 
-      console.log("block following user")
+      console.log("block following user");
 
       //block a follower of yours
       try {
@@ -159,20 +162,19 @@ export default function FollowingScreen() {
           credentials: "include",
         });
 
-        console.log("got following")
+        console.log("got following");
 
         if (!response.ok) {
           alert("Error while blocking user. Try again later.");
           router.replace("/userProfile");
           return;
         }
-      }
-      catch(error) {
+      } catch (error) {
         console.log("Error while blocking user:", (error as Error).message);
         alert("Server error, please try again later.");
       }
-    }
-    blockFollowing()
+    };
+    blockFollowing();
   };
 
   //to remove the auto-generated header... remove if we hate this!
@@ -187,21 +189,27 @@ export default function FollowingScreen() {
       flex: 1,
       backgroundColor: colors.background,
       paddingHorizontal: 20,
-      paddingTop: 60,
+      paddingTop: insets.top,
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
       marginBottom: 20,
+      position: "relative",
+      justifyContent: "center",
+      marginTop: 10,
+    },
+    backButton: {
+      position: "absolute",
+      left: 0,
     },
     backArrow: {
       fontSize: 28,
-      marginRight: 15,
       color: colors.text,
     },
     headerText: {
-      fontSize: 26,
-      fontWeight: "600",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       color: colors.text,
     },
     searchBar: {
@@ -212,7 +220,10 @@ export default function FollowingScreen() {
       paddingHorizontal: 20,
       height: 45,
       marginBottom: 15,
-      color: colors.text
+      color: colors.text,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
     },
     userCard: {
       flexDirection: "row",
@@ -239,15 +250,11 @@ export default function FollowingScreen() {
       backgroundColor: "#fff",
     },
     username: {
-      fontWeight: "600",
-      fontSize: 16,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
       color: colors.text,
       flexShrink: 1,
       minWidth: 0,
-    },
-    name: {
-      fontSize: 14,
-      color: colors.text,
     },
     actionButton: {
       paddingHorizontal: 12,
@@ -256,7 +263,7 @@ export default function FollowingScreen() {
     },
     buttonText: {
       color: "#fff",
-      fontWeight: "600",
+      fontWeight: size.weight.headline,
     },
   });
 
@@ -264,28 +271,39 @@ export default function FollowingScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}
+        <TouchableOpacity
+          onPress={() => router.back()}
           accessible={true}
           accessibilityLabel={"Go Back"}
           accessibilityHint={"Navigates back to the previous page."}
-          accessibilityRole={"button"}>
+          accessibilityRole={"button"}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}
+        <Text
+          style={styles.headerText}
           accessible={true}
-          accessibilityRole={"header"}>
+          accessibilityRole={"header"}
+        >
           Following
         </Text>
       </View>
 
       {/* Search Bar */}
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search following"
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholderTextColor={colors.text}
-      />
+      <View style={styles.searchBar}>
+        <Feather
+          name={"search"}
+          size={16}
+          color={colors.inputContainerPlaceholderText}
+        />
+        <TextInput
+          placeholder="Search following"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor={colors.inputContainerPlaceholderText}
+        />
+      </View>
 
       {/* List */}
       <FlatList
@@ -294,42 +312,62 @@ export default function FollowingScreen() {
         renderItem={({ item }) => (
           <View style={styles.userCard}>
             <View style={styles.userInfo}>
-              <TouchableOpacity onPress={() => router.replace({
-                  pathname: "/userProfile/[id]",
-                  params: { id: item.id },
-                })}
+              <TouchableOpacity
+                onPress={() =>
+                  router.replace({
+                    pathname: "/userProfile/[id]",
+                    params: { id: item.id },
+                  })
+                }
                 accessible={true}
                 accessibilityLabel={item.username + " profile picture."}
                 accessibilityHint={"Double tap to view profile"}
-                accessibilityRole={"image"}>
-              <Image source={item.image} style={styles.avatar} />
+                accessibilityRole={"image"}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
+                <Image source={item.image} style={styles.avatar} />
+                <View style={{ flexShrink: 1, minWidth: 0 }}>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={styles.username}
+                  >
+                    {item.username}
+                  </Text>
+                </View>
               </TouchableOpacity>
-              <View style={{flexShrink: 1, minWidth: 0}}>
-                <Text  numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
-              </View>
             </View>
             {currentUser !== "" && currentUser === id ? (
-            <View style={{ flexDirection: "row", gap: 8, flexShrink: 0, alignItems: "center" }}>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
-                onPress={() => unfollow(item.id)}
-                accessible={true}
-                accessibilityHint={"Double tap to unfollow this account"}
-                accessibilityRole={"button"}
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 8,
+                  flexShrink: 0,
+                  alignItems: "center",
+                }}
               >
-                <Text style={styles.buttonText}>Unfollow</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: "#6C757D" }]}
-                onPress={() => blockUser(item.id)}
-                accessible={true}
-                accessibilityHint={"Double tap to block this account"}
-                accessibilityRole={"button"}
-              >
-                <Text style={styles.buttonText}>Block</Text>
-              </TouchableOpacity>
-            </View>
-            ) : (<View></View>)}
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
+                  onPress={() => unfollow(item.id)}
+                  accessible={true}
+                  accessibilityHint={"Double tap to unfollow this account"}
+                  accessibilityRole={"button"}
+                >
+                  <Text style={styles.buttonText}>Unfollow</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: "#6C757D" }]}
+                  onPress={() => blockUser(item.id)}
+                  accessible={true}
+                  accessibilityHint={"Double tap to block this account"}
+                  accessibilityRole={"button"}
+                >
+                  <Text style={styles.buttonText}>Block</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View></View>
+            )}
           </View>
         )}
       />

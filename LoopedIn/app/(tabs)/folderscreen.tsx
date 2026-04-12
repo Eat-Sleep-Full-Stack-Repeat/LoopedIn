@@ -17,7 +17,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
@@ -27,6 +27,8 @@ import {
   GestureHandlerRootView,
   RefreshControl,
 } from "react-native-gesture-handler";
+import { useAppSize } from "@/Hooks/useSize";
+import BottomFab from "@/components/bottomFab";
 
 /* ---------------- types ---------------- */
 type Folder = {
@@ -109,7 +111,10 @@ export default function FolderScreen() {
   const [noFolders, setNoFolders] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const searchTimer = useRef<NodeJS.Timeout | null>(null);
+  const searchTimer = useRef<number | null>(null);
+
+  const size = useAppSize();
+  const inset = useSafeAreaInsets();
 
   /* ---------------- functionalities ---------------- */
   //check token before doing anything
@@ -565,23 +570,26 @@ export default function FolderScreen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      paddingTop: insets.top,
     },
     title: {
-      fontSize: 28,
-      fontWeight: "700",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       textAlign: "center",
-      marginBottom: 15,
-      marginTop: 18,
+      marginBottom: 20,
+      marginTop: 10,
       color: colors.text,
     },
     searchBar: {
       marginHorizontal: 20,
       marginBottom: 20,
       backgroundColor: colors.searchBarContainer,
-      borderRadius: 14,
+      borderRadius: 25,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
       padding: 12,
       flexDirection: "row",
-      gap: 8,
+      gap: 10,
       alignItems: "center",
     },
     searchInput: {
@@ -597,33 +605,24 @@ export default function FolderScreen() {
       alignItems: "center",
     },
     icon: {
-      width: 42,
-      height: 42,
+      width: size.iconSize + 35,
+      height: size.iconSize + 35,
       marginBottom: 10,
+      tintColor: colors.text,
     },
     folderName: {
-      fontWeight: "600",
-      fontSize: 14,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.bodyText,
       color: colors.text,
     },
     count: {
-      fontSize: 12,
+      fontSize: size.font.detailText,
       color: colors.decorativeText,
       marginBottom: 6,
     },
     editText: {
       color: colors.decorativeBackground,
-      fontWeight: "600",
-    },
-    fab: {
-      position: "absolute",
-      right: 20,
-      backgroundColor: colors.decorativeBackground,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      alignItems: "center",
-      justifyContent: "center",
+      fontWeight: size.weight.headline,
     },
     modalOverlay: {
       position: "absolute",
@@ -639,19 +638,19 @@ export default function FolderScreen() {
       padding: 20,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: "700",
+      fontSize: size.font.titleText,
+      fontWeight: size.weight.title,
       marginBottom: 12,
       textAlign: "center",
       color: colors.text,
     },
     label: {
-      fontSize: 13,
+      fontSize: size.font.caption,
       marginBottom: 6,
       color: colors.text,
     },
     subLabel: {
-      fontSize: 13,
+      fontSize: size.font.caption,
       marginBottom: 10,
       color: colors.text,
     },
@@ -672,15 +671,17 @@ export default function FolderScreen() {
       borderRadius: 14,
     },
     iconSelected: {
-      backgroundColor: colors.decorativeBackground,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 0.5,
+      borderColor: colors.decorativeBackground,
     },
     choiceIcon: {
-      width: 32,
-      height: 32,
+      width: size.iconSize + 20,
+      height: size.iconSize + 20,
       marginBottom: 6,
     },
     choiceText: {
-      fontSize: 11,
+      fontSize: size.font.detailText,
       color: colors.exploreBackground,
     },
     modalRow: {
@@ -706,8 +707,7 @@ export default function FolderScreen() {
     deleteText: {
       color: colors.warning,
       textAlign: "center",
-      fontWeight: "600",
-      marginTop: 10,
+      fontWeight: size.weight.headline,
     },
   });
 
@@ -716,22 +716,6 @@ export default function FolderScreen() {
   const renderFolder = useCallback(
     ({ item }: { item: Folder }) => (
       <View style={styles.folderCard}>
-        <Pressable
-          onPress={() => enterFolder(item.id)}
-          style={{ width: "100%", alignItems: "center" }}
-          accessible={true}
-          accessibilityHint={
-            "Navigates inside the " +
-            item.name +
-            " folder, allowing to view projects within."
-          }
-          accessibilityRole={"button"}
-        >
-          <Image source={item.icon} style={styles.icon} />
-          <Text style={styles.folderName}>{item.name}</Text>
-          <Text style={styles.count}>{item.count} projects</Text>
-        </Pressable>
-
         <Pressable
           onPress={() => {
             setEditingFolder(item);
@@ -745,9 +729,42 @@ export default function FolderScreen() {
             " project folder."
           }
           accessibilityRole={"button"}
-          style={{ width: "100%", alignItems: "center" }}
+          style={{
+            alignItems: "center",
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            position: "absolute",
+            marginTop: 10,
+            right: 10,
+            zIndex: 2,
+          }}
         >
-          <Text style={styles.editText}>Edit</Text>
+          <Feather
+            name="edit"
+            size={size.iconSize}
+            color={colors.decorativeBackground}
+            style={{
+              backgroundColor: colors.secondaryButton,
+              padding: 8,
+              borderRadius: 50,
+            }}
+          />
+        </Pressable>
+
+        <Pressable
+          onPress={() => enterFolder(item.id)}
+          style={{ width: "100%", alignItems: "center", marginTop: 10 }}
+          accessible={true}
+          accessibilityHint={
+            "Navigates inside the " +
+            item.name +
+            " folder, allowing to view projects within."
+          }
+          accessibilityRole={"button"}
+        >
+          <Image source={item.icon} style={styles.icon} />
+          <Text style={styles.folderName}>{item.name}</Text>
+          <Text style={styles.count}>{item.count} projects</Text>
         </Pressable>
       </View>
     ),
@@ -860,7 +877,9 @@ export default function FolderScreen() {
               if (!hasMore.current) {
                 return (
                   <View style={{ paddingBottom: 150 }}>
-                    <Text style={{ color: colors.text }}>
+                    <Text
+                      style={{ color: colors.inputContainerPlaceholderText }}
+                    >
                       No More Folders to Load
                     </Text>
                   </View>
@@ -884,7 +903,6 @@ export default function FolderScreen() {
 
       {/* FAB */}
       <Pressable
-        style={[styles.fab, { bottom: insets.bottom }]}
         accessible={true}
         accessibilityLabel={"Create Project Folder"}
         accessibilityHint={
@@ -896,13 +914,38 @@ export default function FolderScreen() {
           setSelectedIcon(require("@/assets/images/misc.png"));
         }}
       >
-        <Feather name="plus" size={26} color={colors.text} />
+        <BottomFab />
       </Pressable>
 
       {/* CREATE / EDIT MODAL */}
       {(createOpen || editingFolder) && (
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
+            <Pressable
+              style={{
+                flexDirection: "row",
+                alignSelf: "flex-end",
+                position: "absolute",
+                right: 20,
+                top: 20,
+                zIndex: 2,
+              }}
+              accessible={true}
+              accessibilityHint={"Exits the Create Project Folder Screen."}
+              accessibilityRole={"button"}
+              onPress={() => {
+                setCreateOpen(false);
+                setEditingFolder(null);
+                setFolderName("");
+              }}
+            >
+              <AntDesign
+                name="close"
+                size={size.iconSize + 4}
+                color={colors.text}
+              />
+            </Pressable>
+
             <Text style={styles.modalTitle}>
               {editingFolder ? "Edit Folder" : "Create a new folder"}
             </Text>
@@ -950,36 +993,72 @@ export default function FolderScreen() {
                       : { selected: false }
                   }
                 >
-                  <Image source={item.icon} style={styles.choiceIcon} />
-                  <Text style={styles.choiceText}>{item.label}</Text>
+                  <Image
+                    source={item.icon}
+                    style={[
+                      styles.choiceIcon,
+                      {
+                        tintColor:
+                          selectedIcon === item.icon
+                            ? colors.decorativeBackground
+                            : colors.text,
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.choiceText,
+                      {
+                        color:
+                          selectedIcon === item.icon
+                            ? colors.decorativeBackground
+                            : colors.text,
+                      },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
                 </Pressable>
               ))}
             </View>
 
-            <View style={styles.modalRow}>
+            <View
+              style={[
+                styles.modalRow,
+                {
+                  alignSelf: editingFolder ? undefined : "flex-end",
+                },
+              ]}
+            >
+              {editingFolder && (
+                <Pressable
+                  onPress={deleteFolder}
+                  accessible={true}
+                  accessibilityHint={
+                    "Deletes " + editingFolder.name + " project folder."
+                  }
+                  accessibilityRole={"button"}
+                  style={styles.cancelBtn}
+                >
+                  <Text style={styles.deleteText}>Delete folder</Text>
+                </Pressable>
+              )}
               <Pressable
-                style={styles.cancelBtn}
-                accessible={true}
-                accessibilityHint={"Exits the Create Project Folder Screen."}
-                accessibilityRole={"button"}
-                onPress={() => {
-                  setCreateOpen(false);
-                  setEditingFolder(null);
-                  setFolderName("");
-                }}
-              >
-                <Text style={{ color: colors.warning }}>Cancel</Text>
-              </Pressable>
-
-              <Pressable
-                style={styles.createBtn}
+                style={[
+                  styles.createBtn,
+                  { opacity: folderName.trim().length > 0 ? 1 : 0.4 },
+                ]}
                 onPress={editingFolder ? saveRename : createFolder}
                 disabled={createOrSaving}
                 accessible={true}
                 accessibilityHint={"Creates a Project Folder"}
                 accessibilityRole={"button"}
               >
-                <Text style={{ color: colors.text }}>
+                <Text
+                  style={{
+                    color: colors.antiText,
+                  }}
+                >
                   {createOrSaving
                     ? "Please Wait..."
                     : editingFolder
@@ -988,19 +1067,6 @@ export default function FolderScreen() {
                 </Text>
               </Pressable>
             </View>
-
-            {editingFolder && (
-              <Pressable
-                onPress={deleteFolder}
-                accessible={true}
-                accessibilityHint={
-                  "Deletes " + editingFolder.name + " project folder."
-                }
-                accessibilityRole={"button"}
-              >
-                <Text style={styles.deleteText}>Delete folder</Text>
-              </Pressable>
-            )}
           </View>
         </View>
       )}

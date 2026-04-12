@@ -31,13 +31,17 @@ type ForumPostViewProps = {
 const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
-  const {width} = useWindowDimensions();
+  let { width } = useWindowDimensions();
 
   let avatarSize;
 
   //flex 0 for forum posts (varying sizes because doesn't matter)
   //flex 1 for saved post horizontal scroll b/c otherwise, it looks odd if they have diff sizes
   let forumSize = 0;
+
+  if (width >= 720) {
+    width -= 260;
+  }
 
   if (width >= 768) {
     avatarSize = 120;
