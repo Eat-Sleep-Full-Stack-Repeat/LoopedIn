@@ -10,7 +10,6 @@ import {
   Text,
   TextInput,
   View,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/Styles/colors";
@@ -55,6 +54,8 @@ export default function Newformpost() {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState<string>("");
   const [pressed, setPressed] = useState<boolean>(false);
+  const [createdForumPostId, setCreatedForumPostId] = useState<string | null>(null);
+  const [showMissingFieldsOverlay, setShowMissingFieldsOverlay] = useState(false);
 
   const handleAddTag = () => {
     const trimmed = newTag.trim();
@@ -100,15 +101,18 @@ export default function Newformpost() {
     }
 
     if (postTitle.length == 0 || postContent.length == 0) {
-      alert("Cannot have empty fields.")
+      setShowMissingFieldsOverlay(true);
+      setPressed(false);
       return;
     }
     if (postTitle.length > 150) {
       alert("Your forum's title cannot have more than 150 charceters.")
+      setPressed(false);
       return;
     }
     if (postContent.length > 10000) {
       alert("Your forum's body cannot have more than 10,000 charceters.")
+      setPressed(false);
       return;
     }
 
@@ -132,23 +136,45 @@ export default function Newformpost() {
 
       if (!response.ok) {
         alert("Whomp whomp. Could not create post. Try again later.");
+        setPressed(false);
         return;
       }
 
-      
-      console.log("Post created successfully!");
-      Alert.alert("Yippee!", "Your forum post has been created.");
+      const data = await response.json();
+      const newPostId = String(data?.postId ?? "");
 
-      //so that users can see that their post was indeed, posted
-      //also helps refresh the mypost screen for most recent data
-      router.replace("/myposts");
+      console.log("Post created successfully!");
+      if (!newPostId) {
+        router.replace("/userProfile");
+        return;
+      }
+
+      setCreatedForumPostId(newPostId);
 
     }
     catch(error) {
       console.log("Error creating post: ", error);
       alert("Could not create forum post. Please try again later.");
+      setPressed(false);
     }
     
+  };
+
+  const handleViewNewForumPost = () => {
+    if (!createdForumPostId) return;
+
+    router.replace({
+      pathname: "/singleForum/[id]",
+      params: { id: createdForumPostId },
+    });
+  };
+
+  const handleGoToProfile = () => {
+    router.replace("/forumFeed");
+  };
+
+  const handleMissingFieldsConfirm = () => {
+    setShowMissingFieldsOverlay(false);
   };
 
   const styles = StyleSheet.create({
@@ -362,6 +388,61 @@ export default function Newformpost() {
     craftIconLabelSelected: {
       color: colors.decorativeText,
     },
+    successBackdrop: {
+      alignItems: "center",
+      bottom: 0,
+      justifyContent: "center",
+      left: 0,
+      padding: 24,
+      position: "absolute",
+      right: 0,
+      top: 0,
+      zIndex: 999,
+    },
+    successCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      maxWidth: 420,
+      paddingHorizontal: 24,
+      paddingVertical: 28,
+      width: "100%",
+    },
+    successTitle: {
+      fontSize: 24,
+      fontWeight: "700",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    successDescription: {
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    successButtonRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    successButton: {
+      alignItems: "center",
+      borderRadius: 999,
+      flex: 1,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+    },
+    successButtonText: {
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    singleOverlayButton: {
+      alignItems: "center",
+      borderRadius: 999,
+      justifyContent: "center",
+      minHeight: 52,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+      width: "100%",
+    },
   });
 
   return (
@@ -526,6 +607,110 @@ export default function Newformpost() {
         <Text style={styles.createButtonText}>Create Post</Text>
       </Pressable>
     </ScrollView>
+    {createdForumPostId ? (
+      <View
+        style={[
+          styles.successBackdrop,
+          {
+            backgroundColor: `${colors.background}E6`,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.successCard,
+            {
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            },
+          ]}
+        >
+          <Text style={[styles.successTitle, { color: colors.text }]}>
+            Your post is live!
+          </Text>
+          <Text style={[styles.successDescription, { color: colors.settingsText }]}>
+            Want to check it out?
+          </Text>
+          <View style={styles.successButtonRow}>
+            <Pressable
+              onPress={handleViewNewForumPost}
+              style={[
+                styles.successButton,
+                { backgroundColor: colors.activeContainer },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.successButtonText,
+                  { color: colors.background },
+                ]}
+              >
+                Yes
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleGoToProfile}
+              style={[
+                styles.successButton,
+                { backgroundColor: colors.disabledButton },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.successButtonText,
+                  { color: colors.disabledButtonText },
+                ]}
+              >
+                No
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    ) : null}
+    {showMissingFieldsOverlay ? (
+      <View
+        style={[
+          styles.successBackdrop,
+          {
+            backgroundColor: `${colors.background}E6`,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.successCard,
+            {
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            },
+          ]}
+        >
+          <Text style={[styles.successTitle, { color: colors.text }]}>
+            Fields required
+          </Text>
+          <Text style={[styles.successDescription, { color: colors.settingsText }]}>
+            Oops! Something&apos;s missing
+          </Text>
+          <Pressable
+            onPress={handleMissingFieldsConfirm}
+            style={[
+              styles.singleOverlayButton,
+              { backgroundColor: colors.activeContainer },
+            ]}
+          >
+            <Text
+              style={[
+                styles.successButtonText,
+                { color: colors.background },
+              ]}
+            >
+              Ok
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    ) : null}
   </KeyboardAvoidingView>
   );
 }
