@@ -30,6 +30,7 @@ import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
 import { Feather, Entypo } from "@expo/vector-icons";
 import { jwtDecode } from "jwt-decode";
+import { useAppSize } from "@/Hooks/useSize";
 
 type User = {
   userID: string;
@@ -124,6 +125,8 @@ export default function OtherUserProfile() {
 
   //tracking if current user blocked other user
   const [isBlockedUser, setIsBlockedUser] = useState(false);
+
+  const size = useAppSize();
 
   //get rid of header
   useLayoutEffect(() => {
@@ -502,31 +505,13 @@ export default function OtherUserProfile() {
     container: {
       flex: 1,
     },
-    backFab: {
-      zIndex: 10,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.boxBackground,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
+    backButton: {
+      position: "absolute",
+      left: 0,
     },
-    postTabs: {
-      flexDirection: "row",
-      justifyContent: "center",
-      gap: 40,
-      marginBottom: 20,
-      alignItems: "center",
-    },
-    postTabText: {
-      backgroundColor: colors.decorativeBackground,
-      padding: 10,
-      borderRadius: 15,
+    backArrow: {
+      fontSize: 28,
+      color: colors.text,
     },
     topBackground: {
       backgroundColor: colors.topBackground,
@@ -550,6 +535,10 @@ export default function OtherUserProfile() {
       flexDirection: "column",
       flex: 1,
       backgroundColor: colors.topBackground,
+      position: "relative",
+      borderBottomLeftRadius: 40,
+      borderBottomRightRadius: 40,
+      marginBottom: 10,
     },
     headerArrowDiv: {
       backgroundColor: colors.topBackground,
@@ -571,28 +560,19 @@ export default function OtherUserProfile() {
       justifyContent: "center",
       gap: 10,
     },
-    countCircles: {
-      backgroundColor: colors.decorativeBackground,
-      width: 50,
-      height: 50,
-      justifyContent: "center",
-      alignItems: "center",
-      borderRadius: 25,
-    },
     countLabel: {
-      fontSize: 14,
-      color: colors.text,
+      fontSize: size.font.caption,
+      color: colors.settingsText,
       marginTop: 4,
     },
     bioContainer: {
       flexDirection: "column",
-      marginHorizontal: 30,
+      marginHorizontal: 50,
       marginBottom: 20,
       marginTop: 10,
     },
     bioContentContainer: {
       backgroundColor: colors.boxBackground,
-      padding: 10,
       borderRadius: 15,
     },
     tagsContainer: {
@@ -610,12 +590,11 @@ export default function OtherUserProfile() {
     contactContainer: {
       flexDirection: "row",
       justifyContent: "space-evenly",
-      // marginBottom: 10,
       alignItems: "center",
       marginHorizontal: 20,
     },
     followContainer: {
-      backgroundColor: colors.boxBackground,
+      backgroundColor: colors.secondaryButton,
       paddingVertical: 10,
       paddingHorizontal: 40,
       borderRadius: 15,
@@ -624,18 +603,18 @@ export default function OtherUserProfile() {
       backgroundColor: colors.decorativeBackground,
     },
     isFollowedText: {
-      fontSize: 14,
-      color: colors.decorativeText,
+      fontSize: size.font.button,
+      color: colors.antiText,
     },
     followText: {
-      fontSize: 14,
-      color: colors.text,
+      fontSize: size.font.button,
+      color: colors.secondaryText,
     },
     isBlockedBtn: {
       backgroundColor: colors.blockedBackground,
     },
     isBlockedText: {
-      fontSize: 14,
+      fontSize: size.font.caption,
       color: colors.blockedText,
     },
     modalOverlay: {
@@ -645,7 +624,7 @@ export default function OtherUserProfile() {
       backgroundColor: "rgba(0, 0, 0, 0.4)",
     },
     menuContainer: {
-      width: 180,
+      width: "45%",
       borderRadius: 12,
       paddingVertical: 10,
       paddingHorizontal: 15,
@@ -657,7 +636,7 @@ export default function OtherUserProfile() {
       paddingVertical: 8,
     },
     menuText: {
-      fontSize: 16,
+      fontSize: size.font.button,
     },
     activityIndicatorDiv: {
       position: "absolute",
@@ -669,7 +648,7 @@ export default function OtherUserProfile() {
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      borderColor: colors.cancel, 
+      borderColor: colors.cancel,
       borderWidth: 1,
       borderRadius: 12,
       width: "100%",
@@ -687,12 +666,15 @@ export default function OtherUserProfile() {
         }}
       >
         <View style={styles.headerArrowDiv}>
-          <Pressable style={styles.backFab} onPress={() => router.back()}
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
             accessible={true}
             accessibilityLabel={"Go Back"}
             accessibilityHint={"Navigates back to the previous page."}
-            accessibilityRole={"button"}>
-            <Feather name="chevron-left" size={22} color={colors.text} />
+            accessibilityRole={"button"}
+          >
+            <Text style={styles.backArrow}>←</Text>
           </Pressable>
         </View>
         {currentUser !== "" && currentUser !== userData?.userID ? (
@@ -704,15 +686,26 @@ export default function OtherUserProfile() {
               justifyContent: "center",
             }}
           >
-            <TouchableOpacity onPress={() => openMenu()}
+            <TouchableOpacity
+              onPress={() => openMenu()}
               accessible={true}
               accessibilityLabel={"User Menu"}
               accessibilityHint={"Double tap to view options in user menu"}
-              accessibilityRole={"button"}>
+              accessibilityRole={"button"}
+              style={{
+                backgroundColor: colors.secondaryButton,
+                padding: 15,
+                borderRadius: 99,
+                width: size.iconSize + 30,
+                height: size.iconSize + 30,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               <Entypo
                 name="dots-three-vertical"
-                size={22}
-                color={colors.text}
+                size={size.iconSize}
+                color={colors.decorativeBackground}
               />
             </TouchableOpacity>
           </View>
@@ -736,11 +729,9 @@ export default function OtherUserProfile() {
               ]}
               accessible={true}
               accessibilityLabel={"Profile picture of " + userData?.userName}
-              accessibilityRole={"image"}></Image>
+              accessibilityRole={"image"}
+            ></Image>
             <View>
-              <Text style={{ fontSize: 20, color: colors.text }}>
-                {userData?.userName ?? "User"}
-              </Text>
               <View style={{ flexDirection: "row", gap: 20 }}>
                 {/* Followers */}
 
@@ -751,7 +742,10 @@ export default function OtherUserProfile() {
                     justifyContent: "flex-start",
                   }}
                   accessible={true}
-                  accessibilityHint={"Double tap to view all accounts following " + userData?.userName}
+                  accessibilityHint={
+                    "Double tap to view all accounts following " +
+                    userData?.userName
+                  }
                   onPress={() => {
                     if (!userData?.userID) {
                       alert("Still fetching userdata... try again later");
@@ -763,13 +757,14 @@ export default function OtherUserProfile() {
                     });
                   }}
                 >
-                  <View style={styles.countCircles}>
-                    <Text
-                      style={{ fontSize: 24, color: colors.decorativeText }}
-                    >
-                      {userData?.followers ?? 0}
-                    </Text>
-                  </View>
+                  <Text
+                    style={{
+                      fontSize: size.font.titleText,
+                      color: colors.decorativeText,
+                    }}
+                  >
+                    {userData?.followers ?? 0}
+                  </Text>
                   <Text style={styles.countLabel}>Followers</Text>
                 </Pressable>
 
@@ -787,15 +782,20 @@ export default function OtherUserProfile() {
                     });
                   }}
                   accessible={true}
-                  accessibilityHint={"Double tap to view all accounts " + userData?.userName + " is following."}
+                  accessibilityHint={
+                    "Double tap to view all accounts " +
+                    userData?.userName +
+                    " is following."
+                  }
                 >
-                  <View style={styles.countCircles}>
-                    <Text
-                      style={{ fontSize: 24, color: colors.decorativeText }}
-                    >
-                      {userData?.following ?? 0}
-                    </Text>
-                  </View>
+                  <Text
+                    style={{
+                      fontSize: size.font.titleText,
+                      color: colors.decorativeText,
+                    }}
+                  >
+                    {userData?.following ?? 0}
+                  </Text>
                   <Text style={styles.countLabel}>Following</Text>
                 </Pressable>
               </View>
@@ -804,9 +804,18 @@ export default function OtherUserProfile() {
 
           {/* bio */}
           <View style={styles.bioContainer}>
-            <Text style={{ fontSize: 14, color: colors.text }}> Bio </Text>
+            <Text
+              style={{
+                fontSize: size.font.headline,
+                fontWeight: size.weight.headline,
+                color: colors.text,
+                paddingBottom: 5,
+              }}
+            >
+              {userData?.userName ?? "User"}
+            </Text>
             <View style={styles.bioContentContainer}>
-              <Text style={{ fontSize: 14, color: colors.text }}>
+              <Text style={{ fontSize: size.font.caption, color: colors.text }}>
                 {userData?.userBio ?? ""}
               </Text>
             </View>
@@ -839,12 +848,21 @@ export default function OtherUserProfile() {
                   isFollowed && styles.isFollowedBtn,
                   (isBlockedUser || isBlocked) && styles.isBlockedBtn,
                 ]}
-                  accessible={true}
-                  accessibilityHint={isFollowed ? "Currently following " + userData?.userName + ". Double tap to unfollow."
-                    : !isFollowed && !isBlocked && !isBlockedUser ? "Double tap to follow " + userData?.userName
-                    : "Cannot follow " + userData?.userName + " because at least one account is blocked."
-                  }
-                  accessibilityState={isFollowed ? {checked: true} : {checked: false}}
+                accessible={true}
+                accessibilityHint={
+                  isFollowed
+                    ? "Currently following " +
+                      userData?.userName +
+                      ". Double tap to unfollow."
+                    : !isFollowed && !isBlocked && !isBlockedUser
+                    ? "Double tap to follow " + userData?.userName
+                    : "Cannot follow " +
+                      userData?.userName +
+                      " because at least one account is blocked."
+                }
+                accessibilityState={
+                  isFollowed ? { checked: true } : { checked: false }
+                }
                 onPress={handleFollowPress}
               >
                 {isLoading ? (
@@ -870,19 +888,10 @@ export default function OtherUserProfile() {
           )}
         </View>
       </View>
-
-      {/* user's posts section */}
-      <View style={styles.postTabs}>
-        <View style={styles.postTabText}>
-          <Text style={{ color: colors.decorativeText }}>
-            {userData?.userName ?? "User"}'s Posts
-          </Text>
-        </View>
-      </View>
     </View>
   );
 
-  const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS - 10;
+  const cardW = (width - (NUM_COLUMNS + 1) * 10) / NUM_COLUMNS;
 
   return (
     <SafeAreaView style={[styles.container]}>
@@ -908,7 +917,9 @@ export default function OtherUserProfile() {
                 })
               }
               accessible={true}
-              accessibilityLabel={"Explore post created by " + userData?.userName}
+              accessibilityLabel={
+                "Explore post created by " + userData?.userName
+              }
               accessibilityHint={"Double tap to view this explore post"}
             >
               <Image
@@ -918,8 +929,7 @@ export default function OtherUserProfile() {
                   width: cardW,
                   height: cardW * (16 / 9),
                   borderRadius: 20,
-                  marginVertical: 10,
-                  marginHorizontal: 4,
+                  marginBottom: 8,
                 }}
               />
             </Pressable>
@@ -932,15 +942,17 @@ export default function OtherUserProfile() {
             progressViewOffset={insets.top + 10}
           />
         }
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 100,
-          backgroundColor: colors.background,
-        }}
         columnWrapperStyle={{
           justifyContent: "flex-start",
-          // marginVertical: 10,
-          // paddingHorizontal: 10,
-          // columnGap: 10,
+          columnGap: 10,
+          paddingHorizontal: 10,
+        }}
+        contentContainerStyle={{
+          alignSelf: "center",
+          width: "100%",
+          maxWidth: CONTENT_MAX,
+          paddingBottom: insets.bottom,
+          backgroundColor: colors.background,
         }}
       />
 
@@ -968,8 +980,11 @@ export default function OtherUserProfile() {
               style={styles.menuOption}
               accessible={true}
               accessibilityLabel={isBlockedUser ? "Unblock" : "Block"}
-              accessibilityHint={isBlockedUser ? "Double tap to unblock " + userData?.userName : 
-                "Double tap to block " + userData?.userName}
+              accessibilityHint={
+                isBlockedUser
+                  ? "Double tap to unblock " + userData?.userName
+                  : "Double tap to block " + userData?.userName
+              }
             >
               {isBlockedUser ? (
                 <Feather name="smile" size={18} color={colors.text} />
@@ -988,7 +1003,9 @@ export default function OtherUserProfile() {
               accessibilityHint="Double tap to exit user menu"
               style={styles.cancelBtn}
             >
-              <Text style={[styles.menuText, { color: colors.warning}]}>Close</Text>
+              <Text style={[styles.menuText, { color: colors.warning }]}>
+                Close
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

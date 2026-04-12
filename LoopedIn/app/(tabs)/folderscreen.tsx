@@ -583,7 +583,7 @@ export default function FolderScreen() {
     searchBar: {
       marginHorizontal: 20,
       marginBottom: 20,
-      backgroundColor: colors.searchBarContainer,
+      backgroundColor: colors.background,
       borderRadius: 25,
       borderWidth: 1,
       borderColor: colors.decorativeBackground,

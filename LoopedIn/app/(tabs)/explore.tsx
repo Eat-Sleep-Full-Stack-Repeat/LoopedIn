@@ -28,6 +28,8 @@ import {
   GestureHandlerRootView,
   RefreshControl,
 } from "react-native-gesture-handler";
+import { useAppSize } from "@/Hooks/useSize";
+import { Feather } from "@expo/vector-icons";
 
 type Tag = {
   tagID: string;
@@ -79,22 +81,23 @@ export default function ExplorePage() {
   const router = useRouter();
   const currentPost = useRef<number | null>(null);
   const creatorID = useRef<number | null>(null);
+  const size = useAppSize();
 
   const { width } = useWindowDimensions();
   let avatarSize;
-  let usernameSize;
-  let imageHeight;
+  // let usernameSize;
+  let imageHeight: number;
 
   if (width >= 900) {
-    usernameSize = 18;
+    // usernameSize = 18;
     avatarSize = 50;
     imageHeight = 700;
   } else if (width >= 768) {
-    usernameSize = 17;
+    // usernameSize = 17;
     avatarSize = 45;
     imageHeight = 600;
   } else {
-    usernameSize = 15;
+    // usernameSize = 15;
     avatarSize = 35;
     imageHeight = 300;
   }
@@ -335,21 +338,25 @@ export default function ExplorePage() {
       justifyContent: "center",
     },
     pageTitle: {
-      fontSize: 28,
-      fontWeight: "700",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       textAlign: "center",
-      marginVertical: 15,
+      marginTop: 10,
+      marginBottom: 20,
       color: colors.text,
     },
     searchBar: {
-      height: 40,
+      height: 45,
       borderWidth: 1,
-      borderRadius: 8,
+      borderRadius: 25,
       paddingHorizontal: 10,
       marginHorizontal: 20,
-      borderColor: colors.exploreFilterSelected,
-      backgroundColor: "#FFFFFF",
-      color: "#000000",
+      borderColor: colors.decorativeBackground,
+      backgroundColor: colors.background,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      // color: "green",
     },
     filterContainer: {
       flexDirection: "row",
@@ -358,30 +365,31 @@ export default function ExplorePage() {
       marginVertical: 15,
     },
     filterTag: {
+      width: 80,
+      alignItems: "center",
       paddingVertical: 6,
-      paddingHorizontal: 16,
-      borderRadius: 15,
-      backgroundColor: currentTheme === "light" ? "#FFFFFF" : "#2E2E2E",
+      borderRadius: 50,
+      backgroundColor: colors.secondaryButton,
       borderWidth: 1,
-      borderColor: colors.exploreBorder,
+      borderColor: colors.decorativeBackground,
     },
     filterTagSelected: {
-      backgroundColor: colors.exploreFilterSelected,
-      borderColor: colors.exploreFilterSelected,
+      backgroundColor: colors.decorativeBackground,
+      borderColor: colors.decorativeBackground,
     },
     filterText: {
-      fontSize: 14,
-      fontWeight: "500",
-      color: colors.text,
+      fontSize: size.font.caption,
+      fontWeight: size.weight.headline,
+      color: colors.secondaryText,
     },
     filterTextSelected: {
-      color: currentTheme === "light" ? colors.text : "#FFFFFF",
+      color: colors.antiText,
     },
     postContainer: {
       backgroundColor: colors.exploreCardBackground,
       marginHorizontal: 20,
       marginBottom: 25,
-      borderRadius: 10,
+      borderRadius: 20,
       padding: 12,
       borderWidth: 1,
       borderColor: colors.exploreBorder,
@@ -398,17 +406,17 @@ export default function ExplorePage() {
       marginRight: 10,
     },
     username: {
-      fontWeight: "600",
-      fontSize: usernameSize,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
       color: colors.text,
     },
     postImage: {
       width: "100%",
-      borderRadius: 8,
-      backgroundColor: "#EAEAEA",
+      borderRadius: 20,
+      backgroundColor: colors.background,
     },
     postCaption: {
-      fontSize: 14,
+      fontSize: size.font.caption,
       color: colors.text,
       flexShrink: 1,
     },
@@ -423,13 +431,13 @@ export default function ExplorePage() {
       gap: 4,
     },
     actionIcon: {
-      width: 20,
-      height: 20,
+      width: size.iconSize,
+      height: size.iconSize,
       resizeMode: "contain",
     },
     postActionText: {
       color: colors.text,
-      fontSize: 12,
+      fontSize: size.font.detailText,
     },
     tagRow: {
       flexDirection: "row",
@@ -446,9 +454,22 @@ export default function ExplorePage() {
       marginBottom: 8,
     },
     tagText: {
-      fontSize: 12,
-      fontWeight: "600",
+      fontSize: size.font.detailText,
+      fontWeight: size.weight.title,
       color: colors.text,
+    },
+    actionsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 20,
+    },
+    actionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginRight: 16,
+    },
+    actionText: {
+      marginLeft: 6,
     },
   });
 
@@ -486,7 +507,6 @@ export default function ExplorePage() {
           }
           accessible={true}
           accessibilityHint={"Double tap to read more about this explore post."}
-
         >
           <Image
             style={[styles.postImage, { height: imageHeight }]}
@@ -527,14 +547,20 @@ export default function ExplorePage() {
           )}
         </Pressable>
 
-        <View style={styles.postActions}>
+        {/* <View style={styles.postActions}>
           <Pressable
             style={styles.postAction}
             onPress={() => handleLikePress(item)}
             accessible={true}
             accessibilityLabel={"Like"}
-            accessibilityHint={item.isLiked? "double tap to unlike the post" : "double tap to like this post"}
-            accessibilityState={item.isLiked? {checked: true} : {checked: false}}
+            accessibilityHint={
+              item.isLiked
+                ? "double tap to unlike the post"
+                : "double tap to like this post"
+            }
+            accessibilityState={
+              item.isLiked ? { checked: true } : { checked: false }
+            }
             accessibilityRole={"button"}
           >
             <Image
@@ -555,7 +581,9 @@ export default function ExplorePage() {
               style={{ alignItems: "center" }}
               accessible={true}
               accessibilityLabel={"Comment feed"}
-              accessibilityHint={"Double tap to open comment section on this post"}
+              accessibilityHint={
+                "Double tap to open comment section on this post"
+              }
               accessibilityRole={"button"}
             >
               <Image
@@ -566,21 +594,19 @@ export default function ExplorePage() {
             </Pressable>
           </View>
 
-          <View style={styles.postAction}>
-            <Image
-              style={[styles.actionIcon, { tintColor: colors.text }]}
-              source={require("../../assets/images/tags.png")}
-            />
-            <Text style={styles.postActionText}>Tags</Text>
-          </View>
-
           <Pressable
             style={styles.postAction}
             onPress={() => handleSavePress(item)}
             accessible={true}
             accessibilityLabel={"Save"}
-            accessibilityHint={item.isSaved? "double tap to unsave this post" : "double tap to save this post"}
-            accessibilityState={item.isSaved? {checked: true} : {checked: false}}
+            accessibilityHint={
+              item.isSaved
+                ? "double tap to unsave this post"
+                : "double tap to save this post"
+            }
+            accessibilityState={
+              item.isSaved ? { checked: true } : { checked: false }
+            }
             accessibilityRole={"button"}
           >
             <Image
@@ -595,6 +621,95 @@ export default function ExplorePage() {
               source={require("../../assets/images/saved.png")}
             />
             <Text style={styles.postActionText}>
+              {item.isSaved ? "Saved" : "Save"}
+            </Text>
+          </Pressable>
+        </View> */}
+
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => handleLikePress}
+            accessible={true}
+            accessibilityLabel={"Like"}
+            accessibilityHint={
+              item.isLiked
+                ? "double tap to unlike this post"
+                : "double tap to like this post"
+            }
+            accessibilityState={
+              item.isLiked ? { checked: true } : { checked: false }
+            }
+            accessibilityRole={"button"}
+          >
+            <Feather
+              name="heart"
+              size={size.iconSize + 4}
+              color={item.isLiked ? "#E57373" : colors.text}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                { color: colors.text, fontSize: size.font.caption },
+              ]}
+            >
+              {item.isLiked ? "Liked" : "Like"}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => showComments(item)}
+            style={styles.actionButton}
+            accessible={true}
+            accessibilityLabel={"Comment feed"}
+            accessibilityHint={
+              "Double tap to open comment section on this post"
+            }
+            accessibilityRole={"button"}
+          >
+            <Feather
+              name="message-circle"
+              size={size.iconSize + 4}
+              color={colors.text}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                { color: colors.text, fontSize: size.font.caption },
+              ]}
+            >
+              Comment
+            </Text>
+          </Pressable>
+
+          <View style={{ flex: 1 }} />
+
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => handleSavePress}
+            accessible={true}
+            accessibilityLabel={"Save"}
+            accessibilityHint={
+              item.isSaved
+                ? "double tap to unsave this post"
+                : "double tap to save this post"
+            }
+            accessibilityState={
+              item.isSaved ? { checked: true } : { checked: false }
+            }
+            accessibilityRole={"button"}
+          >
+            <Feather
+              name="bookmark"
+              size={size.iconSize + 4}
+              color={item.isSaved ? colors.exploreFilterSelected : colors.text}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                { color: colors.text, fontSize: size.font.caption },
+              ]}
+            >
               {item.isSaved ? "Saved" : "Save"}
             </Text>
           </Pressable>
@@ -624,23 +739,32 @@ export default function ExplorePage() {
 
       <View style={styles.container}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Text style={styles.pageTitle}
+          <Text
+            style={styles.pageTitle}
             accessible={true}
-            accessibilityRole={"header"}  
-          >Explore</Text>
+            accessibilityRole={"header"}
+          >
+            Explore
+          </Text>
 
           <Pressable
             onPress={() => router.push("/exploreSearch")}
             style={{ marginHorizontal: 20 }}
             accessible={true}
-            accessibilityHint={"Allows to search for specific content from the Explore page"}
+            accessibilityHint={
+              "Allows to search for specific content from the Explore page"
+            }
             accessibilityRole={"search"}
           >
-            <View pointerEvents="none">
+            <View pointerEvents="none" style={styles.searchBar}>
+              <Feather
+                name="search"
+                size={size.iconSize - 4}
+                color={colors.inputContainerPlaceholderText}
+              />
               <TextInput
-                style={styles.searchBar}
                 placeholder="Search username or tags"
-                placeholderTextColor="#666"
+                placeholderTextColor={colors.inputContainerPlaceholderText}
                 editable={false}
               />
             </View>
@@ -652,10 +776,17 @@ export default function ExplorePage() {
                 key={filterOption}
                 onPress={() => setSelectedFilter(filterOption)}
                 accessible={true}
-                accessibilityHint={filterOption == "All" ? "Shows all posts" : "Shows posts sorted by " + filterOption + " craft type"}
+                accessibilityHint={
+                  filterOption == "All"
+                    ? "Shows all posts"
+                    : "Shows posts sorted by " + filterOption + " craft type"
+                }
                 accessibilityRole={"tab"}
-                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
-
+                accessibilityState={
+                  selectedFilter === filterOption
+                    ? { selected: true }
+                    : { selected: false }
+                }
                 style={[
                   styles.filterTag,
                   selectedFilter === filterOption && styles.filterTagSelected,
@@ -702,7 +833,7 @@ export default function ExplorePage() {
                 if (!hasMore.current) {
                   return (
                     <View style={{ paddingBottom: 150 }}>
-                      <Text style={{ color: colors.text }}>
+                      <Text style={{ color: colors.settingsText }}>
                         No More Data To Load
                       </Text>
                     </View>
@@ -738,7 +869,6 @@ export default function ExplorePage() {
             postCreator={creatorID.current}
           />
         ) : null}
-
       </View>
     </>
   );

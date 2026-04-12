@@ -159,7 +159,7 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
           >
             <Feather
               name="settings"
-              size={24}
+              size={sizes.iconSize + 4}
               color={colors.decorativeBackground}
             />
           </Pressable>
@@ -923,9 +923,6 @@ export default function UserProfile() {
         }}
         columnWrapperStyle={{
           justifyContent: "flex-start",
-          // To find gap size between cards: width of device - total padding horizontal - space taken by image cards / the number of gaps
-          // ex. for phone with 3 columns: width of phone - 20 for padding (10 on each side) - card size * 3 / 2 (Gap between first and second and gap between second and third)
-          // columnGap: (width - 20 - cardW * NUM_COLUMNS) / (NUM_COLUMNS - 1),
           columnGap: 10,
           paddingHorizontal: 10,
         }}

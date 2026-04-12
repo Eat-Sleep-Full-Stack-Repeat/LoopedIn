@@ -1,3 +1,4 @@
+import { useAppSize } from "@/Hooks/useSize";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import API_URL from "@/utils/config";
@@ -73,6 +74,7 @@ const ExploreCommentsModal = ({
   const currentUserInfo = useRef<userInfo | null>(null);
   const commentIDToDelete = useRef<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const size = useAppSize();
 
   let avatarSize: number;
 
@@ -83,7 +85,6 @@ const ExploreCommentsModal = ({
   }
 
   useEffect(() => {
-    
     if (!isVisible) {
       return;
     }
@@ -352,8 +353,8 @@ const ExploreCommentsModal = ({
     commentsHeading: {
       color: colors.text,
       paddingTop: 0,
-      fontSize: 24,
-      fontWeight: "600",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       marginBottom: 20,
     },
     commentsContainer: {
@@ -388,12 +389,6 @@ const ExploreCommentsModal = ({
       padding: 5,
       marginVertical: 5,
     },
-    profilePicture: {
-      backgroundColor: "white",
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-    },
     userInfo: {
       flexDirection: "column",
       marginLeft: 5,
@@ -419,9 +414,13 @@ const ExploreCommentsModal = ({
     <View style={styles.individualCommentContainer}>
       <View style={styles.topComments}>
         <View style={styles.userInfoHeader}>
-          <Pressable onPress={() => profilePress(item)}
+          <Pressable
+            onPress={() => profilePress(item)}
             accessible={true}
-            accessibilityHint={"Double tap to view " + item.username + " profile"}>
+            accessibilityHint={
+              "Double tap to view " + item.username + " profile"
+            }
+          >
             {item.profilepic ? (
               <Image
                 source={{ uri: item.profilepic }}
@@ -440,7 +439,7 @@ const ExploreCommentsModal = ({
                     width: avatarSize / 2,
                     height: avatarSize / 2,
                     borderRadius: avatarSize / 2,
-                    backgroundColor: "white"
+                    backgroundColor: "white",
                   }}
                 />
               </View>
@@ -448,35 +447,65 @@ const ExploreCommentsModal = ({
           </Pressable>
           <View style={styles.userInfo}>
             <View style={{ flexDirection: "row", gap: 5 }}>
-              <Pressable onPress={() => profilePress(item)}
-                  accessible={true}
-                  accessibilityHint={"Double tap to view " + item.username + " profile"}>
-                <Text style={{ color: colors.text }}>{item.username}</Text>
+              <Pressable
+                onPress={() => profilePress(item)}
+                accessible={true}
+                accessibilityHint={
+                  "Double tap to view " + item.username + " profile"
+                }
+              >
+                <Text
+                  style={{ color: colors.text, fontSize: size.font.headline }}
+                >
+                  {item.username}
+                </Text>
               </Pressable>
               {postCreator === Number(item.commenterid) && (
-                <Text style={{ color: colors.text }}>(Creator)</Text>
+                <Text
+                  style={{ color: colors.text, fontSize: size.font.headline }}
+                >
+                  (Creator)
+                </Text>
               )}
               {currentUser.current === item.commenterid && (
-                <Text style={{ color: colors.text }}>(You)</Text>
+                <Text
+                  style={{ color: colors.text, fontSize: size.font.headline }}
+                >
+                  (You)
+                </Text>
               )}
             </View>
-            <Text style={{ color: colors.text, marginLeft: 5 }}>
+            <Text
+              style={{
+                color: colors.text,
+                marginLeft: 5,
+                fontSize: size.font.detailText,
+              }}
+            >
               {new Date(item.dateposted).toDateString()}
             </Text>
           </View>
         </View>
         {currentUser.current === item.commenterid ? (
-          <Pressable onPress={() => checkDeleteComment(item.id)}
+          <Pressable
+            onPress={() => checkDeleteComment(item.id)}
             accessible={true}
             accessibilityLabel={"Delete"}
             accessibilityHint={"double tap to delete reply"}
-            accessibilityRole={"button"}>
-            <Ionicons name="trash-outline" size={24} color={colors.text} />
+            accessibilityRole={"button"}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={size.iconSize + 4}
+              color={colors.text}
+            />
           </Pressable>
         ) : null}
       </View>
       <View style={styles.commentContent}>
-        <Text style={{ color: colors.text }}>{item.body}</Text>
+        <Text style={{ color: colors.text, fontSize: size.font.bodyText }}>
+          {item.body}
+        </Text>
       </View>
     </View>
   );
@@ -509,22 +538,26 @@ const ExploreCommentsModal = ({
                 width: "100%",
               }}
             >
-              <Pressable onPress={handleCloseComments}
+              <Pressable
+                onPress={handleCloseComments}
                 accessible={true}
                 accessibilityLabel={"Exit"}
                 accessibilityHint={"double tap to exit out of comment section"}
-                accessibilityRole={"button"}>
+                accessibilityRole={"button"}
+              >
                 <AntDesign
                   name="close"
-                  size={24}
+                  size={size.iconSize + 4}
                   color={colors.text}
-                  style={{ marginRight: 25, marginTop: 15, fontSize: 22 }}
+                  style={{ marginRight: 25, marginTop: 20 }}
                 />
               </Pressable>
             </View>
-            <Text style={styles.commentsHeading}
+            <Text
+              style={styles.commentsHeading}
               accessible={true}
-              accessibilityRole={"header"}>
+              accessibilityRole={"header"}
+            >
               Comments
             </Text>
             <View style={{ flex: 1, width: "100%" }}>
@@ -547,7 +580,7 @@ const ExploreCommentsModal = ({
                         <Text
                           style={{
                             color: colors.settingsText,
-                            fontWeight: "bold",
+                            fontWeight: size.weight.headline,
                           }}
                         >
                           There Are No Comments To Display{" "}
@@ -568,14 +601,13 @@ const ExploreCommentsModal = ({
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
-                // width: 290,
                 alignItems: "flex-end",
               }}
             >
               <View style={styles.replyContainer}>
                 <TextInput
                   placeholder="Reply here"
-                  placeholderTextColor={colors.text}
+                  placeholderTextColor={colors.inputContainerPlaceholderText}
                   style={{ color: colors.text }}
                   value={commentValue}
                   onChangeText={setCommentValue}
@@ -584,7 +616,11 @@ const ExploreCommentsModal = ({
               </View>
               <Pressable
                 onPress={() => postComment(commentValue)}
-                style={{ marginBottom: 20, marginLeft: 5, marginRight: 5 }}
+                style={{
+                  marginBottom: 20,
+                  marginLeft: 5,
+                  marginRight: 5,
+                }}
                 accessible={true}
                 accessibilityLabel={"Post"}
                 accessibilityHint={"double tap to post reply"}
@@ -592,7 +628,7 @@ const ExploreCommentsModal = ({
               >
                 <MaterialCommunityIcons
                   name="send-circle-outline"
-                  size={40}
+                  size={size.iconSize + 20}
                   color={colors.decorativeBackground}
                 />
               </Pressable>
@@ -663,7 +699,6 @@ const ExploreCommentsModal = ({
                     onPress={() => {
                       setDisplayCheckDelete(false);
                       commentIDToDelete.current = null;
-                      
                     }}
                     accessible={true}
                     accessibilityHint={"double tap to cancel reply deletion"}
