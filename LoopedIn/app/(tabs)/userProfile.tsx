@@ -715,7 +715,7 @@ export default function UserProfile() {
     await Storage.removeItem("token");
 
     setTimeout(() => {
-      router.push("/"); //index for dev purposes; later should be login
+      router.push("/login"); //index for dev purposes; later should be login
       setSettingsOpen(false);
     }, 0);
 
