@@ -1661,7 +1661,12 @@ export default function ForumPostDetail() {
             return <ActivityIndicator size="small" color={colors.text} />;
           } else {
             return (
-              <View style={{ paddingVertical: 40, marginLeft: 50 }}>
+              <View
+                style={{
+                  paddingVertical: 40,
+                  alignItems: "center",
+                }}
+              >
                 <Text
                   style={{ color: colors.settingsText, fontWeight: "bold" }}
                 >

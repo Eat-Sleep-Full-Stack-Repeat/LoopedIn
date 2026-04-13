@@ -441,7 +441,7 @@ export default function TrackerFolderView() {
       backgroundColor: colors.exploreCardBackground,
       padding: 10,
       borderRadius: 14,
-      fontSize: size.font.headline,
+      fontSize: size.font.bodyText,
     },
     projectContainer: {
       backgroundColor: colors.exploreCardBackground,
@@ -649,7 +649,7 @@ export default function TrackerFolderView() {
                     style={{
                       color: colors.text,
                       flexShrink: 1,
-                      fontSize: size.font.headline,
+                      fontSize: size.font.bodyText,
                     }}
                   >
                     {item.title}

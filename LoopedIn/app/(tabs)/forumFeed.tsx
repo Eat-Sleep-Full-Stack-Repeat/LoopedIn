@@ -394,7 +394,6 @@ export default function ForumFeed() {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginHorizontal: 5,
       marginBottom: 20,
     },
     craftTags: {

@@ -229,7 +229,7 @@ export default function ForumFeed() {
       paddingTop: insets.top,
       flexDirection: "column",
       backgroundColor: colors.background,
-      paddingHorizontal: 20,
+      paddingHorizontal: 15,
     },
     title: {
       alignItems: "center",
@@ -261,13 +261,12 @@ export default function ForumFeed() {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginHorizontal: 5,
       marginBottom: 20,
     },
     craftTags: {
       flexDirection: "row",
       justifyContent: "space-between",
-      gap: 20,
+      gap: 15,
     },
     buttonPressed: {
       backgroundColor: colors.decorativeBackground,
