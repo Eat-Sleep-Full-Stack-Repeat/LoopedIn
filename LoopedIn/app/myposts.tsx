@@ -21,6 +21,8 @@ import {
   GestureHandlerRootView,
   RefreshControl,
 } from "react-native-gesture-handler";
+import { useAppSize } from "@/Hooks/useSize";
+import BottomFab from "@/components/bottomFab";
 
 type Tag = {
   tagID: string;
@@ -78,6 +80,8 @@ export default function MyPosts() {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+
+  const size = useAppSize();
 
   const handleCreatePost = () => {
     router.push("/newforumpost");
@@ -271,17 +275,23 @@ export default function MyPosts() {
                   {item.username}
                 </Text>
                 <Text style={[styles.date, { color: colors.text }]}>
-                  {new Date(item.datePosted).toDateString()}
+                  {new Date(item.datePosted).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </Text>
               </View>
             </View>
           </Pressable>
 
-          <TouchableOpacity onPress={() => openMenu(parseInt(item.id))}
+          <TouchableOpacity
+            onPress={() => openMenu(parseInt(item.id))}
             accessible={true}
             accessibilityLabel={"Forum Post Menu"}
             accessibilityHint={"Double tap to edit or delete this forum post"}
-            accessibilityRole={"button"}>
+            accessibilityRole={"button"}
+          >
             <Entypo name="dots-three-vertical" size={22} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -374,13 +384,23 @@ export default function MyPosts() {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      paddingTop: insets.top,
     },
     scrollContent: {
       paddingHorizontal: 20,
+      flex: 1,
     },
     pageTitle: {
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
+    },
+    backButton: {
+      position: "absolute",
+      left: 0,
+    },
+    backArrow: {
       fontSize: 28,
-      fontWeight: "700",
+      color: colors.text,
     },
     postContainer: {
       borderRadius: 14,
@@ -395,11 +415,12 @@ export default function MyPosts() {
     },
     header: {
       paddingHorizontal: 16,
-      paddingBottom: 8,
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "center",
       marginBottom: 20,
+      position: "relative",
+      marginTop: 10,
     },
     headerRow: {
       flexDirection: "row",
@@ -412,26 +433,26 @@ export default function MyPosts() {
       alignItems: "center",
     },
     profilePic: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: size.iconSize + 24,
+      height: size.iconSize + 24,
+      borderRadius: 50,
       marginRight: 10,
     },
     username: {
-      fontSize: 15,
-      fontWeight: "600",
+      fontSize: size.font.headline,
+      fontWeight: size.weight.headline,
     },
     content: {
-      fontSize: 14,
+      fontSize: size.font.bodyText,
       lineHeight: 20,
     },
     date: {
-      fontSize: 12,
+      fontSize: size.font.detailText,
       opacity: 0.7,
     },
     postTitle: {
-      fontSize: 16,
-      fontWeight: "bold",
+      fontSize: size.font.headline,
+      fontWeight: size.weight.title,
       marginBottom: 8,
     },
     tagRow: {
@@ -447,8 +468,8 @@ export default function MyPosts() {
       borderWidth: 1,
     },
     tagText: {
-      fontSize: 12,
-      fontWeight: "600",
+      fontSize: size.font.detailText,
+      fontWeight: size.weight.title,
     },
     floatingButton: {
       position: "absolute",
@@ -488,7 +509,7 @@ export default function MyPosts() {
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      borderColor: colors.cancel, 
+      borderColor: colors.cancel,
       borderWidth: 1,
       borderRadius: 12,
       width: "100%",
@@ -497,175 +518,175 @@ export default function MyPosts() {
   });
 
   return (
-    <>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false, animation: "none" }} />
 
-      <SafeAreaView
-        style={[
-          styles.container,
-          { paddingTop: insets.top, backgroundColor: colors.background },
-        ]}
-      >
-        <GestureHandlerRootView style={styles.scrollContent}>
-          <View style={styles.header}>
-            <Pressable onPress={router.back} hitSlop={10}
-                accessible={true}
-                accessibilityLabel={"Go Back"}
-                accessibilityHint={"Navigates back to the previous page."}
-                accessibilityRole={"button"}>
-              <Feather name="arrow-left" size={24} color={colors.text} />
-            </Pressable>
-            <Text style={[styles.pageTitle, { color: colors.text }]}
-              accessible={true}
-              accessibilityRole={"header"}>
-              My Posts
-            </Text>
-            <View style={{ height: 10 }} />
-          </View>
+      <GestureHandlerRootView style={styles.scrollContent}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={router.back}
+            hitSlop={10}
+            accessible={true}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}
+            style={styles.backButton}
+          >
+            <Text style={styles.backArrow}>←</Text>
+          </Pressable>
+          <Text
+            style={[styles.pageTitle, { color: colors.text }]}
+            accessible={true}
+            accessibilityRole={"header"}
+          >
+            My Posts
+          </Text>
+          <View style={{ height: 10 }} />
+        </View>
 
-          <FlatList
-            data={posts}
-            renderItem={renderPost}
-            keyExtractor={(item) => item.id}
-            onEndReached={fetchData}
-            onEndReachedThreshold={0.2}
-            ListEmptyComponent={() => {
-              if (loadingMore.current) {
-                return <ActivityIndicator size="small" color={colors.text} />;
-              } else if (noPosts) {
+        <FlatList
+          data={posts}
+          renderItem={renderPost}
+          keyExtractor={(item) => item.id}
+          onEndReached={fetchData}
+          onEndReachedThreshold={0.2}
+          ListEmptyComponent={() => {
+            if (loadingMore.current) {
+              return <ActivityIndicator size="small" color={colors.text} />;
+            } else if (noPosts) {
+              return (
+                <View style={{ paddingVertical: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {" "}
+                    No posts to see here... create a forum post now!{" "}
+                  </Text>
+                </View>
+              );
+            } else {
+              return (
+                <View style={{ paddingVertical: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {" "}
+                    Loading...{" "}
+                  </Text>
+                </View>
+              );
+            }
+          }}
+          ListFooterComponent={() => {
+            if (posts.length > 0) {
+              if (!hasMore.current) {
                 return (
-                  <View style={{ paddingVertical: 10 }}>
-                    <Text
-                      style={{
-                        color: colors.settingsText,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                      }}
-                    >
+                  <View style={{ paddingBottom: 150 }}>
+                    <Text style={{ color: colors.settingsText }}>
                       {" "}
-                      No posts to see here... create a forum post now!{" "}
+                      No More Posts{" "}
                     </Text>
                   </View>
                 );
               } else {
                 return (
-                  <View style={{ paddingVertical: 10 }}>
-                    <Text
-                      style={{
-                        color: colors.settingsText,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                      }}
-                    >
-                      {" "}
-                      Loading...{" "}
-                    </Text>
+                  <View style={{ paddingBottom: 150 }}>
+                    <ActivityIndicator size="small" color={colors.text} />
                   </View>
                 );
               }
-            }}
-            ListFooterComponent={() => {
-              if (posts.length > 0) {
-                if (!hasMore.current) {
-                  return (
-                    <View style={{ paddingBottom: 150 }}>
-                      <Text style={{ color: colors.text }}>
-                        {" "}
-                        No More Posts{" "}
-                      </Text>
-                    </View>
-                  );
-                } else {
-                  return (
-                    <View style={{ paddingBottom: 150 }}>
-                      <ActivityIndicator size="small" color={colors.text} />
-                    </View>
-                  );
-                }
-              }
-            }}
-            ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-              />
             }
-          />
-        </GestureHandlerRootView>
+          }}
+          ListFooterComponentStyle={{ alignItems: "center", marginTop: 15 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        />
+      </GestureHandlerRootView>
 
-        {/* Floating + button */}
-        <Pressable
-          style={[
-            styles.floatingButton,
-            {
-              backgroundColor: colors.decorativeBackground,
-              bottom: insets.bottom,
-            },
-          ]}
-          onPress={handleCreatePost}
-          accessible={true}
-          accessibilityLabel={"Create Forum Post"}
-          accessibilityHint={"Navigates to the create forum post screen. Click to create a forum post."}
-          accessibilityRole={"button"}>
-
-          <Feather name="plus" size={28} color={colors.decorativeText} />
-        </Pressable>
-
-        {/* Edit/Delete popup */}
-        <Modal
-          transparent
-          visible={menuVisible}
-          animationType="fade"
-          onRequestClose={() => setMenuVisible(false)}
+      {/* Edit/Delete popup */}
+      <Modal
+        transparent
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setMenuVisible(false)}
+          accessible={false}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPressOut={() => setMenuVisible(false)}
-            accessible={false}
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
           >
-            <View
-              style={[
-                styles.menuContainer,
-                { backgroundColor: colors.exploreCardBackground },
-              ]}
+            <TouchableOpacity
+              onPress={handleEdit}
+              style={styles.menuOption}
+              accessible={true}
+              accessibilityLabel={"Edit"}
+              accessibilityHint={
+                "Navigates to the edit forum post screen. Double tap to edit this forum post."
+              }
             >
-              <TouchableOpacity onPress={handleEdit} style={styles.menuOption}
-                accessible={true}
-                accessibilityLabel={"Edit"}
-                accessibilityHint={"Navigates to the edit forum post screen. Double tap to edit this forum post."}>
-                <Feather name="edit" size={18} color={colors.text} />
-                <Text style={[styles.menuText, { color: colors.text }]}>
-                  Edit
-                </Text>
-              </TouchableOpacity>
+              <Feather name="edit" size={18} color={colors.text} />
+              <Text style={[styles.menuText, { color: colors.text }]}>
+                Edit
+              </Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={handleDelete}
-                style={styles.menuOption}
-                accessible={true}
-                accessibilityLabel={"Delete"}
-                accessibilityHint={"Double tap to delete this forum post."}>
-                <Feather name="trash-2" size={18} color={colors.warning} />
-                <Text style={[styles.menuText, { color: colors.warning }]}>
-                  Delete
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setMenuVisible(false)}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel="Close menu"
-                accessibilityHint="Double tap to exit forum post menu"
-                style={styles.cancelBtn}
-              >
-                <Text style={[styles.menuText, { color: colors.cancel}]}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      </SafeAreaView>
-    </>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.menuOption}
+              accessible={true}
+              accessibilityLabel={"Delete"}
+              accessibilityHint={"Double tap to delete this forum post."}
+            >
+              <Feather name="trash-2" size={18} color={colors.warning} />
+              <Text style={[styles.menuText, { color: colors.warning }]}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit forum post menu"
+              style={styles.cancelBtn}
+            >
+              <Text style={[styles.menuText, { color: colors.cancel }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Floating + button */}
+      <Pressable
+        style={{ bottom: 20 }}
+        onPress={handleCreatePost}
+        accessible={true}
+        accessibilityLabel={"Create Forum Post"}
+        accessibilityHint={
+          "Navigates to the create forum post screen. Click to create a forum post."
+        }
+        accessibilityRole={"button"}
+      >
+        <BottomFab />
+      </Pressable>
+    </View>
   );
 }

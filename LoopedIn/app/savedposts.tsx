@@ -24,6 +24,7 @@ import {
   GestureHandlerRootView,
   RefreshControl,
 } from "react-native-gesture-handler";
+import { useAppSize } from "@/Hooks/useSize";
 
 type Tag = {
   tagID: string;
@@ -79,6 +80,8 @@ export default function ForumFeed() {
   const limit = 10;
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
+
+  const size = useAppSize();
 
   const [craftFilter, setCraftFilter] = useState<string[]>([
     "Crochet",
@@ -226,30 +229,31 @@ export default function ForumFeed() {
       paddingTop: insets.top,
       flexDirection: "column",
       backgroundColor: colors.background,
-      justifyContent: "center",
-      position: "relative",
+      paddingHorizontal: 20,
     },
     title: {
       alignItems: "center",
       marginBottom: 20,
+      marginTop: 10,
+      position: "relative",
+      justifyContent: "center",
+      flexDirection: "row",
     },
     titleText: {
       color: colors.text,
-      fontSize: 35,
-      fontWeight: "bold",
-      paddingTop: 40,
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
     },
     refineHeader: {
       flexDirection: "column",
-      marginHorizontal: 20,
     },
     recentPostsHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
     },
     refineHeaderText: {
-      fontWeight: "bold",
-      fontSize: 16,
+      fontWeight: size.weight.largeTitle,
+      fontSize: size.font.button,
       color: colors.text,
       marginBottom: 10,
     },
@@ -257,7 +261,7 @@ export default function ForumFeed() {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginHorizontal: 10,
+      marginHorizontal: 5,
       marginBottom: 20,
     },
     craftTags: {
@@ -269,53 +273,40 @@ export default function ForumFeed() {
       backgroundColor: colors.decorativeBackground,
     },
     buttonNotPressed: {
-      backgroundColor: colors.topBackground,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
     },
     buttonBase: {
       padding: 10,
       borderRadius: 15,
-    },
-    floatingButton: {
-      position: "absolute",
-      right: 20,
-      bottom: insets.bottom + 90,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.decorativeBackground,
-      justifyContent: "center",
+      width: 75,
       alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
-      elevation: 5,
     },
     backFab: {
       position: "absolute",
-      top: insets.top + 8,
-      zIndex: 10,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      marginLeft: 20,
-      backgroundColor: colors.boxBackground,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
+      left: 0,
+    },
+    backArrow: {
+      fontSize: 28,
+      color: colors.text,
     },
   });
 
   const headerView = () => (
     <View>
       {/* Forum title */}
-      <View style={styles.title} 
-        accessible={true}
-        accessibilityRole={"header"}>
+      <View style={styles.title} accessible={true} accessibilityRole={"header"}>
+        <Pressable
+          style={styles.backFab}
+          onPress={() => router.back()}
+          accessible={true}
+          accessibilityLabel={"Go Back"}
+          accessibilityHint={"Navigates back to the previous page."}
+          accessibilityRole={"button"}
+        >
+          <Text style={styles.backArrow}>←</Text>
+        </Pressable>
         <Text style={styles.titleText}> Saved Posts </Text>
       </View>
 
@@ -336,15 +327,25 @@ export default function ForumFeed() {
                     : styles.buttonNotPressed,
                 ]}
                 accessible={true}
-                accessibilityHint={filterOption == "All" ? "Shows all forum posts" : "Shows forum posts sorted by " + filterOption + " craft type"}
+                accessibilityHint={
+                  filterOption == "All"
+                    ? "Shows all forum posts"
+                    : "Shows forum posts sorted by " +
+                      filterOption +
+                      " craft type"
+                }
                 accessibilityRole={"tab"}
-                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
+                accessibilityState={
+                  selectedFilter === filterOption
+                    ? { selected: true }
+                    : { selected: false }
+                }
               >
                 <Text
                   style={[
                     filterOption === selectedFilter
-                      ? { color: colors.decorativeText }
-                      : { color: colors.text },
+                      ? { color: colors.antiText }
+                      : { color: colors.secondaryText },
                   ]}
                 >
                   {filterOption}
@@ -368,13 +369,6 @@ export default function ForumFeed() {
     <GestureHandlerRootView>
       <View style={styles.container}>
         {/* back button */}
-        <Pressable style={styles.backFab} onPress={() => router.back()}
-          accessible={true}
-          accessibilityLabel={"Go Back"}
-          accessibilityHint={"Navigates back to the previous page."}
-          accessibilityRole={"button"}>
-          <Feather name="chevron-left" size={22} color={colors.text} />
-        </Pressable>
         <FlatList
           data={forumData}
           renderItem={({ item }) => (
@@ -396,9 +390,19 @@ export default function ForumFeed() {
               return <ActivityIndicator size="small" color={colors.text} />;
             } else {
               return (
-                <View style={{ paddingVertical: 40, marginLeft: 50 }}>
+                <View
+                  style={{
+                    paddingVertical: 40,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
                   <Text
-                    style={{ color: colors.settingsText, fontWeight: "bold" }}
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: size.weight.title,
+                      fontSize: size.font.detailText,
+                    }}
                   >
                     {" "}
                     No Saved Posts{" "}
@@ -411,7 +415,13 @@ export default function ForumFeed() {
             if (forumData.length > 0) {
               if (!hasMore.current) {
                 return (
-                  <Text style={{ color: colors.text }}>
+                  <Text
+                    style={{
+                      color: colors.settingsText,
+                      fontWeight: size.weight.title,
+                      fontSize: size.font.detailText,
+                    }}
+                  >
                     {" "}
                     No More Saved Posts{" "}
                   </Text>

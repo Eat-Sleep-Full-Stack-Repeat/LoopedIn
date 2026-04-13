@@ -482,7 +482,11 @@ const ExploreCommentsModal = ({
                 fontSize: size.font.detailText,
               }}
             >
-              {new Date(item.dateposted).toDateString()}
+              {new Date(item.dateposted).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </Text>
           </View>
         </View>

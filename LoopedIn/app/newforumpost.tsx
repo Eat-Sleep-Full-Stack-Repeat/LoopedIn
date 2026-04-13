@@ -19,6 +19,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
+import { useAppSize } from "@/Hooks/useSize";
 
 type CraftOption = {
   id: string;
@@ -40,7 +41,7 @@ const craftOptions: CraftOption[] = [
   {
     id: "Misc",
     label: "Misc",
-    icon: require("../assets/images/paw-icon.png")
+    icon: require("../assets/images/paw-icon.png"),
   },
 ];
 
@@ -56,15 +57,22 @@ export default function Newformpost() {
   const [newTag, setNewTag] = useState<string>("");
   const [pressed, setPressed] = useState<boolean>(false);
 
+  const size = useAppSize();
+
   const handleAddTag = () => {
     const trimmed = newTag.trim();
     if (!trimmed || tags.includes(trimmed) || tags.length >= 5) {
       return;
     }
-    if (trimmed == "knit" || trimmed == "crochet" || trimmed == "misc" || trimmed == "miscellaneous") {
+    if (
+      trimmed == "knit" ||
+      trimmed == "crochet" ||
+      trimmed == "misc" ||
+      trimmed == "miscellaneous"
+    ) {
       console.log("crochet or knit tag found.");
       alert("You cannot have Knit, Crochet, or Misc tags in your post!");
-      setNewTag("")
+      setNewTag("");
       return;
     }
     setTags((prev) => [...prev, trimmed]);
@@ -82,7 +90,7 @@ export default function Newformpost() {
     }
 
     //otherwise, disable button
-    setPressed(true)
+    setPressed(true);
 
     console.log("Create Post pressed", {
       selectedFilter,
@@ -96,19 +104,19 @@ export default function Newformpost() {
       filter: selectedFilter,
       title: postTitle,
       content: postContent,
-      tags: tags
-    }
+      tags: tags,
+    };
 
     if (postTitle.length == 0 || postContent.length == 0) {
-      alert("Cannot have empty fields.")
+      alert("Cannot have empty fields.");
       return;
     }
     if (postTitle.length > 150) {
-      alert("Your forum's title cannot have more than 150 charceters.")
+      alert("Your forum's title cannot have more than 150 charceters.");
       return;
     }
     if (postContent.length > 10000) {
-      alert("Your forum's body cannot have more than 10,000 charceters.")
+      alert("Your forum's body cannot have more than 10,000 charceters.");
       return;
     }
 
@@ -122,12 +130,12 @@ export default function Newformpost() {
 
     try {
       const response = await fetch(`${API_URL}/api/forum/forum-post`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-          body: formData
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: formData,
       });
 
       if (!response.ok) {
@@ -135,20 +143,16 @@ export default function Newformpost() {
         return;
       }
 
-      
       console.log("Post created successfully!");
       Alert.alert("Yippee!", "Your forum post has been created.");
 
       //so that users can see that their post was indeed, posted
       //also helps refresh the mypost screen for most recent data
       router.replace("/myposts");
-
-    }
-    catch(error) {
+    } catch (error) {
       console.log("Error creating post: ", error);
       alert("Could not create forum post. Please try again later.");
     }
-    
   };
 
   const styles = StyleSheet.create({
@@ -159,8 +163,8 @@ export default function Newformpost() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: insets.top + 24,
-      paddingHorizontal: 24,
+      paddingTop: insets.top,
+      paddingHorizontal: 20,
     },
     scrollContent: {
       paddingBottom: insets.bottom + 48,
@@ -171,14 +175,14 @@ export default function Newformpost() {
       alignItems: "center",
       justifyContent: "center",
       marginTop: 10,
-      marginBottom: 32,
+      marginBottom: 20,
     },
     backButton: {
       position: "absolute",
       left: 0,
     },
     backArrow: {
-      fontSize: 30,
+      fontSize: 28,
       color: colors.text,
     },
     formSection: {
@@ -186,8 +190,8 @@ export default function Newformpost() {
     },
     title: {
       color: colors.text,
-      fontSize: 32,
-      fontWeight: "bold",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       textAlign: "center",
     },
     refineSection: {
@@ -201,8 +205,8 @@ export default function Newformpost() {
     },
     sectionLabel: {
       color: colors.text,
-      fontWeight: "600",
-      fontSize: 16,
+      fontWeight: size.weight.title,
+      fontSize: size.font.button,
     },
     characterCounter: {
       color: `${colors.text}99`,
@@ -216,7 +220,7 @@ export default function Newformpost() {
       borderWidth: 1,
       borderColor: colors.topBackground,
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
     },
     contentInput: {
       minHeight: 130,
@@ -240,24 +244,6 @@ export default function Newformpost() {
       borderWidth: 1,
       borderColor: colors.topBackground,
     },
-    mediaIconCircle: {
-      width: 66,
-      height: 66,
-      borderRadius: 33,
-      backgroundColor: colors.decorativeBackground,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    mediaIcon: {
-      color: colors.decorativeText,
-    },
-    mediaBlockLabel: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-      textAlign: "center",
-      marginTop: 12,
-    },
     tagSection: {
       marginBottom: 32,
     },
@@ -267,16 +253,18 @@ export default function Newformpost() {
       marginBottom: 16,
     },
     tagChip: {
-      backgroundColor: colors.topBackground,
-      borderRadius: 16,
+      backgroundColor: colors.secondaryButton,
+      borderRadius: 50,
       paddingHorizontal: 14,
       paddingVertical: 8,
       marginRight: 12,
       marginTop: 10,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
     },
     tagChipText: {
       color: colors.text,
-      fontWeight: "600",
+      fontWeight: size.weight.title,
     },
     tagInputRow: {
       flexDirection: "row",
@@ -291,22 +279,24 @@ export default function Newformpost() {
       borderWidth: 1,
       borderColor: colors.topBackground,
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
     },
     addTagButton: {
-      width: 52,
-      height: 52,
+      width: size.iconSize + 30,
+      height: size.iconSize + 30,
       borderRadius: 26,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.decorativeBackground,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
       marginLeft: 12,
     },
     addTagButtonDisabled: {
-      backgroundColor: `${colors.topBackground}55`,
+      opacity: 0.4,
     },
     addTagIcon: {
-      color: colors.decorativeText,
+      color: colors.decorativeBackground,
     },
     createButton: {
       backgroundColor: colors.decorativeBackground,
@@ -316,14 +306,14 @@ export default function Newformpost() {
       justifyContent: "center",
     },
     createButtonText: {
-      color: colors.decorativeText,
-      fontSize: 18,
-      fontWeight: "700",
+      color: colors.antiText,
+      fontSize: size.font.button,
+      fontWeight: size.weight.largeTitle,
     },
     refineHeaderText: {
       color: colors.text,
-      fontWeight: "bold",
-      fontSize: 16,
+      fontWeight: size.weight.title,
+      fontSize: size.font.button,
       marginBottom: 16,
     },
     craftFilters: {
@@ -335,29 +325,29 @@ export default function Newformpost() {
       gap: 12,
     },
     craftIconWrapper: {
-      width: 44,
-      height: 44,
+      width: size.iconSize + 24,
+      height: size.iconSize + 24,
       borderRadius: 22,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.topBackground,
-      borderWidth: 2,
-      borderColor: "transparent",
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
       overflow: "hidden",
     },
     craftIconWrapperSelected: {
       backgroundColor: colors.decorativeBackground,
-      borderColor: colors.decorativeText,
+      borderColor: colors.decorativeBackground,
     },
     craftIconImage: {
-      width: 30,
-      height: 30,
-      tintColor: colors.decorativeText,
+      width: size.iconSize + 10,
+      height: size.iconSize + 10,
+      tintColor: colors.antiText,
     },
     craftIconLabel: {
       color: colors.text,
-      fontSize: 14,
-      fontWeight: "500",
+      fontSize: size.font.caption,
+      fontWeight: size.weight.headline,
     },
     craftIconLabelSelected: {
       color: colors.decorativeText,
@@ -365,167 +355,193 @@ export default function Newformpost() {
   });
 
   return (
-      <KeyboardAvoidingView
-        style={[styles.keyboardAvoider, { backgroundColor: colors.background }]}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+    <KeyboardAvoidingView
+      style={[styles.keyboardAvoider, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-      <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}
-          accessible={true}
-          accessibilityLabel={"Go Back"}
-          accessibilityHint={"Navigates back to the previous page."}
-          accessibilityRole={"button"}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Text style={styles.title}
-          accessible={true}
-          accessibilityRole={"header"}
-        >New Forum Post</Text>
-      </View>
-
-      <View style={styles.refineSection}>
-        <Text style={styles.refineHeaderText}>Associated Craft</Text>
-        <View style={styles.craftFilters}>
-          {craftOptions.map((option) => {
-            const isSelected = option.id === selectedFilter;
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => setSelectedFilter(option.id)}
-                style={styles.craftOption}
-                accessible={true}
-                accessibilityHint={"Selects " + option.label + " as explore post craft type."}
-                accessibilityRole={"button"}
-                accessibilityState={selectedFilter === option.id ? {selected: true} : {selected: false}}
-              >
-                <View
-                  style={[
-                    styles.craftIconWrapper,
-                    isSelected && styles.craftIconWrapperSelected,
-                  ]}
-                >
-                  <Image
-                    source={option.icon}
-                    style={[
-                      styles.craftIconImage,
-                      !isSelected && { tintColor: colors.text },
-                    ]}
-                    resizeMode="contain"
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.craftIconLabel,
-                    isSelected && styles.craftIconLabelSelected,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.formSection}>
-        <View style={styles.sectionLabelRow}>
-          <Text style={styles.sectionLabel}>Title</Text>
-          <Text style={styles.characterCounter}
-            accessible={true}
-            accessibilityLabel={`${postTitle.length} out of 150 characters are used.`}
-          >{`${postTitle.length}/150`}</Text>
-        </View>
-        <TextInput
-          value={postTitle}
-          onChangeText={setPostTitle}
-          placeholder="Enter a title"
-          placeholderTextColor={`${colors.text}99`}
-          maxLength={150}
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.formSection}>
-        <View style={styles.sectionLabelRow}>
-          <Text style={styles.sectionLabel}>Content</Text>
-          <Text style={styles.characterCounter}
-            accessible={true}
-            accessibilityLabel={`${postContent.length} out of 10000 characters are used.`}
-          >{`${postContent.length}/10000`}</Text>
-        </View>
-        <TextInput
-          value={postContent}
-          onChangeText={setPostContent}
-          placeholder="Share the details..."
-          placeholderTextColor={`${colors.text}99`}
-          multiline
-          maxLength={10000}
-          style={[styles.input, styles.contentInput]}
-        />
-      </View>
-
-      <View style={[styles.formSection, styles.tagSection]}>
-        <Text style={styles.sectionLabel}>Tag (Up to 5)</Text>
-        <View style={styles.tagList}>
-          {tags.map((tag) => (
-            <Pressable
-              key={tag}
-              style={styles.tagChip}
-              onPress={() => handleRemoveTag(tag)}
-              accessible={true}
-              accessibilityLabel={"Remove tag"}
-              accessibilityHint={"Double tap to remove " + tag}
-            >
-              <Text style={styles.tagChipText}>#{tag}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={styles.tagInputRow}>
-          <TextInput
-            value={newTag}
-            onChangeText={(text) => setNewTag(text.replace(/\s/g, "").toLowerCase())}
-            placeholder="Add a tag"
-            placeholderTextColor={`${colors.text}99`}
-            style={styles.tagInput}
-          />
+        <View style={styles.header}>
           <Pressable
-            style={[
-              styles.addTagButton,
-              (tags.length >= 5 || !newTag.trim()) && styles.addTagButtonDisabled,
-            ]}
-            onPress={handleAddTag}
-            disabled={tags.length >= 5 || !newTag.trim()}
+            style={styles.backButton}
+            onPress={() => router.back()}
             accessible={true}
-            accessibilityLabel={"Add Tag"}
-            accessibilityHint={tags.length >= 5 || !newTag.trim() ? "Cannot add more tags. Ensure tag text field is filled out, and number of tags is under 5." 
-              : "Double tap to add tag"}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}
           >
-            <Feather
-              name="plus"
-              size={28}
-              style={[
-                styles.addTagIcon,
-                (tags.length >= 5 || !newTag.trim()) && { color: colors.text },
-              ]}
-            />
+            <Text style={styles.backArrow}>←</Text>
           </Pressable>
+          <Text
+            style={styles.title}
+            accessible={true}
+            accessibilityRole={"header"}
+          >
+            New Forum Post
+          </Text>
         </View>
-      </View>
 
-      <Pressable style={styles.createButton} 
-        onPress={handleCreatePost} 
-        disabled={pressed}
+        <View style={styles.refineSection}>
+          <Text style={styles.refineHeaderText}>Associated Craft</Text>
+          <View style={styles.craftFilters}>
+            {craftOptions.map((option) => {
+              const isSelected = option.id === selectedFilter;
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => setSelectedFilter(option.id)}
+                  style={styles.craftOption}
+                  accessible={true}
+                  accessibilityHint={
+                    "Selects " + option.label + " as explore post craft type."
+                  }
+                  accessibilityRole={"button"}
+                  accessibilityState={
+                    selectedFilter === option.id
+                      ? { selected: true }
+                      : { selected: false }
+                  }
+                >
+                  <View
+                    style={[
+                      styles.craftIconWrapper,
+                      isSelected && styles.craftIconWrapperSelected,
+                    ]}
+                  >
+                    <Image
+                      source={option.icon}
+                      style={[
+                        styles.craftIconImage,
+                        !isSelected && {
+                          tintColor: colors.secondaryText,
+                        },
+                      ]}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.craftIconLabel,
+                      isSelected && styles.craftIconLabelSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.formSection}>
+          <View style={styles.sectionLabelRow}>
+            <Text style={styles.sectionLabel}>Title</Text>
+            <Text
+              style={styles.characterCounter}
+              accessible={true}
+              accessibilityLabel={`${postTitle.length} out of 150 characters are used.`}
+            >{`${postTitle.length}/150`}</Text>
+          </View>
+          <TextInput
+            value={postTitle}
+            onChangeText={setPostTitle}
+            placeholder="Enter a title"
+            placeholderTextColor={`${colors.text}99`}
+            maxLength={150}
+            style={styles.input}
+          />
+        </View>
+
+        <View style={styles.formSection}>
+          <View style={styles.sectionLabelRow}>
+            <Text style={styles.sectionLabel}>Content</Text>
+            <Text
+              style={styles.characterCounter}
+              accessible={true}
+              accessibilityLabel={`${postContent.length} out of 10000 characters are used.`}
+            >{`${postContent.length}/10000`}</Text>
+          </View>
+          <TextInput
+            value={postContent}
+            onChangeText={setPostContent}
+            placeholder="Share the details..."
+            placeholderTextColor={`${colors.text}99`}
+            multiline
+            maxLength={10000}
+            style={[styles.input, styles.contentInput]}
+          />
+        </View>
+
+        <View style={[styles.formSection, styles.tagSection]}>
+          <Text style={styles.sectionLabel}>Tag (Up to 5)</Text>
+          <View style={styles.tagList}>
+            {tags.map((tag) => (
+              <Pressable
+                key={tag}
+                style={styles.tagChip}
+                onPress={() => handleRemoveTag(tag)}
+                accessible={true}
+                accessibilityLabel={"Remove tag"}
+                accessibilityHint={"Double tap to remove " + tag}
+              >
+                <Text style={styles.tagChipText}>#{tag}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.tagInputRow}>
+            <TextInput
+              value={newTag}
+              onChangeText={(text) =>
+                setNewTag(text.replace(/\s/g, "").toLowerCase())
+              }
+              placeholder="Add a tag"
+              placeholderTextColor={`${colors.text}99`}
+              style={styles.tagInput}
+            />
+            <Pressable
+              style={[
+                styles.addTagButton,
+                (tags.length >= 5 || !newTag.trim()) &&
+                  styles.addTagButtonDisabled,
+              ]}
+              onPress={handleAddTag}
+              disabled={tags.length >= 5 || !newTag.trim()}
+              accessible={true}
+              accessibilityLabel={"Add Tag"}
+              accessibilityHint={
+                tags.length >= 5 || !newTag.trim()
+                  ? "Cannot add more tags. Ensure tag text field is filled out, and number of tags is under 5."
+                  : "Double tap to add tag"
+              }
+            >
+              <Feather
+                name="plus"
+                size={28}
+                style={[
+                  styles.addTagIcon,
+                  (tags.length >= 5 || !newTag.trim()) && {
+                    color: colors.text,
+                  },
+                ]}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        <Pressable
+          style={styles.createButton}
+          onPress={handleCreatePost}
+          disabled={pressed}
           accessible={true}
-          accessibilityHint={"Post to forum feed."}>
-        <Text style={styles.createButtonText}>Create Post</Text>
-      </Pressable>
-    </ScrollView>
-  </KeyboardAvoidingView>
+          accessibilityHint={"Post to forum feed."}
+        >
+          <Text style={styles.createButtonText}>Create Post</Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

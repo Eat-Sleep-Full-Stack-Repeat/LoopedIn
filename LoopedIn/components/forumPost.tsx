@@ -4,13 +4,13 @@ import { StyleSheet, View, Image, Text, Pressable, Dimensions, useWindowDimensio
 import { FontAwesome } from "@expo/vector-icons";
 import { useState } from "react";
 import { router } from "expo-router";
-
+import { useAppSize } from "@/Hooks/useSize";
 
 type Tag = {
   tagID: string;
   tagColor: string;
   tagName: string;
-}
+};
 
 type ForumPost = {
   id: string;
@@ -33,6 +33,8 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const colors = Colors[currentTheme];
   let { width } = useWindowDimensions();
 
+  const size = useAppSize();
+
   let avatarSize;
 
   //flex 0 for forum posts (varying sizes because doesn't matter)
@@ -40,7 +42,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   let forumSize = 0;
 
   if (width >= 720) {
-    width -= 260;
+    width -= 260; //subtracting the size of the left-side nav bar on larger screens
   }
 
   if (width >= 768) {
@@ -55,21 +57,26 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
 
   const forumPressed = () => {
     if (postInfo) {
-      router.push({pathname: "/singleForum/[id]", params: { id: postInfo.id.toString()}});
+      router.push({
+        pathname: "/singleForum/[id]",
+        params: { id: postInfo.id.toString() },
+      });
     } else {
       console.log("tried to pass an empty post :(");
     }
-  }
+  };
 
   const profilePress = () => {
     //fixed -> added clickable post user image
     if (postInfo) {
-      router.push({pathname: "/userProfile/[id]", params: { id:  postInfo.userID}});
-    }
-    else {
+      router.push({
+        pathname: "/userProfile/[id]",
+        params: { id: postInfo.userID },
+      });
+    } else {
       console.log("tried to pass an empty post :(");
     }
-  }
+  };
 
   const styles = StyleSheet.create({
     forumPost: {
@@ -82,10 +89,10 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       flex: forumSize,
     },
     forumTitle: {
-      fontSize: 14,
-      fontWeight: "bold",
+      fontSize: size.font.headline,
+      fontWeight: size.weight.headline,
       color: colors.text,
-      flexShrink: 1, 
+      flexShrink: 1,
     },
     topForumPost: {
       flexDirection: "row",
@@ -102,17 +109,12 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "flex-end",
+      marginTop: 5,
     },
     allTagsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
       marginBottom: 2,
-    },
-    individualTag: {
-      padding: 5,
-      backgroundColor: colors.decorativeBackground,
-      borderRadius: 20,
-      margin: 2,
     },
     tagRow: {
       flexDirection: "row",
@@ -128,18 +130,22 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       backgroundColor: colors.topBackground,
     },
     tagText: {
-      fontSize: 12,
-      fontWeight: "600",
+      fontSize: size.font.caption,
+      fontWeight: size.weight.title,
       color: colors.text,
     },
   });
 
   return (
-    <Pressable onPress={forumPressed}
+    <Pressable
+      onPress={forumPressed}
       accessible={true}
       //have to limit it in some way or it will read out the entire forum post lol
-      accessibilityLabel={"Forum title: " + postInfo.title + " posted by " + postInfo.username}
-      accessibilityHint={"Double tap to read more about this forum post."}>
+      accessibilityLabel={
+        "Forum title: " + postInfo.title + " posted by " + postInfo.username
+      }
+      accessibilityHint={"Double tap to read more about this forum post."}
+    >
       <View style={styles.forumPost}>
         <View
           style={{
@@ -149,22 +155,38 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
           }}
         >
           <View style={styles.topForumPost}>
-            <Pressable onPress={profilePress}
+            <Pressable
+              onPress={profilePress}
               accessible={true}
-              accessibilityHint={"Double tap to view " + postInfo.username + " profile"}>
+              accessibilityHint={
+                "Double tap to view " + postInfo.username + " profile"
+              }
+            >
               {postInfo.profilePic ? (
-                <Image source={{ uri: postInfo.profilePic}} style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2, backgroundColor: colors.boxBackground }}/>
-              ):(
-              <View>
                 <Image
-                source={require("@/assets/images/icons8-cat-profile-50.png")}
-                style={{ width: avatarSize/2, height: avatarSize/2, borderRadius: avatarSize / 2 }}
-              />
-              </View>
+                  source={{ uri: postInfo.profilePic }}
+                  style={{
+                    width: avatarSize / 2,
+                    height: avatarSize / 2,
+                    borderRadius: avatarSize / 2,
+                    backgroundColor: colors.boxBackground,
+                  }}
+                />
+              ) : (
+                <View>
+                  <Image
+                    source={require("@/assets/images/icons8-cat-profile-50.png")}
+                    style={{
+                      width: avatarSize / 2,
+                      height: avatarSize / 2,
+                      borderRadius: avatarSize / 2,
+                    }}
+                  />
+                </View>
               )}
             </Pressable>
-            
-            <View style={{ flexShrink: 1, maxWidth: '85%'}}>
+
+            <View style={{ flexShrink: 1, maxWidth: "85%" }}>
               <Text
                 style={styles.forumTitle}
                 numberOfLines={1}
@@ -172,9 +194,13 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
               >
                 {postInfo.title}
               </Text>
-              <Pressable onPress={profilePress}
+              <Pressable
+                onPress={profilePress}
                 accessible={true}
-                accessibilityHint={"Double tap to view " + postInfo.username + " profile"}>
+                accessibilityHint={
+                  "Double tap to view " + postInfo.username + " profile"
+                }
+              >
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
@@ -190,7 +216,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
           <Text
             ellipsizeMode="tail"
             numberOfLines={2}
-            style={{ color: colors.text }}
+            style={{ color: colors.text, fontSize: size.font.bodyText }}
           >
             {postInfo.content}
           </Text>
@@ -198,23 +224,33 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
         {postInfo.tag_data && !!postInfo.tag_data.length && (
           <View style={styles.tagRow}>
             {postInfo.tag_data.map((tag) => (
-              <View key={`${postInfo.id}-${tag.tagID}`} style={[styles.tagChip, {borderColor: tag.tagColor}]}>
-                {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
-                  <Text style={styles.tagText}>
-                    🌟{tag.tagName}
-                  </Text>
+              <View
+                key={`${postInfo.id}-${tag.tagID}`}
+                style={[styles.tagChip, { borderColor: tag.tagColor }]}
+              >
+                {tag.tagName === "Knit" ||
+                tag.tagName === "Crochet" ||
+                tag.tagName === "Misc" ? (
+                  <Text style={styles.tagText}>🌟{tag.tagName}</Text>
                 ) : (
-                  <Text style={styles.tagText}>
-                    #{tag.tagName}
-                  </Text>
+                  <Text style={styles.tagText}>#{tag.tagName}</Text>
                 )}
               </View>
             ))}
           </View>
         )}
         <View style={styles.postDate}>
-          <Text style={{ color: colors.text }}>
-            {new Date(postInfo.datePosted).toDateString()}
+          <Text
+            style={{
+              color: colors.inputContainerPlaceholderText,
+              fontSize: size.font.detailText,
+            }}
+          >
+            {new Date(postInfo.datePosted).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </Text>
         </View>
       </View>

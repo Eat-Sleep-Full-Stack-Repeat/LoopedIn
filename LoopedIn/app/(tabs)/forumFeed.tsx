@@ -23,12 +23,8 @@ import {
   RefreshControl,
 } from "react-native-gesture-handler";
 import ForumSearchOverlay from "@/components/forumSearchOverlay";
-
-/*
-Ideas for backend implementation:
-- Display saved posts from most newly saved -> oldest saved posts
-- Display all other posts based on when they were posted
-*/
+import { useAppSize } from "@/Hooks/useSize";
+import BottomFab from "@/components/bottomFab";
 
 type Tag = {
   tagID: string;
@@ -90,6 +86,8 @@ export default function ForumFeed() {
   const limit = 10;
   const lastTimeStamp = useRef<string | null>(null);
   const lastPostID = useRef<number | null>(null);
+
+  const size = useAppSize();
 
   const [craftFilter, setCraftFilter] = useState<string[]>([
     "Crochet",
@@ -361,8 +359,14 @@ export default function ForumFeed() {
     },
     searchIcon: {
       flexDirection: "column",
-      justifyContent: "flex-end",
+      justifyContent: "center",
       alignItems: "center",
+      backgroundColor: colors.secondaryButton,
+      width: size.iconSize + 24,
+      height: size.iconSize + 24,
+      borderRadius: 50,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
     },
     searchText: {
       color: colors.text,
@@ -373,16 +377,16 @@ export default function ForumFeed() {
     },
     titleText: {
       color: colors.text,
-      fontSize: 35,
-      fontWeight: "bold",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
     },
     refineHeader: {
       flexDirection: "column",
       marginHorizontal: 20,
     },
     refineHeaderText: {
-      fontWeight: "bold",
-      fontSize: 16,
+      fontWeight: size.weight.largeTitle,
+      fontSize: size.font.button,
       color: colors.text,
       marginBottom: 10,
     },
@@ -390,43 +394,31 @@ export default function ForumFeed() {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginHorizontal: 10,
+      marginHorizontal: 5,
       marginBottom: 20,
     },
     craftTags: {
       flexDirection: "row",
       justifyContent: "space-between",
-      gap: 20,
+      gap: 15,
     },
     buttonPressed: {
       backgroundColor: colors.decorativeBackground,
     },
     buttonNotPressed: {
-      backgroundColor: colors.topBackground,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
     },
     buttonBase: {
       padding: 10,
       borderRadius: 15,
+      width: 75,
+      alignItems: "center",
     },
     savedPostsHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
-    },
-    floatingButton: {
-      position: "absolute",
-      right: 20,
-      bottom: insets.bottom,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.decorativeBackground,
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
-      elevation: 5,
     },
   });
 
@@ -441,31 +433,48 @@ export default function ForumFeed() {
             accessible={true}
             accessibilityLabel={"My Posts"}
             accessibilityRole={"button"}
-            accessibilityHint={"Navigates to the page to view all your forum posts."}
+            accessibilityHint={
+              "Navigates to the page to view all your forum posts."
+            }
           >
-            <Feather name="user" size={24} color={colors.text} />
-            <Text style={styles.searchText}>My Posts</Text>
+            <Feather
+              name="user"
+              size={size.iconSize + 4}
+              color={colors.decorativeBackground}
+            />
           </Pressable>
         </View>
         {/* Search icon section */}
         <View style={styles.searchBar}>
-          <Pressable style={styles.searchIcon} onPress={searchFunctionality}
+          <Pressable
+            style={styles.searchIcon}
+            onPress={searchFunctionality}
             accessible={true}
             accessibilityLabel={"Search"}
             accessibilityRole={"button"}
-            accessibilityHint={"Navigates to the forum posts search bar. Double tap to search all forum posts."}>
-            <Feather name="search" size={24} color={colors.text} />
-            <Text style={styles.searchText}>Search</Text>
+            accessibilityHint={
+              "Navigates to the forum posts search bar. Double tap to search all forum posts."
+            }
+          >
+            <Feather
+              name="search"
+              size={size.iconSize + 2}
+              color={colors.decorativeBackground}
+            />
           </Pressable>
         </View>
       </View>
 
       {/* Forum title */}
       <View style={styles.title}>
-        <Text style={styles.titleText}
+        <Text
+          style={styles.titleText}
           accessible={true}
-          accessibilityRole={"header"}  
-        > Forum </Text>
+          accessibilityRole={"header"}
+        >
+          {" "}
+          Forum{" "}
+        </Text>
       </View>
 
       {/* Refine by craft section */}
@@ -479,9 +488,19 @@ export default function ForumFeed() {
                 key={filterOption}
                 onPress={() => setFilter(filterOption)}
                 accessible={true}
-                accessibilityHint={filterOption == "All" ? "Shows all forum posts" : "Shows forum posts sorted by " + filterOption + " craft type"}
+                accessibilityHint={
+                  filterOption == "All"
+                    ? "Shows all forum posts"
+                    : "Shows forum posts sorted by " +
+                      filterOption +
+                      " craft type"
+                }
                 accessibilityRole={"tab"}
-                accessibilityState={selectedFilter === filterOption ? {selected: true} : {selected: false}}
+                accessibilityState={
+                  selectedFilter === filterOption
+                    ? { selected: true }
+                    : { selected: false }
+                }
                 style={[
                   styles.buttonBase,
                   filterOption === selectedFilter
@@ -492,8 +511,12 @@ export default function ForumFeed() {
                 <Text
                   style={[
                     filterOption === selectedFilter
-                      ? { color: colors.decorativeText }
-                      : { color: colors.text },
+                      ? { color: colors.antiText }
+                      : { color: colors.secondaryText },
+                    {
+                      fontSize: size.font.bodyText,
+                      fontWeight: size.weight.headline,
+                    },
                   ]}
                 >
                   {filterOption}
@@ -508,12 +531,14 @@ export default function ForumFeed() {
       <View style={styles.refineHeader}>
         <View style={styles.savedPostsHeader}>
           <Text style={styles.refineHeaderText}> Saved Posts </Text>
-          <Pressable onPress={() => handleSeeMorePress("saved")}
+          <Pressable
+            onPress={() => handleSeeMorePress("saved")}
             accessible={true}
             accessibilityLabel={"See More"}
             accessibilityRole={"button"}
-            accessibilityHint={"Navigates to the page to view all saved posts."}>
-            <Text style={{ color: colors.text }}>See More {">"}</Text>
+            accessibilityHint={"Navigates to the page to view all saved posts."}
+          >
+            <Text style={{ color: colors.text }}>See More {"→"}</Text>
           </Pressable>
         </View>
       </View>
@@ -555,7 +580,7 @@ export default function ForumFeed() {
                   style={{
                     color: colors.settingsText,
                     textAlign: "center",
-                    fontWeight: "bold",
+                    fontWeight: size.weight.headline,
                   }}
                 >
                   {" "}
@@ -616,7 +641,7 @@ export default function ForumFeed() {
             if (forumData.length > 0) {
               if (!hasMore.current) {
                 return (
-                  <Text style={{ color: colors.text }}>
+                  <Text style={{ color: colors.settingsText }}>
                     {" "}
                     No More Data To Load{" "}
                   </Text>
@@ -632,12 +657,16 @@ export default function ForumFeed() {
           }
         />
 
-        <Pressable style={styles.floatingButton} onPress={handleCreatePost}
+        <Pressable
+          onPress={handleCreatePost}
           accessible={true}
           accessibilityLabel={"Create Forum Post"}
-          accessibilityHint={"Navigates to the create forum post screen. Double tap to create a forum post."}
-          accessibilityRole={"button"}>
-          <Feather name="plus" size={28} color={colors.decorativeText} />
+          accessibilityHint={
+            "Navigates to the create forum post screen. Double tap to create a forum post."
+          }
+          accessibilityRole={"button"}
+        >
+          <BottomFab />
         </Pressable>
 
         {/*slide-in search overlay */}

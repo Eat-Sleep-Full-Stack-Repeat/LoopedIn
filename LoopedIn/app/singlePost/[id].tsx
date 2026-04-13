@@ -488,7 +488,11 @@ export default function SinglePost() {
                     { color: colors.text, fontSize: size.font.detailText },
                   ]}
                 >
-                  {new Date(post.datePosted).toDateString()}
+                  {new Date(post.datePosted).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </Text>
               </View>
             </Pressable>
