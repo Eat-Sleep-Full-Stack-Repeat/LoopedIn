@@ -408,7 +408,7 @@ export default function MyPosts() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     postContainer: {
@@ -513,7 +513,7 @@ export default function MyPosts() {
       paddingVertical: 8,
     },
     menuText: {
-      fontSize: 16,
+      fontSize: size.font.button,
     },
     cancelBtn: {
       marginTop: 10,
@@ -649,7 +649,11 @@ export default function MyPosts() {
                 "Navigates to the edit forum post screen. Double tap to edit this forum post."
               }
             >
-              <Feather name="edit" size={18} color={colors.text} />
+              <Feather
+                name="edit"
+                size={size.iconSize - 2}
+                color={colors.text}
+              />
               <Text style={[styles.menuText, { color: colors.text }]}>
                 Edit
               </Text>
@@ -662,7 +666,11 @@ export default function MyPosts() {
               accessibilityLabel={"Delete"}
               accessibilityHint={"Double tap to delete this forum post."}
             >
-              <Feather name="trash-2" size={18} color={colors.warning} />
+              <Feather
+                name="trash-2"
+                size={size.iconSize - 2}
+                color={colors.warning}
+              />
               <Text style={[styles.menuText, { color: colors.warning }]}>
                 Delete
               </Text>

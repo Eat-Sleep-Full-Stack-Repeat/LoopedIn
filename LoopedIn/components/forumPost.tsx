@@ -26,9 +26,10 @@ type ForumPost = {
 
 type ForumPostViewProps = {
   postInfo: ForumPost;
+  hasSideBar: boolean;
 };
 
-const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
+const ForumPostView = ({ postInfo, hasSideBar }: ForumPostViewProps) => {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   let { width } = useWindowDimensions();
@@ -41,7 +42,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   //flex 1 for saved post horizontal scroll b/c otherwise, it looks odd if they have diff sizes
   let forumSize = 0;
 
-  if (width >= 720) {
+  if (width >= 768 && hasSideBar) {
     width -= 260; //subtracting the size of the left-side nav bar on larger screens
   }
 

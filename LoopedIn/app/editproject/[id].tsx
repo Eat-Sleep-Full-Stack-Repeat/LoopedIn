@@ -253,7 +253,7 @@ export default function EditProject() {
       paddingVertical: 6,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     headerCenter: {

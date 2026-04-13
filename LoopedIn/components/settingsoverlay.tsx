@@ -1,6 +1,9 @@
+import { useAppSize } from "@/Hooks/useSize";
 import { Colors } from "@/Styles/colors";
+import { useSize } from "@/context/SizeContext";
 import { useTheme } from "@/context/ThemeContext";
-import React, { useEffect } from "react";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   View,
@@ -11,6 +14,8 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
+  Switch,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -51,6 +56,10 @@ export default function SettingsOverlay({
   const panelW = Math.min(420, Math.max(320, Math.round(screenW * 0.85)));
   const translateX = useSharedValue(panelW);
 
+  const [currentScreen, setCurrentScreen] = useState<
+    "main" | "account" | "accessibility"
+  >("main");
+
   // Open / close animations
   useEffect(() => {
     if (visible) {
@@ -63,6 +72,7 @@ export default function SettingsOverlay({
   // Shared close animation
   const animateClose = () => {
     translateX.value = withTiming(panelW, { duration: 200 }, () => {
+      runOnJS(setCurrentScreen)("main");
       runOnJS(onClose)();
     });
   };
@@ -99,6 +109,19 @@ export default function SettingsOverlay({
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
 
+  const size = useAppSize();
+  const { currentSize, toggleSize } = useSize();
+  const [isSizeEnabled, setIsSizeEnabled] = useState(currentSize === "large");
+
+  const toggleAppSize = () => {
+    setIsSizeEnabled((previousState) => !previousState);
+    toggleSize();
+  };
+
+  useEffect(() => {
+    setIsSizeEnabled(currentSize === "large");
+  }, [currentTheme]);
+
   /* ---------- Helpers ---------- */
   function SectionHeader({ label }: { label: string }) {
     return <Text style={styles.sectionHeader}>{label}</Text>;
@@ -112,11 +135,13 @@ export default function SettingsOverlay({
     label,
     onPress,
     destructive,
+    regButton,
     showChevron,
   }: {
     label: string;
     onPress?: () => void;
     destructive?: boolean;
+    regButton?: boolean;
     showChevron?: boolean;
   }) {
     return (
@@ -126,6 +151,8 @@ export default function SettingsOverlay({
         style={({ pressed }) => [
           styles.menuItem,
           pressed && onPress ? styles.menuItemPressed : null,
+          destructive && styles.logOutButton,
+          regButton && styles.regButton,
           !onPress && styles.menuItemDisabled,
         ]}
         accessible={true}
@@ -136,12 +163,213 @@ export default function SettingsOverlay({
           style={[
             styles.menuItemText,
             destructive && styles.menuItemTextDestructive,
+            regButton && styles.regButtonText,
           ]}
         >
           {label}
         </Text>
         {showChevron ? <Text style={styles.menuItemChevron}>›</Text> : null}
       </Pressable>
+    );
+  }
+
+  // Function for the main settings UI
+  function MainSettings() {
+    return (
+      <>
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <Text
+            style={styles.headerTitle}
+            accessible={true}
+            accessibilityRole={"header"}
+          >
+            {title}
+          </Text>
+          <Pressable
+            onPress={animateClose}
+            hitSlop={12}
+            style={styles.closeBtn}
+            accessible={true}
+            accessibilityLabel={"Close"}
+            accessibilityHint={"Double tap to close settings."}
+            accessibilityRole={"button"}
+          >
+            <Text style={styles.closeBtnText}>✕</Text>
+          </Pressable>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.hairline} />
+
+        {/* Scrollable content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator
+        >
+          <SectionHeader label="App" />
+          <MenuItem
+            label="Accessibility"
+            onPress={() => setCurrentScreen("accessibility")}
+            showChevron
+          />
+          <Divider />
+          <MenuItem
+            label="Account"
+            onPress={() => setCurrentScreen("account")}
+            showChevron
+          />
+        </ScrollView>
+      </>
+    );
+  }
+
+  // Function for the accessibility settings UI
+  function AccessibilitySettings() {
+    return (
+      <>
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 10,
+              flex: 1,
+              marginRight: 12,
+              alignItems: "flex-start",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => setCurrentScreen("main")}
+              accessible={true}
+              accessibilityLabel={"Go Back"}
+              accessibilityHint={"Navigates back to the previous page."}
+              accessibilityRole={"button"}
+              style={styles.backButton}
+            >
+              <Text style={styles.backArrow}>←</Text>
+            </TouchableOpacity>
+            <Text
+              style={[
+                styles.headerTitle,
+                {
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  flexShrink: 1,
+                },
+              ]}
+              accessible={true}
+              accessibilityRole={"header"}
+            >
+              Accessibility Settings
+            </Text>
+          </View>
+          <Pressable
+            onPress={animateClose}
+            hitSlop={12}
+            style={styles.closeBtn}
+            accessible={true}
+            accessibilityLabel={"Close"}
+            accessibilityHint={"Double tap to close settings."}
+            accessibilityRole={"button"}
+          >
+            <Text style={styles.closeBtnText}>✕</Text>
+          </Pressable>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.hairline} />
+
+        {/* Scrollable content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator
+        >
+          <View
+            style={{
+              justifyContent: "flex-start",
+              alignItems: "center",
+              flexDirection: "row",
+              marginTop: 10,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.button,
+                marginLeft: 15,
+              }}
+            >
+              {" "}
+              Large Text:{" "}
+            </Text>
+            <Switch
+              onValueChange={toggleAppSize}
+              trackColor={{ false: "#767577", true: "#E0D5DD" }}
+              thumbColor={isSizeEnabled ? "#F7B557" : "#f4f3f4"}
+              value={isSizeEnabled}
+              style={{ justifyContent: "center", marginLeft: 10 }}
+            />
+          </View>
+        </ScrollView>
+      </>
+    );
+  }
+
+  // Function for the account info
+  function AccountSettings() {
+    return (
+      <>
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setCurrentScreen("main")}
+              accessible={true}
+              accessibilityLabel={"Go Back"}
+              accessibilityHint={"Navigates back to the previous page."}
+              accessibilityRole={"button"}
+              style={styles.backButton}
+            >
+              <Text style={styles.backArrow}>←</Text>
+            </TouchableOpacity>
+            <Text
+              style={[
+                styles.headerTitle,
+                { justifyContent: "center", alignItems: "center" },
+              ]}
+              accessible={true}
+              accessibilityRole={"header"}
+            >
+              Account Settings
+            </Text>
+          </View>
+          <Pressable
+            onPress={animateClose}
+            hitSlop={12}
+            style={styles.closeBtn}
+            accessible={true}
+            accessibilityLabel={"Close"}
+            accessibilityHint={"Double tap to close settings."}
+            accessibilityRole={"button"}
+          >
+            <Text style={styles.closeBtnText}>✕</Text>
+          </Pressable>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.hairline} />
+
+        {/* Scrollable content */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator
+        >
+          <MenuItem label="Edit Profile" regButton onPress={onEditProfile} />
+          <MenuItem label="Log Out" destructive onPress={onLogout} />
+        </ScrollView>
+      </>
     );
   }
 
@@ -180,19 +408,24 @@ export default function SettingsOverlay({
       paddingHorizontal: 23,
     },
     headerTitle: {
-      fontSize: 20,
-      fontWeight: "700",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       color: colors.text,
+      position: "relative",
     },
     closeBtn: {
-      width: 36,
-      height: 36,
+      width: size.iconSize + 16,
+      height: size.iconSize + 16,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 18,
-      backgroundColor: "rgba(0,0,0,0.06)",
+      borderRadius: 50,
+      backgroundColor: colors.secondaryButton,
     },
-    closeBtnText: { fontSize: 18, fontWeight: "700", color: colors.text },
+    closeBtnText: {
+      fontSize: size.font.button,
+      fontWeight: size.weight.title,
+      color: colors.secondaryText,
+    },
     hairline: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: "rgba(0, 0, 0, 0)",
@@ -203,8 +436,8 @@ export default function SettingsOverlay({
       marginTop: 18,
       marginBottom: 6,
       paddingHorizontal: 23,
-      fontSize: 12,
-      fontWeight: "700",
+      fontSize: size.font.headline,
+      fontWeight: size.weight.headline,
       color: colors.settingsText,
       textTransform: "uppercase",
       letterSpacing: 0.6,
@@ -227,16 +460,42 @@ export default function SettingsOverlay({
     menuItemPressed: { backgroundColor: "rgba(0,0,0,0.04)" },
     menuItemDisabled: { opacity: 0.6 },
     menuItemText: {
-      fontSize: 16,
+      fontSize: size.font.button,
       color: colors.settingsMenuText,
-      fontWeight: "500",
+      fontWeight: size.weight.headline,
     },
-    menuItemTextDestructive: { color: colors.warning, fontWeight: "700" },
+    menuItemTextDestructive: {
+      color: colors.cancel,
+      fontWeight: size.weight.largeTitle,
+      fontSize: size.font.button,
+    },
     menuItemChevron: {
-      fontSize: 18,
+      fontSize: size.font.headline,
       color: colors.settingsMenuText,
       marginLeft: 12,
       lineHeight: 18,
+    },
+    backButton: {},
+    backArrow: {
+      fontSize: size.font.largeTitleText,
+      color: colors.text,
+    },
+    logOutButton: {
+      borderWidth: 1,
+      borderColor: colors.cancel,
+      marginHorizontal: 30,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    regButton: {
+      marginHorizontal: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.secondaryButton,
+      marginBottom: 20,
+    },
+    regButtonText: {
+      color: colors.secondaryText,
     },
   });
 
@@ -244,7 +503,10 @@ export default function SettingsOverlay({
     <Modal
       visible={visible}
       transparent
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        setCurrentScreen("main");
+        onClose();
+      }}
       statusBarTranslucent
       presentationStyle={Platform.OS === "ios" ? "overFullScreen" : undefined}
     >
@@ -262,53 +524,9 @@ export default function SettingsOverlay({
               style={[styles.panel, { width: panelW }, panelStyle]}
             >
               <SafeAreaView style={styles.safeArea}>
-                {/* Header Row */}
-                <View style={styles.headerRow}>
-                  <Text
-                    style={styles.headerTitle}
-                    accessible={true}
-                    accessibilityRole={"header"}
-                  >
-                    {title}
-                  </Text>
-                  <Pressable
-                    onPress={animateClose}
-                    hitSlop={12}
-                    style={styles.closeBtn}
-                    accessible={true}
-                    accessibilityLabel={"Close"}
-                    accessibilityHint={"Double tap to close settings."}
-                    accessibilityRole={"button"}
-                  >
-                    <Text style={styles.closeBtnText}>✕</Text>
-                  </Pressable>
-                </View>
-
-                {/* Divider */}
-                <View style={styles.hairline} />
-
-                {/* Scrollable content */}
-                <ScrollView
-                  contentContainerStyle={styles.scrollContent}
-                  showsVerticalScrollIndicator
-                >
-                  <SectionHeader label="App" />
-                  <MenuItem
-                    label="Accessibility"
-                    onPress={onAccessibility}
-                    showChevron
-                  />
-                  <Divider />
-                  <MenuItem
-                    label="Appearance"
-                    onPress={onAppearance}
-                    showChevron
-                  />
-
-                  <SectionHeader label=" " />
-                  <MenuItem label="Edit Profile" onPress={onEditProfile} />
-                  <MenuItem label="Log Out" destructive onPress={onLogout} />
-                </ScrollView>
+                {currentScreen === "main" && <MainSettings />}
+                {currentScreen === "account" && <AccountSettings />}
+                {currentScreen === "accessibility" && <AccessibilitySettings />}
               </SafeAreaView>
             </Animated.View>
           </GestureDetector>

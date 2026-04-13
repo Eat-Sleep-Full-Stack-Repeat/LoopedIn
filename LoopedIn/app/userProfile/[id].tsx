@@ -510,7 +510,7 @@ export default function OtherUserProfile() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     topBackground: {
@@ -988,11 +988,24 @@ export default function OtherUserProfile() {
               }
             >
               {isBlockedUser ? (
-                <Feather name="smile" size={18} color={colors.text} />
+                <Feather
+                  name="smile"
+                  size={size.iconSize - 2}
+                  color={colors.text}
+                />
               ) : (
-                <Feather name="frown" size={18} color={colors.text} />
+                <Feather
+                  name="frown"
+                  size={size.iconSize - 2}
+                  color={colors.text}
+                />
               )}
-              <Text style={[styles.menuText, { color: colors.text }]}>
+              <Text
+                style={[
+                  styles.menuText,
+                  { color: colors.text, fontSize: size.font.button },
+                ]}
+              >
                 {isBlockedUser ? "Unblock" : "Block"}
               </Text>
             </TouchableOpacity>

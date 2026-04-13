@@ -17,6 +17,7 @@ import { useTheme } from "@/context/ThemeContext";
 import API_URL from "@/utils/config";
 import { Storage } from "@/utils/storage";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useAppSize } from "@/Hooks/useSize";
 
 type CraftOption = {
   id: string;
@@ -30,7 +31,6 @@ type Attachment = {
   type: "image" | "file";
   thumbnail?: ImageSourcePropType;
 };
-
 
 type ForumPost = {
   id: string;
@@ -70,15 +70,16 @@ export default function EditForum() {
   const [lockedCraftId, setLockedCraftId] = useState<string | null>(null);
   const [attachments] = useState<Attachment[]>([]);
 
-  const [forumData, setForumData] = useState<ForumPost | null>(null)
+  const [forumData, setForumData] = useState<ForumPost | null>(null);
 
   //lock after saved changes
   const [savedChanges, setSavedChanges] = useState(false);
   const lockedCraft =
     craftOptions.find((option) => option.id === lockedCraftId) || null;
 
-
   const { id } = useLocalSearchParams();
+
+  const size = useAppSize();
 
   const fetchData = async () => {
     //check token
@@ -86,13 +87,14 @@ export default function EditForum() {
 
     //login check to reduce unnecessary fetches
     if (!token) {
-      alert("Hold on there... you need to login first!")
-      router.replace("/login")
-      return
+      alert("Hold on there... you need to login first!");
+      router.replace("/login");
+      return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/forum/my-forum-posts/${id}`,
+      const response = await fetch(
+        `${API_URL}/api/forum/my-forum-posts/${id}`,
         {
           method: "GET",
           headers: {
@@ -101,24 +103,22 @@ export default function EditForum() {
           },
           credentials: "include",
         }
-      )
+      );
 
       //if editing post that doesn't exist or someone doesn't have access to edit
       if (response.status == 404) {
-        alert("This forum post doesn't exist")
+        alert("This forum post doesn't exist");
         return;
       }
 
       //expired token not taken away from storage or overall not allowed to access resource
       else if (response.status == 403) {
-        alert("Hold on there... you need to login first!")
-        router.replace("/login")
-        return
-      }
-
-      else if (!response.ok) {
-        alert("Server error occured. Please try again later.")
-        router.back()
+        alert("Hold on there... you need to login first!");
+        router.replace("/login");
+        return;
+      } else if (!response.ok) {
+        alert("Server error occured. Please try again later.");
+        router.back();
         return;
       }
 
@@ -130,22 +130,19 @@ export default function EditForum() {
         body: responseData.fld_body,
         picture: responseData.fld_pic,
         craftID: responseData.fld_tags_pk,
-        craftType: responseData.fld_tag_name
-      }
+        craftType: responseData.fld_tag_name,
+      };
 
-      setForumData(tempPostData)
-      setPostTitle(tempPostData.header)
-      setPostContent(tempPostData.body)
-      setLockedCraftId(tempPostData.craftType)
-    
+      setForumData(tempPostData);
+      setPostTitle(tempPostData.header);
+      setPostContent(tempPostData.body);
+      setLockedCraftId(tempPostData.craftType);
+    } catch (error) {
+      console.log("Error fetching posts: ", error);
+      alert("Server error. Please try again later.");
+      router.back();
     }
-    catch(error) {
-      console.log("Error fetching posts: ", error)
-      alert("Server error. Please try again later.")
-      router.back()
-    }
-  }
-
+  };
 
   const editForum = async () => {
     //check token
@@ -153,65 +150,56 @@ export default function EditForum() {
 
     //login check to reduce unnecessary fetches
     if (!token) {
-      alert("Hold on there... you need to login first!")
-      router.replace("/login")
-      return
+      alert("Hold on there... you need to login first!");
+      router.replace("/login");
+      return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/forum/forum_post/${id}`,
-        {
-          method: "PATCH",
-          headers : {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            header: postTitle,
-            body: postContent,
-          }),
-          credentials: "include",
-        }
-      )
+      const response = await fetch(`${API_URL}/api/forum/forum_post/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          header: postTitle,
+          body: postContent,
+        }),
+        credentials: "include",
+      });
 
       if (response.status === 403) {
-        alert("Forbidden: You do not have permission to edit this post.")
-        return
+        alert("Forbidden: You do not have permission to edit this post.");
+        return;
+      } else if (!response.ok) {
+        alert("Server error occured. Please try again later.");
+        router.back();
+        return;
       }
 
-      else if (!response.ok) {
-        alert("Server error occured. Please try again later.")
-        router.back()
-        return
-      }
+      setSavedChanges(true);
 
-      setSavedChanges(true)
-
-      alert("Forum post successfully saved!")
-
+      alert("Forum post successfully saved!");
+    } catch (error) {
+      alert("Server error. Please try again later.");
+      console.log("Error editing post:", error);
     }
-    catch(error) {
-      alert("Server error. Please try again later.")
-      console.log("Error editing post:", error)
-
-    }
-  }
-
+  };
 
   //saved changes button handler
   const saveChangedHandler = () => {
-    setSavedChanges(true)
+    setSavedChanges(true);
     //api endpoint call
-    editForum()
+    editForum();
 
-    router.replace("/myposts")
-  }
-
+    router.replace("/myposts");
+  };
 
   useEffect(() => {
-    fetchData()
-    console.log("Edit forum data fetched")
-  }, [id])
+    fetchData();
+    console.log("Edit forum data fetched");
+  }, [id]);
 
   const styles = StyleSheet.create({
     keyboardAvoider: {
@@ -221,8 +209,8 @@ export default function EditForum() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: insets.top + 24,
-      paddingHorizontal: 24,
+      paddingTop: insets.top,
+      paddingHorizontal: 20,
     },
     scrollContent: {
       paddingBottom: insets.bottom + 48,
@@ -233,20 +221,20 @@ export default function EditForum() {
       alignItems: "center",
       justifyContent: "center",
       marginTop: 10,
-      marginBottom: 32,
+      marginBottom: 20,
     },
     backButton: {
       position: "absolute",
       left: 0,
     },
     backArrow: {
-      fontSize: 30,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     title: {
       color: colors.text,
-      fontSize: 32,
-      fontWeight: "bold",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       textAlign: "center",
     },
     section: {
@@ -254,8 +242,8 @@ export default function EditForum() {
     },
     sectionLabel: {
       color: colors.text,
-      fontWeight: "700",
-      fontSize: 16,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
       marginBottom: 12,
     },
     lockedCraftCard: {
@@ -269,25 +257,25 @@ export default function EditForum() {
       borderColor: colors.boxBackground,
     },
     craftIconWrapper: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: size.iconSize + 24,
+      height: size.iconSize + 24,
+      borderRadius: 50,
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: colors.decorativeBackground,
     },
     craftIconImage: {
-      width: 30,
-      height: 30,
-      tintColor: colors.decorativeText,
+      width: size.iconSize + 10,
+      height: size.iconSize + 10,
+      tintColor: colors.antiText,
     },
     craftLabelColumn: {
       flex: 1,
     },
     craftLabel: {
       color: colors.text,
-      fontWeight: "600",
-      fontSize: 15,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
     },
     sectionLabelRow: {
       flexDirection: "row",
@@ -296,13 +284,13 @@ export default function EditForum() {
       marginBottom: 8,
     },
     inputLabel: {
-      color: colors.text,
-      fontWeight: "600",
-      fontSize: 16,
+      color: colors.inputContainerPlaceholderText,
+      fontWeight: size.weight.title,
+      fontSize: size.font.bodyText,
     },
     characterCounter: {
       color: `${colors.text}99`,
-      fontSize: 13,
+      fontSize: size.font.detailText,
     },
     input: {
       backgroundColor: colors.boxBackground,
@@ -312,7 +300,7 @@ export default function EditForum() {
       borderWidth: 1,
       borderColor: colors.topBackground,
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
     },
     contentInput: {
       minHeight: 140,
@@ -342,7 +330,7 @@ export default function EditForum() {
     },
     attachmentName: {
       color: colors.text,
-      fontSize: 12,
+      fontSize: size.font.detailText,
       textAlign: "center",
     },
     saveButton: {
@@ -353,9 +341,9 @@ export default function EditForum() {
       justifyContent: "center",
     },
     saveButtonText: {
-      color: colors.decorativeText,
-      fontSize: 18,
-      fontWeight: "700",
+      color: colors.antiText,
+      fontSize: size.font.button,
+      fontWeight: size.weight.largeTitle,
     },
   });
 
@@ -372,25 +360,33 @@ export default function EditForum() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
             accessible={true}
             accessibilityLabel={"Go Back"}
             accessibilityHint={"Navigates back to the previous page."}
-            accessibilityRole={"button"}>
+            accessibilityRole={"button"}
+          >
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
-          <Text style={styles.title}
+          <Text
+            style={styles.title}
             accessible={true}
             accessibilityRole={"header"}
-          >Edit Forum Post</Text>
+          >
+            Edit Forum Post
+          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Associated Craft</Text>
-          <View style={styles.lockedCraftCard}
+          <View
+            style={styles.lockedCraftCard}
             accessible={true}
             accessibilityLabel={"Locked Craft Type: " + lockedCraft?.label}
-            accessibilityHint={"Craft Type cannot be swapped."}>
+            accessibilityHint={"Craft Type cannot be swapped."}
+          >
             {lockedCraft?.icon ? (
               <View style={styles.craftIconWrapper}>
                 <Image
@@ -415,7 +411,8 @@ export default function EditForum() {
         <View style={styles.section}>
           <View style={styles.sectionLabelRow}>
             <Text style={styles.inputLabel}>Title</Text>
-            <Text style={styles.characterCounter}
+            <Text
+              style={styles.characterCounter}
               accessible={true}
               accessibilityLabel={`${postTitle.length} out of 150 characters are used.`}
             >{`${postTitle.length}/150`}</Text>
@@ -424,7 +421,6 @@ export default function EditForum() {
             value={postTitle}
             onChangeText={setPostTitle}
             placeholder="Update the title"
-
             placeholderTextColor={`${colors.text}99`}
             maxLength={150}
             style={styles.input}
@@ -434,7 +430,8 @@ export default function EditForum() {
         <View style={styles.section}>
           <View style={styles.sectionLabelRow}>
             <Text style={styles.inputLabel}>Content</Text>
-            <Text style={styles.characterCounter}
+            <Text
+              style={styles.characterCounter}
               accessible={true}
               accessibilityLabel={`${postContent.length} out of 10000 characters are used.`}
             >{`${postContent.length}/10000`}</Text>
@@ -450,9 +447,13 @@ export default function EditForum() {
           />
         </View>
 
-        <Pressable style={styles.saveButton} disabled={savedChanges} onPress={saveChangedHandler}
+        <Pressable
+          style={styles.saveButton}
+          disabled={savedChanges}
+          onPress={saveChangedHandler}
           accessible={true}
-          accessibilityHint={"Save edits to forum post"}>
+          accessibilityHint={"Save edits to forum post"}
+        >
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </Pressable>
       </ScrollView>

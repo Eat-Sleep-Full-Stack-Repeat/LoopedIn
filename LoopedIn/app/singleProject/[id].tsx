@@ -208,7 +208,7 @@ export default function SingleProject() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     headerCenter: {

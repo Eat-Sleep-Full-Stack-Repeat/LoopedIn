@@ -408,7 +408,7 @@ export default function TrackerFolderView() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     headerBox: {
@@ -441,6 +441,7 @@ export default function TrackerFolderView() {
       backgroundColor: colors.exploreCardBackground,
       padding: 10,
       borderRadius: 14,
+      fontSize: size.font.headline,
     },
     projectContainer: {
       backgroundColor: colors.exploreCardBackground,
@@ -620,6 +621,7 @@ export default function TrackerFolderView() {
                 style={{
                   justifyContent: "space-between",
                   flexDirection: "row",
+                  alignItems: "center",
                 }}
               >
                 <Pressable
@@ -647,7 +649,7 @@ export default function TrackerFolderView() {
                     style={{
                       color: colors.text,
                       flexShrink: 1,
-                      fontSize: size.font.bodyText,
+                      fontSize: size.font.headline,
                     }}
                   >
                     {item.title}
@@ -675,6 +677,11 @@ export default function TrackerFolderView() {
                     "Double tap to edit or delete this project"
                   }
                   accessibilityRole={"button"}
+                  style={{
+                    backgroundColor: colors.secondaryButton,
+                    padding: 10,
+                    borderRadius: 50,
+                  }}
                 >
                   <Entypo
                     name="dots-three-vertical"
@@ -758,7 +765,11 @@ export default function TrackerFolderView() {
               accessibilityLabel="Edit"
               accessibilityHint="Double tap to edit this project"
             >
-              <Feather name="edit" size={18} color={colors.text} />
+              <Feather
+                name="edit"
+                size={size.iconSize - 2}
+                color={colors.text}
+              />
               <Text style={[styles.menuActionText, { color: colors.text }]}>
                 Edit
               </Text>
@@ -772,7 +783,11 @@ export default function TrackerFolderView() {
               accessibilityLabel="Delete"
               accessibilityHint="Double tap to delete this project"
             >
-              <Feather name="trash-2" size={18} color={colors.warning} />
+              <Feather
+                name="trash-2"
+                size={size.iconSize - 2}
+                color={colors.warning}
+              />
               <Text style={[styles.menuActionText, styles.deleteText]}>
                 Delete
               </Text>

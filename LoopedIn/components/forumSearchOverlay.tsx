@@ -373,7 +373,7 @@ export default function ForumSearchOverlay({
                   marginVertical: 8,
                 }}
               >
-                <ForumPostView postInfo={item} />
+                <ForumPostView postInfo={item} hasSideBar={true} />
               </View>
             )}
             ListEmptyComponent={

@@ -793,7 +793,7 @@ const styles = (colors: any, isTablet: boolean, size: any) =>
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     headerText: {
@@ -816,6 +816,7 @@ const styles = (colors: any, isTablet: boolean, size: any) =>
       backgroundColor: colors.topBackground,
       color: colors.text,
       paddingHorizontal: 12,
+      fontSize: size.font.bodyText,
     },
     iconBtn: {
       padding: 10,

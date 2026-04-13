@@ -365,7 +365,7 @@ export default function ExplorePage() {
       marginVertical: 15,
     },
     filterTag: {
-      width: 80,
+      width: 85,
       alignItems: "center",
       paddingVertical: 6,
       borderRadius: 50,
@@ -766,6 +766,7 @@ export default function ExplorePage() {
                 placeholder="Search username or tags"
                 placeholderTextColor={colors.inputContainerPlaceholderText}
                 editable={false}
+                style={{ fontSize: size.font.bodyText }}
               />
             </View>
           </Pressable>

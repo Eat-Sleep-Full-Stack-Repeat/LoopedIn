@@ -202,7 +202,11 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                 accessibilityHint={"Double tap to change your profile picture"}
                 accessibilityRole={"button"}
               >
-                <Feather name="edit-2" size={14} color={colors.badgeIcon} />
+                <Feather
+                  name="edit-2"
+                  size={sizes.iconSize - 6}
+                  color={colors.badgeIcon}
+                />
               </Pressable>
             )}
           </View>
@@ -288,6 +292,15 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         {editing ? (
           <View style={s.editRow}>
             <Pressable
+              onPress={saving ? undefined : discardChanges}
+              style={[s.secondaryBtn, saving && { opacity: 0.6 }]}
+              accessible={true}
+              accessibilityHint={"Double tap to cancel profile changes"}
+              accessibilityRole={"button"}
+            >
+              <Text style={s.secondaryBtnText}>Discard</Text>
+            </Pressable>
+            <Pressable
               accessible={true}
               accessibilityHint={"Double tap to save profile changes."}
               accessibilityRole={"button"}
@@ -306,15 +319,6 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
               ) : (
                 <Text style={s.primaryBtnText}>Save changes</Text>
               )}
-            </Pressable>
-            <Pressable
-              onPress={saving ? undefined : discardChanges}
-              style={[s.secondaryBtn, saving && { opacity: 0.6 }]}
-              accessible={true}
-              accessibilityHint={"Double tap to cancel profile changes"}
-              accessibilityRole={"button"}
-            >
-              <Text style={s.secondaryBtnText}>Discard</Text>
             </Pressable>
           </View>
         ) : (
@@ -1121,7 +1125,7 @@ const themedStyles = (
       borderRadius: 15,
     },
     editProfileButtonText: {
-      fontSize: 14,
+      fontSize: sizes.font.bodyText,
       color: colors.text,
     },
     logoutButton: {
@@ -1131,7 +1135,7 @@ const themedStyles = (
       borderRadius: 15,
     },
     logoutButtonText: {
-      fontSize: 14,
+      fontSize: sizes.font.bodyText,
       color: colors.text,
     },
     editRow: {
@@ -1152,7 +1156,7 @@ const themedStyles = (
     primaryBtnText: {
       fontSize: sizes.font.button,
       fontWeight: sizes.weight.headline,
-      color: colors.decorativeText,
+      color: colors.antiText,
     },
     secondaryBtn: {
       backgroundColor: colors.boxBackground,

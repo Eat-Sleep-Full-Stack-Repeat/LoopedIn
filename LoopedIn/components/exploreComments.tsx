@@ -667,7 +667,7 @@ const ExploreCommentsModal = ({
                 <Text
                   style={{
                     color: colors.text,
-                    fontSize: 18,
+                    fontSize: size.font.headline,
                     paddingBottom: 15,
                   }}
                 >
@@ -696,7 +696,11 @@ const ExploreCommentsModal = ({
                     }}
                   >
                     <Text
-                      style={{ color: colors.text, fontSize: 16, padding: 5 }}
+                      style={{
+                        color: colors.text,
+                        fontSize: size.font.button,
+                        padding: 5,
+                      }}
                     >
                       {" "}
                       Yes{" "}
@@ -720,7 +724,11 @@ const ExploreCommentsModal = ({
                     }}
                   >
                     <Text
-                      style={{ color: colors.text, fontSize: 16, padding: 5 }}
+                      style={{
+                        color: colors.text,
+                        fontSize: size.font.button,
+                        padding: 5,
+                      }}
                     >
                       {" "}
                       Cancel{" "}

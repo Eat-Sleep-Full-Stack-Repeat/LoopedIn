@@ -413,7 +413,7 @@ export default function ForumFeed() {
     buttonBase: {
       padding: 10,
       borderRadius: 50,
-      width: 75,
+      width: 90,
       alignItems: "center",
     },
     savedPostsHeader: {
@@ -609,7 +609,7 @@ export default function ForumFeed() {
           data={forumData}
           renderItem={({ item }) => (
             <View style={{ alignItems: "center", marginHorizontal: 20 }}>
-              <ForumPostView postInfo={item} />
+              <ForumPostView postInfo={item} hasSideBar={true} />
             </View>
           )}
           keyExtractor={(item) => item.id}

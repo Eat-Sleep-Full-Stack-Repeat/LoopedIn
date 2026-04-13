@@ -280,7 +280,7 @@ export default function ForumFeed() {
     buttonBase: {
       padding: 10,
       borderRadius: 50,
-      width: 75,
+      width: 90,
       alignItems: "center",
     },
     backFab: {
@@ -288,7 +288,7 @@ export default function ForumFeed() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
   });
@@ -346,6 +346,10 @@ export default function ForumFeed() {
                     filterOption === selectedFilter
                       ? { color: colors.antiText }
                       : { color: colors.secondaryText },
+                    {
+                      fontSize: size.font.bodyText,
+                      fontWeight: size.weight.headline,
+                    },
                   ]}
                 >
                   {filterOption}
@@ -373,7 +377,7 @@ export default function ForumFeed() {
           data={forumData}
           renderItem={({ item }) => (
             <View style={{ alignItems: "center", marginHorizontal: 20 }}>
-              <ForumPostView postInfo={item} />
+              <ForumPostView postInfo={item} hasSideBar={false} />
             </View>
           )}
           keyExtractor={(item) => item.id}

@@ -334,7 +334,7 @@ export default function SingleProject() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     createButton: {
@@ -873,7 +873,7 @@ export default function SingleProject() {
               >
                 <Feather
                   name="plus"
-                  size={20}
+                  size={size.iconSize}
                   color={
                     photoCards.length >= PHOTO_LIMIT
                       ? colors.secondaryText

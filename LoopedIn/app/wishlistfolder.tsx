@@ -697,7 +697,11 @@ export default function WishlistFolderScreen() {
             accessibilityHint={"Navigates back to the previous page."}
             accessibilityRole={"button"}
           >
-            <Text style={[styles.backArrow, { color: colors.text }]}>←</Text>
+            <Text
+              style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+            >
+              ←
+            </Text>
           </Pressable>
         </View>
         <View style={styles.headerCenter}>
@@ -1251,9 +1255,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     paddingVertical: 2,
-  },
-  backArrow: {
-    fontSize: 28,
   },
   headerActionButton: {
     paddingVertical: 2,

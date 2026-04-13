@@ -596,6 +596,7 @@ export default function FolderScreen() {
       flex: 1,
       color: colors.text,
       paddingVertical: 0,
+      fontSize: size.font.bodyText,
     },
     folderCard: {
       width: "47%",
@@ -787,7 +788,7 @@ export default function FolderScreen() {
         <View style={styles.searchBar}>
           <Feather
             name="search"
-            size={16}
+            size={size.iconSize - 4}
             color={colors.inputContainerPlaceholderText}
           />
           <TextInput
@@ -815,7 +816,7 @@ export default function FolderScreen() {
             >
               <Feather
                 name="x"
-                size={16}
+                size={size.iconSize - 4}
                 color={colors.inputContainerPlaceholderText}
               />
             </Pressable>

@@ -295,13 +295,6 @@ export default function SinglePost() {
           },
         ]}
       >
-        {/* back arrow for testing */}
-        {/* <View>
-        <Pressable onPress={router.back} hitSlop={10}>
-          <Feather name="arrow-left" size={24} color={colors.text} />
-        </Pressable>
-      </View> */}
-
         {/* Centered message */}
         <View>
           <Text
@@ -416,7 +409,11 @@ export default function SinglePost() {
           accessibilityRole={"button"}
           style={styles.backButton}
         >
-          <Text style={[styles.backArrow, { color: colors.text }]}>←</Text>
+          <Text
+            style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+          >
+            ←
+          </Text>
         </Pressable>
         <Text
           style={{
@@ -817,7 +814,11 @@ export default function SinglePost() {
                   accessibilityLabel={"Delete"}
                   accessibilityHint={"Double tap to delete this explore post."}
                 >
-                  <Feather name="trash-2" size={18} color={colors.warning} />
+                  <Feather
+                    name="trash-2"
+                    size={size.iconSize - 2}
+                    color={colors.warning}
+                  />
                   <Text
                     style={{
                       color: colors.warning,
@@ -842,7 +843,11 @@ export default function SinglePost() {
                   "Double tap to report this explore post to LoopedIn moderators."
                 }
               >
-                <Feather name="flag" size={18} color={colors.text} />
+                <Feather
+                  name="flag"
+                  size={size.iconSize - 2}
+                  color={colors.text}
+                />
                 <Text
                   style={{ color: colors.text, fontSize: size.font.button }}
                 >
@@ -905,7 +910,12 @@ export default function SinglePost() {
             ]}
           >
             <View style={{ paddingBottom: 20 }}>
-              <Text style={[styles.reportHeaderText, { color: colors.text }]}>
+              <Text
+                style={[
+                  styles.reportHeaderText,
+                  { color: colors.text, fontSize: size.font.button },
+                ]}
+              >
                 Report Reason
               </Text>
             </View>
@@ -989,9 +999,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     position: "relative",
   },
-  backArrow: {
-    fontSize: 28,
-  },
   backButton: {
     position: "absolute",
     left: 0,
@@ -1020,11 +1027,6 @@ const styles = StyleSheet.create({
   },
   date: {
     opacity: 0.7,
-  },
-  titleText: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
   },
   imageWrapper: {
     width: "100%",
@@ -1093,7 +1095,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   reportHeaderText: {
-    fontSize: 24,
     textAlign: "center",
   },
 });

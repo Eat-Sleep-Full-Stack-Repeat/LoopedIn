@@ -793,7 +793,7 @@ export default function ForumPostDetail() {
       zIndex: 10,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     postCard: {
@@ -1504,7 +1504,12 @@ export default function ForumPostDetail() {
                           })}
                         </Text>
                         {node.isedited ? (
-                          <Text style={{ fontSize: 12, color: colors.text }}>
+                          <Text
+                            style={{
+                              fontSize: size.font.detailText,
+                              color: colors.text,
+                            }}
+                          >
                             {" "}
                             - Edited{" "}
                           </Text>

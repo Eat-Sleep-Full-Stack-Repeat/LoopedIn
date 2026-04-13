@@ -9,6 +9,7 @@ export const Sizes = {
       button: 16,
       caption: 14,
       detailText: 12,
+      welcomeText: 34,
     },
     weight: {
       headline: "500",
@@ -26,6 +27,7 @@ export const Sizes = {
       button: 19,
       caption: 17,
       detailText: 14,
+      welcomeText: 41,
     },
     weight: {
       headline: "500",

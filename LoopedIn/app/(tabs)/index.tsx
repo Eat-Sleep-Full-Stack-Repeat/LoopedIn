@@ -10,11 +10,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function Index() {
   const { currentTheme, toggleTheme } = useTheme();
-  const { currentSize, toggleSize } = useSize();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(currentTheme === "dark");
-  const [isSizeEnabled, setIsSizeEnabled] = useState(currentSize === "large");
 
   const size = useAppSize();
 
@@ -23,17 +21,8 @@ export default function Index() {
     toggleTheme();
   };
 
-  const toggleAppSize = () => {
-    setIsSizeEnabled((previousState) => !previousState);
-    toggleSize();
-  };
-
   useEffect(() => {
     setIsEnabled(currentTheme === "dark");
-  }, [currentTheme]);
-
-  useEffect(() => {
-    setIsSizeEnabled(currentSize === "large");
   }, [currentTheme]);
 
   return (
@@ -82,24 +71,6 @@ export default function Index() {
           trackColor={{ false: "#767577", true: "#E0D5DD" }}
           thumbColor={isEnabled ? "#F7B557" : "#f4f3f4"}
           value={isEnabled}
-          style={{ justifyContent: "center" }}
-        />
-      </View>
-
-      <View
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          flexDirection: "row",
-          marginTop: 10,
-        }}
-      >
-        <Text style={{ color: colors.text }}> Large Text? </Text>
-        <Switch
-          onValueChange={toggleAppSize}
-          trackColor={{ false: "#767577", true: "#E0D5DD" }}
-          thumbColor={isEnabled ? "#F7B557" : "#f4f3f4"}
-          value={isSizeEnabled}
           style={{ justifyContent: "center" }}
         />
       </View>

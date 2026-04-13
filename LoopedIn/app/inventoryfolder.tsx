@@ -677,7 +677,11 @@ export default function SingleFolderScreen() {
             accessibilityHint={"Navigates back to the previous page."}
             accessibilityRole={"button"}
           >
-            <Text style={[styles.backArrow, { color: colors.text }]}>←</Text>
+            <Text
+              style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+            >
+              ←
+            </Text>
           </Pressable>
         </View>
         <View
@@ -1233,9 +1237,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  backArrow: {
-    fontSize: 28,
   },
   headerActionButton: {
     paddingVertical: 2,

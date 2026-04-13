@@ -6,17 +6,20 @@ import { useEffect, useState } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from '../utils/config';
 import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
+import { useAppSize } from "@/Hooks/useSize";
 
 const REMEMBERED_EMAIL_KEY = "rememberedEmail";
 
 export default function Login() {
-  const {currentTheme} = useTheme();
+  const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(true);
-  const [text, onChangeText] = useState('');
-  const [password, onChangePassword] = useState('');
+  const [text, onChangeText] = useState("");
+  const [password, onChangePassword] = useState("");
   const [rememberEmail, setRememberEmail] = useState(false);
+
+  const size = useAppSize();
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -51,16 +54,21 @@ export default function Login() {
   //MAIN NATIVE LOGIN FUNCTION
   const onPressSignIn = async () => {
     console.log("Sign in pressed");
-    console.log("Entered email:", text.trim(), "Entered password:", password.trim());
+    console.log(
+      "Entered email:",
+      text.trim(),
+      "Entered password:",
+      password.trim()
+    );
 
     //check if both fields entered
     if (!text.trim() || !password.trim()) {
-        alert("Please enter both email and password.");
-        return;
-    }  
+      alert("Please enter both email and password.");
+      return;
+    }
 
     //check if user has a valid email
-    if(!isValidEmail(text)){
+    if (!isValidEmail(text)) {
       alert("Invalid email format.");
       return;
     }
@@ -72,68 +80,70 @@ export default function Login() {
     // }
 
     //check if password is alphanumeric
-    if(!isAlphanumeric(password)){
-      alert("Password contains at least one invalid character. Passwords must be 8-30 characters long and alphanumeric.");
+    if (!isAlphanumeric(password)) {
+      alert(
+        "Password contains at least one invalid character. Passwords must be 8-30 characters long and alphanumeric."
+      );
       return;
     }
 
     //check is password is between 8 and 30 characters long
-    if(password.length < 8){
-      alert("Password contains fewer than 8 characters. Passwords must be 8-30 characters long and alphanumeric.");
+    if (password.length < 8) {
+      alert(
+        "Password contains fewer than 8 characters. Passwords must be 8-30 characters long and alphanumeric."
+      );
       return;
-    } 
-    else if (password.length > 30){
-      alert("Password contains more than 30 characters. Passwords must be 8-30 characters long and alphanumeric.")
+    } else if (password.length > 30) {
+      alert(
+        "Password contains more than 30 characters. Passwords must be 8-30 characters long and alphanumeric."
+      );
       return;
     }
-    
-    if(text.length > 321){
-      alert("Email too long. Please ensure that email is at most 321 characters.")
+
+    if (text.length > 321) {
+      alert(
+        "Email too long. Please ensure that email is at most 321 characters."
+      );
       return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/login/login`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Ensure cookies/sessions are sent
-          body: JSON.stringify({
-            email: text.trim(),
-            password: password.trim(),
-          }),
-        });
-  
-        console.log("Response status:", response.status);
-        const data = await response.json();
-        
-        if (data.token) {
-          if (rememberEmail) {
-            await Storage.setItem(REMEMBERED_EMAIL_KEY, text.trim());
-          } else {
-            await Storage.removeItem(REMEMBERED_EMAIL_KEY);
-          }
+      const response = await fetch(`${API_URL}/api/login/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Ensure cookies/sessions are sent
+        body: JSON.stringify({
+          email: text.trim(),
+          password: password.trim(),
+        }),
+      });
 
-          await Storage.setItem('token', data.token); //store jwt info
-          router.push("/userProfile"); // Redirect on success
+      console.log("Response status:", response.status);
+      const data = await response.json();
+
+      if (data.token) {
+        if (rememberEmail) {
+          await Storage.setItem(REMEMBERED_EMAIL_KEY, text.trim());
         } else {
-          console.log("Login failed:", data.message);
-          alert(data.message);
+          await Storage.removeItem(REMEMBERED_EMAIL_KEY);
         }
-        
-    } catch (error) {
-        console.log("Error during sign in:", error);
-        alert("Server error, please try again later.");
-    }
 
+        await Storage.setItem("token", data.token); //store jwt info
+        router.push("/userProfile"); // Redirect on success
+      } else {
+        console.log("Login failed:", data.message);
+        alert(data.message);
+      }
+    } catch (error) {
+      console.log("Error during sign in:", error);
+      alert("Server error, please try again later.");
+    }
   };
 
+  //---------------------------------------------------------------------------------
 
-
-
-//---------------------------------------------------------------------------------
-    
   return (
     <View
       style={{
@@ -146,10 +156,10 @@ export default function Login() {
     >
       <Text
         style={{
-          fontSize: 32,
-          fontWeight: "500",
+          fontSize: size.font.welcomeText,
+          fontWeight: size.weight.largeTitle,
           marginBottom: 40,
-          color: colors.welcomeText,
+          color: colors.decorativeBackground,
         }}
         accessible={true}
         accessibilityRole={"header"}
@@ -168,7 +178,7 @@ export default function Login() {
           style={{
             marginLeft: 10,
             marginBottom: 5,
-            fontSize: 18,
+            fontSize: size.font.headline,
             color: colors.text,
           }}
         >
@@ -177,7 +187,7 @@ export default function Login() {
         </Text>
         <TextInput
           placeholder="example@email.com"
-          placeholderTextColor={colors.text}
+          placeholderTextColor={colors.inputContainerPlaceholderText}
           style={{
             width: "100%",
             height: 50,
@@ -188,6 +198,7 @@ export default function Login() {
             marginBottom: 10,
             paddingHorizontal: 10,
             color: colors.text,
+            fontSize: size.font.bodyText,
           }}
           onChangeText={onChangeText}
           value={text}
@@ -207,7 +218,7 @@ export default function Login() {
           style={{
             marginLeft: 10,
             marginBottom: 5,
-            fontSize: 18,
+            fontSize: size.font.headline,
             color: colors.text,
           }}
         >
@@ -228,11 +239,12 @@ export default function Login() {
         >
           <TextInput
             placeholder="Password"
-            placeholderTextColor={colors.text}
+            placeholderTextColor={colors.inputContainerPlaceholderText}
             secureTextEntry={passwordVisible}
             style={{
               flex: 1,
               color: colors.text,
+              fontSize: size.font.bodyText,
             }}
             onChangeText={onChangePassword}
             value={password}
@@ -250,7 +262,7 @@ export default function Login() {
             <Text>
               <Ionicons
                 name={passwordVisible ? "eye-off" : "eye"}
-                size={22}
+                size={size.iconSize + 2}
                 color={colors.text}
                 style={{ marginHorizontal: 10 }}
               />{" "}
@@ -279,11 +291,11 @@ export default function Login() {
           >
             <Ionicons
               name={rememberEmail ? "checkbox" : "square-outline"}
-              size={22}
+              size={size.iconSize + 2}
               color={colors.text}
               style={{ marginRight: 8 }}
             />
-            <Text style={{ color: colors.text, fontSize: 16 }}>
+            <Text style={{ color: colors.text, fontSize: size.font.button }}>
               Remember email
             </Text>
           </Pressable>
@@ -299,9 +311,9 @@ export default function Login() {
               style={{
                 color: colors.linkText,
                 marginRight: 5,
+                fontSize: size.font.button,
               }}
             >
-              {" "}
               Forgot Password?
             </Text>
           </TouchableOpacity>
@@ -329,9 +341,9 @@ export default function Login() {
       >
         <Text
           style={{
-            fontSize: 25,
-            fontWeight: "600",
-            color: colors.decorativeText,
+            fontSize: size.font.titleText,
+            fontWeight: size.weight.title,
+            color: colors.antiText,
           }}
         >
           Login
@@ -347,7 +359,9 @@ export default function Login() {
         }}
       >
         {/* Sign-up*/}
-        <Text style={{ color: colors.text }}> Don't have an account? </Text>
+        <Text style={{ color: colors.text, fontSize: size.font.button }}>
+          Don't have an account?
+        </Text>
         <TouchableOpacity
           onPress={() => router.push("/signup")}
           accessible={true}
@@ -357,10 +371,10 @@ export default function Login() {
           <Text
             style={{
               color: colors.linkText,
-              marginRight: 5,
+              marginLeft: 5,
+              fontSize: size.font.button,
             }}
           >
-            {" "}
             Sign Up
           </Text>
         </TouchableOpacity>

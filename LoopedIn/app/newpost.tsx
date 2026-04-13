@@ -354,7 +354,7 @@ export default function NewPost() {
       left: 0,
     },
     backArrow: {
-      fontSize: 30,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     title: {
@@ -837,7 +837,7 @@ export default function NewPost() {
             >
               <Feather
                 name="plus"
-                size={20}
+                size={size.iconSize}
                 color={
                   photoCards.length >= PHOTO_LIMIT
                     ? colors.secondaryText
@@ -973,7 +973,7 @@ export default function NewPost() {
             >
               <Feather
                 name="plus"
-                size={28}
+                size={size.iconSize}
                 style={[
                   styles.addTagIcon,
                   (tags.length >= 5 || !newTag.trim()) && {
@@ -1004,7 +1004,7 @@ export default function NewPost() {
           >
             <Feather
               name="globe"
-              size={20}
+              size={size.iconSize}
               style={[
                 styles.postOptionIcon,
                 postVisibility === "public" && styles.postOptionIconSelected,
@@ -1038,7 +1038,7 @@ export default function NewPost() {
           >
             <Feather
               name="lock"
-              size={20}
+              size={size.iconSize}
               style={[
                 styles.postOptionIcon,
                 postVisibility === "private" && styles.postOptionIconSelected,

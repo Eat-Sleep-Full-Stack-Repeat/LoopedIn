@@ -182,7 +182,7 @@ export default function Newformpost() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     formSection: {
@@ -210,7 +210,7 @@ export default function Newformpost() {
     },
     characterCounter: {
       color: `${colors.text}99`,
-      fontSize: 13,
+      fontSize: size.font.detailText,
     },
     input: {
       backgroundColor: colors.boxBackground,
@@ -520,7 +520,7 @@ export default function Newformpost() {
             >
               <Feather
                 name="plus"
-                size={28}
+                size={size.iconSize + 8}
                 style={[
                   styles.addTagIcon,
                   (tags.length >= 5 || !newTag.trim()) && {

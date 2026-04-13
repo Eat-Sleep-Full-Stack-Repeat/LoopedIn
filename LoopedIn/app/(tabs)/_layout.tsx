@@ -1,3 +1,4 @@
+import { useAppSize } from "@/Hooks/useSize";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -67,6 +68,8 @@ function CustomTabBar({
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
 
+  const size = useAppSize();
+
   return (
     <View
       style={{
@@ -87,7 +90,7 @@ function CustomTabBar({
       {isLargeScreen ? (
         <Text
           style={{
-            fontSize: 30,
+            fontSize: size.font.largeTitleText,
             marginBottom: 25,
             fontWeight: "700",
             color: colors.decorativeBackground,
@@ -166,7 +169,7 @@ function CustomTabBar({
                       ? colors.decorativeBackground
                       : colors.text,
                     paddingHorizontal: 10,
-                    fontSize: 18,
+                    fontSize: size.font.button,
                     fontWeight: "500",
                   }}
                 >

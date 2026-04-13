@@ -1,3 +1,4 @@
+import { useAppSize } from "@/Hooks/useSize";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
@@ -10,6 +11,8 @@ const BottomFab = () => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768; //using 768 as a default break between phone and tablet
+
+  const size = useAppSize();
 
   const styles = StyleSheet.create({
     floatingButton: {
@@ -32,7 +35,7 @@ const BottomFab = () => {
 
   return (
     <View style={styles.floatingButton}>
-      <Feather name="plus" size={28} color={colors.antiText} />
+      <Feather name="plus" size={size.iconSize + 8} color={colors.antiText} />
     </View>
   );
 };

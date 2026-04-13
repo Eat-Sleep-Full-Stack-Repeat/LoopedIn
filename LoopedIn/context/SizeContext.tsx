@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { Storage } from "@/utils/storage";
+import { useWindowDimensions } from "react-native";
 
 type SizeContextType = {
   currentSize: "medium" | "large";
@@ -17,8 +18,16 @@ export const SizeContext = createContext<SizeContextType>({
   toggleSize: () => {},
 });
 
+type SizeOption = "medium" | "large";
+
 export const SizeProvider = ({ children }: { children: ReactNode }) => {
-  const [size, setSize] = useState<"medium" | "large">("medium");
+  const { width } = useWindowDimensions();
+  // function to get the default size (large screens default to on - AKA large)
+  const getDefault = (): SizeOption => {
+    return width >= 768 ? "large" : "medium";
+  };
+
+  const [size, setSize] = useState<SizeOption>(getDefault());
 
   useEffect(() => {
     const getSize = async () => {
@@ -27,6 +36,10 @@ export const SizeProvider = ({ children }: { children: ReactNode }) => {
         if (value === "medium" || value === "large") {
           console.log("Size in storage:", value);
           setSize(value);
+        } else {
+          const tempSize = getDefault();
+          setSize(tempSize);
+          await Storage.setItem("user-size", tempSize);
         }
       } catch (e) {
         console.log(e);

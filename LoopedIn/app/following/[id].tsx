@@ -204,7 +204,7 @@ export default function FollowingScreen() {
       left: 0,
     },
     backArrow: {
-      fontSize: 28,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     headerText: {
@@ -294,7 +294,7 @@ export default function FollowingScreen() {
       <View style={styles.searchBar}>
         <Feather
           name={"search"}
-          size={16}
+          size={size.iconSize - 4}
           color={colors.inputContainerPlaceholderText}
         />
         <TextInput
@@ -302,6 +302,7 @@ export default function FollowingScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor={colors.inputContainerPlaceholderText}
+          style={{ fontSize: size.font.bodyText }}
         />
       </View>
 
