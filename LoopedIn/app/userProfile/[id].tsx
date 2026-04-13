@@ -94,7 +94,7 @@ export default function OtherUserProfile() {
   const [reloadToken, setReloadToken] = useState(0);
 
   const isTablet = width >= 768;
-  const CONTENT_MAX = isTablet ? 720 : width;
+  const CONTENT_MAX = width;
   const NUM_COLUMNS =
     width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
   const AVATAR = isTablet ? 120 : 100;
@@ -524,7 +524,7 @@ export default function OtherUserProfile() {
     },
     bottomBackground: {
       backgroundColor: colors.background,
-      height: "50%",
+      height: "80%",
       position: "absolute",
       bottom: 0,
       left: 0,
@@ -539,6 +539,7 @@ export default function OtherUserProfile() {
       borderBottomLeftRadius: 40,
       borderBottomRightRadius: 40,
       marginBottom: 10,
+      width: "100%",
     },
     headerArrowDiv: {
       backgroundColor: colors.topBackground,
@@ -624,7 +625,7 @@ export default function OtherUserProfile() {
       backgroundColor: "rgba(0, 0, 0, 0.4)",
     },
     menuContainer: {
-      width: "45%",
+      width: 180,
       borderRadius: 12,
       paddingVertical: 10,
       paddingHorizontal: 15,

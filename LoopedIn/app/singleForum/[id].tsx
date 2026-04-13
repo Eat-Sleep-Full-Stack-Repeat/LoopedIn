@@ -986,7 +986,7 @@ export default function ForumPostDetail() {
       backgroundColor: "rgba(0, 0, 0, 0.4)",
     },
     menuContainer: {
-      width: "45%",
+      width: 180,
       borderRadius: 12,
       paddingVertical: 10,
       paddingHorizontal: 15,
@@ -1718,7 +1718,7 @@ export default function ForumPostDetail() {
                   style={{
                     backgroundColor: colors.topBackground,
                     flexDirection: "column",
-                    width: "45%",
+                    width: 180,
                     gap: 10,
                     alignItems: "flex-start",
                     justifyContent: "flex-start",

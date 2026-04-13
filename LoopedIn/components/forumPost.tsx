@@ -81,7 +81,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
   const styles = StyleSheet.create({
     forumPost: {
       flexDirection: "column",
-      paddingHorizontal: 20,
+      paddingHorizontal: 30,
       paddingVertical: 10,
       backgroundColor: colors.topBackground,
       borderRadius: 15,
@@ -109,7 +109,7 @@ const ForumPostView = ({ postInfo }: ForumPostViewProps) => {
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "flex-end",
-      marginTop: 5,
+      marginTop: 8,
     },
     allTagsContainer: {
       flexDirection: "row",

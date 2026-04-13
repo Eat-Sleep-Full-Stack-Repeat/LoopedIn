@@ -372,7 +372,10 @@ const ExploreCommentsModal = ({
       backgroundColor: colors.exploreCardBackground,
       marginBottom: 20,
       alignSelf: "center",
-      padding: 15,
+      justifyContent: "center",
+      paddingHorizontal: 15,
+      paddingBottom: 15,
+      paddingTop: 10,
       borderRadius: 20,
       borderColor: colors.exploreBorder,
       borderWidth: 1,
@@ -477,9 +480,9 @@ const ExploreCommentsModal = ({
             </View>
             <Text
               style={{
-                color: colors.text,
-                marginLeft: 5,
+                color: colors.inputContainerPlaceholderText,
                 fontSize: size.font.detailText,
+                marginTop: 5,
               }}
             >
               {new Date(item.dateposted).toLocaleDateString("en-US", {

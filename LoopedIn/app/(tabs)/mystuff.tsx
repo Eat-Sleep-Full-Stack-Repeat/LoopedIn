@@ -8,6 +8,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
+import { useAppSize } from "@/Hooks/useSize";
 
 type Folder = {
   id: string;
@@ -26,6 +27,8 @@ export default function MyStuffScreen() {
 
   //const [tokenOkay, setTokenOkay] = useState(false);
   const alreadyAlerted = useRef(false); //preventing double-alert in dev
+
+  const size = useAppSize();
 
   //token check + reload after navigtion
   useFocusEffect(
@@ -50,19 +53,16 @@ export default function MyStuffScreen() {
   );
 
   //for "# inventory/wishlist items" lines; endpoint in inventory.js
-  const findNumItems = async (token: string) =>{
+  const findNumItems = async (token: string) => {
     try {
-      const res = await fetch(
-        `${API_URL}/api/get-num-items`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/get-num-items`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -71,18 +71,14 @@ export default function MyStuffScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Endpoint does not exist. Please try again later.`);
         }
         router.back();
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -93,16 +89,15 @@ export default function MyStuffScreen() {
 
       const data = await res.json();
 
-      if(!data.empty){
+      if (!data.empty) {
         console.log("inputting data");
         setInventoryCount(data.iCount);
         setWishlistCount(data.wCount);
       }
+    } catch (error) {
+      console.log("Error when trying to fetch folder counts:", error);
     }
-    catch(error) {
-      console.log("Error when trying to fetch folder counts:", error)
-    }
-  }
+  };
 
   const folders: Folder[] = [
     { id: "1", name: "Inventory", count: inventoryCount },
@@ -113,13 +108,23 @@ export default function MyStuffScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background, paddingTop: insets.top + 20 },
+        { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <Text style={[styles.title, { color: colors.text }]}
+      <Text
+        style={[
+          styles.title,
+          {
+            color: colors.text,
+            fontSize: size.font.largeTitleText,
+            fontWeight: size.weight.title,
+          },
+        ]}
         accessible={true}
-        accessibilityRole={"header"}      
-      >My Stuff</Text>
+        accessibilityRole={"header"}
+      >
+        My Stuff
+      </Text>
 
       {/* Folder Cards */}
       {folders.map((folder) => (
@@ -151,14 +156,35 @@ export default function MyStuffScreen() {
                 ? require("@/assets/images/inventory.png")
                 : require("@/assets/images/wishlist.png")
             }
-            style={styles.folderIcon}
+            style={[
+              styles.folderIcon,
+              {
+                tintColor: colors.decorativeBackground,
+                width: size.iconSize + 60,
+                height: size.iconSize + 60,
+              },
+            ]}
           />
 
-          <Text style={[styles.cardText, { color: colors.text }]}>
+          <Text
+            style={[
+              styles.cardText,
+              {
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.title,
+              },
+            ]}
+          >
             {folder.name}
           </Text>
 
-          <Text style={[styles.countText, { color: colors.settingsText }]}>
+          <Text
+            style={[
+              styles.countText,
+              { color: colors.settingsText, fontSize: size.font.caption },
+            ]}
+          >
             {folder.count} {folder.name.toLowerCase()}{" "}
             {folder.count === 1 ? "item" : "items"}
           </Text>
@@ -174,10 +200,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: 20,
+    marginTop: 10,
   },
   card: {
     borderRadius: 18,
@@ -188,18 +213,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   folderIcon: {
-    width: 80,
-    height: 80,
     resizeMode: "contain",
     marginBottom: 10,
   },
   cardText: {
     marginTop: 12,
-    fontSize: 18,
-    fontWeight: "600",
   },
   countText: {
-    fontSize: 14,
     marginTop: 4,
   },
 });

@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -22,6 +23,7 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Storage } from "@/utils/storage";
 import API_URL from "@/utils/config";
+import { useAppSize } from "@/Hooks/useSize";
 
 type ProjectPhoto = {
   pic: string;
@@ -47,6 +49,9 @@ export default function EditProject() {
   const alreadyAlerted = useRef(false);
 
   const projectId = Array.isArray(id) ? id[0] : id;
+
+  const size = useAppSize();
+  const { width } = useWindowDimensions();
 
   const formattedStartDate = (startDate ?? new Date()).toLocaleDateString(
     "en-US",
@@ -113,9 +118,13 @@ export default function EditProject() {
 
       setTitleText(info?.fld_p_name ?? "");
       setNoteText(info?.fld_notes ?? "");
-      setStartDate(info?.fld_date_started ? new Date(info.fld_date_started) : null);
+      setStartDate(
+        info?.fld_date_started ? new Date(info.fld_date_started) : null
+      );
 
-      const mappedPhotos: ProjectPhoto[] = Array.isArray(responseData.projectPics)
+      const mappedPhotos: ProjectPhoto[] = Array.isArray(
+        responseData.projectPics
+      )
         ? responseData.projectPics
             .map((pic: any) => {
               if (Array.isArray(pic)) {
@@ -160,7 +169,9 @@ export default function EditProject() {
   }, [projectId]);
 
   const mainImageUri =
-    photos.length > 0 ? photos[Math.min(selectedThumb, photos.length - 1)]?.pic : null;
+    photos.length > 0
+      ? photos[Math.min(selectedThumb, photos.length - 1)]?.pic
+      : null;
 
   const handleSaveChanges = async () => {
     if (!projectId || loading) return;
@@ -223,23 +234,27 @@ export default function EditProject() {
     screen: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: insets.top + 8,
+      paddingTop: insets.top,
       paddingHorizontal: 20,
     },
     headerRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 8,
+      marginTop: 10,
+      marginBottom: 20,
       justifyContent: "space-between",
     },
     headerSide: {
-      width: 32,
+      width: size.iconSize + 12,
       alignItems: "center",
       justifyContent: "center",
     },
     backButton: {
-      paddingRight: 8,
       paddingVertical: 6,
+    },
+    backArrow: {
+      fontSize: 28,
+      color: colors.text,
     },
     headerCenter: {
       flex: 1,
@@ -248,12 +263,12 @@ export default function EditProject() {
     },
     title: {
       color: colors.text,
-      fontSize: 18,
-      fontWeight: "600",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
     },
     mainPhotoPlaceholder: {
       marginTop: 12,
-      width: 240,
+      width: "80%",
       aspectRatio: 3 / 4,
       borderRadius: 16,
       backgroundColor: "transparent",
@@ -267,8 +282,8 @@ export default function EditProject() {
     mainPhotoText: {
       color: colors.settingsText,
       marginTop: 8,
-      fontSize: 12,
-      fontWeight: "500",
+      fontSize: size.font.detailText,
+      fontWeight: size.weight.headline,
     },
     mainImage: {
       width: "100%",
@@ -281,7 +296,7 @@ export default function EditProject() {
       paddingRight: 8,
     },
     thumbCard: {
-      width: 70,
+      width: width * 0.2,
       aspectRatio: 3 / 4,
       borderRadius: 10,
       backgroundColor: "transparent",
@@ -305,7 +320,7 @@ export default function EditProject() {
       width: "100%",
       minHeight: 180,
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "flex-start",
       justifyContent: "flex-start",
       paddingHorizontal: 14,
@@ -319,7 +334,7 @@ export default function EditProject() {
       marginTop: 6,
       width: "100%",
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "flex-start",
       justifyContent: "flex-start",
       paddingHorizontal: 14,
@@ -339,7 +354,7 @@ export default function EditProject() {
       marginTop: 5,
       width: "100%",
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 14,
@@ -350,14 +365,14 @@ export default function EditProject() {
     },
     dateInput: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
       textAlign: "center",
       width: "100%",
     },
     dateLabel: {
       marginTop: 16,
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
     },
     dateModalOverlay: {
       flex: 1,
@@ -384,8 +399,8 @@ export default function EditProject() {
     },
     dateModalButtonText: {
       color: colors.decorativeText,
-      fontSize: 15,
-      fontWeight: "600",
+      fontSize: size.font.bodyText,
+      fontWeight: size.weight.title,
     },
     datePicker: {
       alignSelf: "center",
@@ -401,23 +416,23 @@ export default function EditProject() {
       alignSelf: "center",
     },
     addProjectButtonText: {
-      color: colors.decorativeText,
-      fontSize: 16,
-      fontWeight: "600",
+      color: colors.antiText,
+      fontSize: size.font.button,
+      fontWeight: size.weight.title,
     },
     countText: {
       color: colors.settingsText,
-      fontSize: 12,
+      fontSize: size.font.detailText,
     },
     noteTitleInput: {
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
       paddingVertical: 4,
       width: "100%",
     },
     noteBodyInput: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
       lineHeight: 20,
       textAlignVertical: Platform.OS === "android" ? "top" : "auto",
       minHeight: 120,
@@ -438,15 +453,19 @@ export default function EditProject() {
         >
           <View style={styles.headerRow}>
             <View style={styles.headerSide}>
-              <Pressable style={styles.backButton} onPress={() => router.back()}
+              <Pressable
+                style={styles.backButton}
+                onPress={() => router.back()}
                 accessible={true}
                 accessibilityLabel={"Go Back"}
                 accessibilityHint={"Navigates back to the previous page."}
-                accessibilityRole={"button"}>
-                <Feather name="arrow-left" size={22} color={colors.text} />
+                accessibilityRole={"button"}
+              >
+                <Text style={styles.backArrow}>←</Text>
               </Pressable>
             </View>
-            <View style={styles.headerCenter}
+            <View
+              style={styles.headerCenter}
               accessible={true}
               accessibilityRole={"header"}
             >
@@ -456,18 +475,23 @@ export default function EditProject() {
           </View>
 
           {loading ? (
-            <View style={{ alignItems: "center", paddingVertical: 12 }}
+            <View
+              style={{ alignItems: "center", paddingVertical: 12 }}
               accessible={true}
-              accessibilityLabel={"loading"}>
+              accessibilityLabel={"loading"}
+            >
               <ActivityIndicator size="small" color={colors.text} />
             </View>
           ) : null}
 
-          <View style={styles.mainPhotoPlaceholder}
+          <View
+            style={styles.mainPhotoPlaceholder}
             accessible={true}
-            accessibilityLabel={mainImageUri ? "Primary Project Photo" : "No Project Photo"}
+            accessibilityLabel={
+              mainImageUri ? "Primary Project Photo" : "No Project Photo"
+            }
             accessibilityRole={mainImageUri ? "image" : "none"}
-            >
+          >
             {mainImageUri ? (
               <Image
                 source={{ uri: mainImageUri }}
@@ -476,7 +500,11 @@ export default function EditProject() {
               />
             ) : (
               <>
-                <Feather name="image" size={40} color={colors.decorativeText} />
+                <Feather
+                  name="image"
+                  size={size.iconSize + 20}
+                  color={colors.decorativeText}
+                />
                 <Text style={styles.mainPhotoText}>No project image</Text>
               </>
             )}
@@ -512,10 +540,13 @@ export default function EditProject() {
 
           <View style={styles.noteHeaderRow}>
             <Text style={styles.dateLabel}>Title</Text>
-            <Text style={styles.countText}
+            <Text
+              style={styles.countText}
               accessible={true}
               accessibilityLabel={`${titleText.length} out of  40 characters are used.`}
-            >{titleText.length}/40</Text>
+            >
+              {titleText.length}/40
+            </Text>
           </View>
           <View style={styles.noteTitleBox}>
             <TextInput
@@ -595,10 +626,13 @@ export default function EditProject() {
 
           <View style={styles.noteHeaderRow}>
             <Text style={styles.dateLabel}>Note</Text>
-            <Text style={styles.countText}
+            <Text
+              style={styles.countText}
               accessible={true}
               accessibilityLabel={`${noteText.length} out of 5000 characters are used.`}
-            >{noteText.length}/5000</Text>
+            >
+              {noteText.length}/5000
+            </Text>
           </View>
           <View style={styles.notePlaceholder}>
             <TextInput
@@ -611,11 +645,13 @@ export default function EditProject() {
             />
           </View>
 
-          <Pressable style={styles.addProjectButton} onPress={handleSaveChanges}
+          <Pressable
+            style={styles.addProjectButton}
+            onPress={handleSaveChanges}
             accessible={true}
             accessibilityRole={"button"}
             accessibilityHint={"Double tap to save edits to project"}
-            >
+          >
             <Text style={styles.addProjectButtonText}>Save Changes</Text>
           </Pressable>
         </ScrollView>

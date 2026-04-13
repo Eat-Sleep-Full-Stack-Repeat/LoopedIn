@@ -468,7 +468,7 @@ export default function TrackerFolderView() {
       backgroundColor: "rgba(0, 0, 0, 0.4)",
     },
     menuContainer: {
-      width: "45%",
+      width: 180,
       borderRadius: 12,
       paddingVertical: 10,
       paddingHorizontal: 15,

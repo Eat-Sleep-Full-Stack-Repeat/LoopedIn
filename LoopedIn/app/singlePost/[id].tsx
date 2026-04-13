@@ -478,6 +478,7 @@ export default function SinglePost() {
                     paddingTop: 2,
                     fontSize: size.font.headline,
                     fontWeight: size.weight.headline,
+                    marginBottom: 3,
                   }}
                 >
                   {post.username}
@@ -1073,7 +1074,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   menuContainer: {
-    width: "45%",
+    width: 180,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 15,

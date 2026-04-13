@@ -246,8 +246,8 @@ export default function MyPosts() {
         style={[
           styles.postContainer,
           {
-            backgroundColor: currentTheme === "light" ? "#E0D5DD" : "#9C7C93",
-            borderColor: currentTheme === "light" ? "#C4B0C9" : "#6E5670",
+            backgroundColor: colors.topBackground,
+            borderColor: colors.topBackground,
           },
         ]}
       >
@@ -291,8 +291,17 @@ export default function MyPosts() {
             accessibilityLabel={"Forum Post Menu"}
             accessibilityHint={"Double tap to edit or delete this forum post"}
             accessibilityRole={"button"}
+            style={{
+              backgroundColor: colors.secondaryButton,
+              padding: 10,
+              borderRadius: 50,
+            }}
           >
-            <Entypo name="dots-three-vertical" size={22} color={colors.text} />
+            <Entypo
+              name="dots-three-vertical"
+              size={size.iconSize + 2}
+              color={colors.decorativeBackground}
+            />
           </TouchableOpacity>
         </View>
 

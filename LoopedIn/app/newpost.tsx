@@ -575,8 +575,10 @@ export default function NewPost() {
       marginBottom: 16,
     },
     tagChip: {
-      backgroundColor: colors.topBackground,
-      borderRadius: 16,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      borderRadius: 50,
       paddingHorizontal: 14,
       paddingVertical: 8,
       marginRight: 12,

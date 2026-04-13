@@ -680,7 +680,7 @@ export default function ExploreSearch() {
                   marginTop: 18,
                 }}
               >
-                Enter a search term and select a filter.
+                Enter a search term and select a filter
               </Text>
             ) : (
               <FlatList
@@ -723,7 +723,7 @@ export default function ExploreSearch() {
                           paddingBottom: 40,
                         }}
                       >
-                        No more users.
+                        No more users
                       </Text>
                     );
                   }
@@ -742,7 +742,7 @@ export default function ExploreSearch() {
                           paddingTop: 20,
                         }}
                       >
-                        No more posts.
+                        No more posts
                       </Text>
                     );
                   }

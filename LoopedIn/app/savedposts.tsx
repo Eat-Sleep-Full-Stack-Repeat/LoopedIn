@@ -279,7 +279,7 @@ export default function ForumFeed() {
     },
     buttonBase: {
       padding: 10,
-      borderRadius: 15,
+      borderRadius: 50,
       width: 75,
       alignItems: "center",
     },

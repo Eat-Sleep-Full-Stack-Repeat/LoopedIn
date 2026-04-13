@@ -19,13 +19,13 @@ export const Sizes = {
   large: {
     iconSize: 24,
     font: {
-      bodyText: 16,
-      titleText: 20,
-      largeTitleText: 28,
-      headline: 17,
-      button: 18,
-      caption: 14,
-      detailText: 12,
+      bodyText: 17,
+      titleText: 24,
+      largeTitleText: 34,
+      headline: 20,
+      button: 19,
+      caption: 17,
+      detailText: 14,
     },
     weight: {
       headline: "500",

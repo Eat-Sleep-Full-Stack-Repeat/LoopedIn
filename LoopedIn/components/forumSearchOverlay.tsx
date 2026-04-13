@@ -13,7 +13,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import ForumPostView from "@/components/forumPost";
@@ -252,21 +252,12 @@ export default function ForumSearchOverlay({
               width: isTablet ? "100%" : "95%",
               maxWidth: isTablet ? 900 : undefined,
             },
-            { backgroundColor: colors.topBackground },
+            { backgroundColor: colors.topBackground, paddingHorizontal: 20 },
           ]}
         >
           {/* Header */}
           <View style={styles.header}>
-            <Pressable
-              onPress={onClose}
-              accessible={true}
-              accessibilityLabel={"Exit"}
-              accessibilityHint={"double tap to exit out of comment section"}
-              accessibilityRole={"button"}
-              style={{ padding: 6 }}
-            >
-              <Feather name="x" size={size.iconSize + 6} color={colors.text} />
-            </Pressable>
+            <View style={styles.sideView} />
             <Text
               style={{
                 color: colors.text,
@@ -279,6 +270,16 @@ export default function ForumSearchOverlay({
             >
               Search
             </Text>
+            <Pressable
+              onPress={onClose}
+              accessible={true}
+              accessibilityLabel={"Exit"}
+              accessibilityHint={"double tap to exit out of comment section"}
+              accessibilityRole={"button"}
+              style={styles.sideView}
+            >
+              <AntDesign name="close" size={size.iconSize + 4} />
+            </Pressable>
           </View>
           {/* Input row */}
           <View style={styles.searchRow}>
@@ -366,7 +367,12 @@ export default function ForumSearchOverlay({
             data={results}
             keyExtractor={(item, index) => `${item.id}_${index}`}
             renderItem={({ item }) => (
-              <View style={{ alignItems: "center", marginVertical: 8 }}>
+              <View
+                style={{
+                  alignItems: "center",
+                  marginVertical: 8,
+                }}
+              >
                 <ForumPostView postInfo={item} />
               </View>
             )}
@@ -379,15 +385,15 @@ export default function ForumSearchOverlay({
                 }}
               >
                 {query
-                  ? "No results found."
-                  : "Enter a search term and select a filter to begin."}
+                  ? "No results found"
+                  : "Enter a search term and select a filter to begin"}
               </Text>
             }
             ItemSeparatorComponent={() => (
               <View
                 style={{
                   height: 1,
-                  width: "90%",
+                  width: "100%",
                   backgroundColor: colors.background,
                 }}
               />
@@ -402,9 +408,13 @@ export default function ForumSearchOverlay({
               if (results.length > 0) {
                 if (!hasMore.current) {
                   return (
-                    <Text style={{ color: colors.text }}>
-                      {" "}
-                      No More Data To Load{" "}
+                    <Text
+                      style={{
+                        color: colors.inputContainerPlaceholderText,
+                        fontSize: size.font.caption,
+                      }}
+                    >
+                      No More Data To Load
                     </Text>
                   );
                 } else {
@@ -416,6 +426,7 @@ export default function ForumSearchOverlay({
               paddingBottom: 120,
               backgroundColor: colors.topBackground,
               paddingHorizontal: 10,
+              alignItems: "center",
             }}
             style={{
               width: "100%",
@@ -452,8 +463,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 10,
     marginBottom: 10,
+    marginTop: 20,
   },
   searchRow: {
     flexDirection: "row",
@@ -486,5 +499,8 @@ const styles = StyleSheet.create({
     width: 90,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sideView: {
+    width: 30,
   },
 });
