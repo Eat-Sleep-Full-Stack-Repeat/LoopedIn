@@ -32,7 +32,7 @@ import { Storage } from "../../utils/storage";
 import { TextInput } from "react-native-gesture-handler";
 import ForumReplyModal from "@/components/forumReply";
 import EditForumReplyModal from "@/components/editForumReply";
-import reasons from "@/components/reportReasons"
+import {reasons} from "@/components/reportReasons"
 import { useAppSize } from "@/Hooks/useSize";
 
 type Comment = {
@@ -1291,7 +1291,6 @@ export default function ForumPostDetail() {
           </TouchableOpacity>
         </Modal>
 
-        {/*report modal */}
         <Modal
           transparent
           visible={reportMenuVisible}

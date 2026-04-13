@@ -18,16 +18,16 @@ import {
   Switch,
 } from "react-native";
 import {
-  GestureHandlerRootView,
-  Gesture,
-  GestureDetector,
+GestureHandlerRootView,
+Gesture,
+GestureDetector,
 } from "react-native-gesture-handler";
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  runOnJS,
+useSharedValue,
+useAnimatedStyle,
+withTiming,
+withSpring,
+runOnJS,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -52,9 +52,9 @@ export default function SettingsOverlay({
   onEditProfile,
   title = "Settings",
 }: SettingsOverlayProps) {
-  const { width: screenW } = useWindowDimensions();
-  const panelW = Math.min(420, Math.max(320, Math.round(screenW * 0.85)));
-  const translateX = useSharedValue(panelW);
+const { width: screenW } = useWindowDimensions();
+const panelW = Math.min(420, Math.max(320, Math.round(screenW * 0.85)));
+const translateX = useSharedValue(panelW);
 
   const [currentScreen, setCurrentScreen] = useState<
     "main" | "account" | "accessibility"
@@ -77,7 +77,36 @@ export default function SettingsOverlay({
     });
   };
 
-  // Swipe gesture handler
+  const { currentTheme, toggleTheme } = useTheme();
+  const colors = Colors[currentTheme];
+  const insets = useSafeAreaInsets();
+  const isDark = currentTheme === "dark";
+  
+  const toggleAnim = useSharedValue(isDark ? 1 : 0);
+
+useEffect(() => {
+toggleAnim.value = withTiming(isDark ? 1 : 0, { duration: 200 });
+}, [isDark]);
+
+const toggleStyle = useAnimatedStyle(() => ({
+transform: [{ translateX: toggleAnim.value * 24 + 2 }],
+}));
+
+  const backdropStyle = useAnimatedStyle(() => {
+    const progress = 1 - translateX.value / panelW;
+    return { opacity: 0.35 * progress };
+  });
+
+  const size = useAppSize();
+  const { currentSize, toggleSize } = useSize();
+  const isLarge = currentSize === "large";
+  const toggleSizeAnim = useSharedValue(isLarge ? 1 : 0);
+  useEffect(() => {
+    toggleSizeAnim.value = withTiming(isLarge ? 1 : 0, { duration: 200 });
+  }, [isLarge]);
+  const toggleSizeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: toggleSizeAnim.value * 24 + 2 }],
+  }));
   const pan = Gesture.Pan()
     .maxPointers(1)
     .activeOffsetX([-12, 12])
@@ -95,32 +124,9 @@ export default function SettingsOverlay({
       }
     });
 
-  // Animated styles
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
-
-  const backdropStyle = useAnimatedStyle(() => {
-    const progress = 1 - translateX.value / panelW;
-    return { opacity: 0.35 * progress };
-  });
-
-  const { currentTheme } = useTheme();
-  const colors = Colors[currentTheme];
-  const insets = useSafeAreaInsets();
-
-  const size = useAppSize();
-  const { currentSize, toggleSize } = useSize();
-  const [isSizeEnabled, setIsSizeEnabled] = useState(currentSize === "large");
-
-  const toggleAppSize = () => {
-    setIsSizeEnabled((previousState) => !previousState);
-    toggleSize();
-  };
-
-  useEffect(() => {
-    setIsSizeEnabled(currentSize === "large");
-  }, [currentTheme]);
 
   /* ---------- Helpers ---------- */
   function SectionHeader({ label }: { label: string }) {
@@ -286,32 +292,77 @@ export default function SettingsOverlay({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator
         >
-          <View
-            style={{
-              justifyContent: "flex-start",
-              alignItems: "center",
-              flexDirection: "row",
-              marginTop: 10,
-            }}
+          <Pressable
+            onPress={toggleSize}
+            style={styles.menuItem}
+            accessible={true}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: isLarge }}
+            accessibilityLabel="Large Font mode"
           >
-            <Text
+            <Text style={styles.menuItemText}>Large Font Mode</Text>
+
+            <View
               style={{
-                color: colors.text,
-                fontSize: size.font.button,
-                marginLeft: 15,
+                width: 50,
+                height: 28,
+                borderRadius: 20,
+                backgroundColor: isLarge
+                  ? colors.decorativeBackground
+                  : colors.disabledButton,
+                justifyContent: "center",
               }}
             >
-              {" "}
-              Large Text:{" "}
-            </Text>
-            <Switch
-              onValueChange={toggleAppSize}
-              trackColor={{ false: "#767577", true: "#E0D5DD" }}
-              thumbColor={isSizeEnabled ? "#F7B557" : "#f4f3f4"}
-              value={isSizeEnabled}
-              style={{ justifyContent: "center", marginLeft: 10 }}
-            />
-          </View>
+              <Animated.View
+                style={[
+                  {
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: colors.text,
+                    position: "absolute",
+                  },
+                  toggleSizeStyle,
+                ]}
+              />
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={toggleTheme}
+            style={styles.menuItem}
+            accessible={true}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: isDark }}
+            accessibilityLabel="Dark mode"
+          >
+            <Text style={styles.menuItemText}>Dark Mode</Text>
+
+            <View
+              style={{
+                width: 50,
+                height: 28,
+                borderRadius: 20,
+                backgroundColor: isDark
+                  ? colors.decorativeBackground
+                  : colors.disabledButton,
+                justifyContent: "center",
+              }}
+            >
+              <Animated.View
+                style={[
+                  {
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: colors.text,
+                    position: "absolute",
+                  },
+                  toggleStyle,
+                ]}
+              />
+            </View>
+          </Pressable>
         </ScrollView>
       </>
     );
@@ -535,3 +586,4 @@ export default function SettingsOverlay({
     </Modal>
   );
 }
+

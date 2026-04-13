@@ -3,77 +3,45 @@ import { Colors } from "@/Styles/colors";
 import { useSize } from "@/context/SizeContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Switch, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function Index() {
-  const { currentTheme, toggleTheme } = useTheme();
-  const colors = Colors[currentTheme];
-  const router = useRouter();
-  const [isEnabled, setIsEnabled] = useState(currentTheme === "dark");
+const { currentTheme } = useTheme();
+const colors = Colors[currentTheme];
+const router = useRouter();
 
-  const size = useAppSize();
+const size = useAppSize();
 
-  const toggleSwitch = () => {
-    setIsEnabled((previousState) => !previousState);
-    toggleTheme();
-  };
+return (
+<GestureHandlerRootView
+style={{
+flex: 1,
+justifyContent: "center",
+alignItems: "center",
+backgroundColor: colors.background,
+}}
+>
+{/* Title */}
+<Text style={{ color: colors.text, fontSize: size.font.headline }}>
+This will be the welcome screen
+</Text>
 
-  useEffect(() => {
-    setIsEnabled(currentTheme === "dark");
-  }, [currentTheme]);
+{/* Navigation */}
+<TouchableOpacity
+onPress={() => router.push("/login")}
+style={{ marginTop: 20 }}
+>
+<Text style={{ color: colors.text, fontSize: size.font.bodyText }}>Login Page</Text>
+</TouchableOpacity>
 
-  return (
-    <GestureHandlerRootView
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.background,
-      }}
-    >
-      <Text
-        style={{
-          color: colors.text,
-          fontSize: size.font.largeTitleText,
-          fontWeight: size.weight.title,
-        }}
-      >
-        This will be the welcome screen!
-      </Text>
-
-      <TouchableOpacity
-        onPress={() => router.push("/login")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}>Login Page</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => router.push("/welcomePage")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: colors.text }}>Welcome Page</Text>
-      </TouchableOpacity>
-      <View
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          flexDirection: "row",
-          marginTop: 10,
-        }}
-      >
-        <Text style={{ color: colors.text }}> Dark Mode? </Text>
-        <Switch
-          onValueChange={toggleSwitch}
-          trackColor={{ false: "#767577", true: "#E0D5DD" }}
-          thumbColor={isEnabled ? "#F7B557" : "#f4f3f4"}
-          value={isEnabled}
-          style={{ justifyContent: "center" }}
-        />
-      </View>
-    </GestureHandlerRootView>
-  );
+<TouchableOpacity
+onPress={() => router.push("/welcomePage")}
+style={{ marginTop: 20 }}
+>
+<Text style={{ color: colors.text, fontSize: size.font.bodyText }}>Welcome Page</Text>
+</TouchableOpacity>
+</GestureHandlerRootView>
+);
 }

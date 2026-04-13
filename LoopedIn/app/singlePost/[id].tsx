@@ -23,7 +23,7 @@ import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
-import reasons from "@/components/reportReasons";
+import {reasons} from "@/components/reportReasons";
 import { useAppSize } from "@/Hooks/useSize";
 
 type PhotoCard = {
