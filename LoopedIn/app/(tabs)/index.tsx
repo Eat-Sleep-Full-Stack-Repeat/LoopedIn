@@ -6,6 +6,7 @@ import { ActivityIndicator, Switch, Text, View } from "react-native";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Storage } from "@/utils/storage";
+import API_URL from "@/utils/config";
 
 export default function Index() {
   const { currentTheme, toggleTheme } = useTheme();
@@ -29,15 +30,30 @@ export default function Index() {
     const checkAuth = async () => {
       try {
         const token = await Storage.getItem("token");
-        console.log("INDEX TOKEN:", token);
 
-        if (token) {
+        if (!token || token === "null" || token.trim() === "") {
+          router.replace("/login");
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/api/login/verify`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (response.ok) {
           router.replace("/(tabs)/explore");
         } else {
+          await Storage.removeItem("token");
           router.replace("/login");
         }
       } catch (error) {
         console.log("Error checking auth:", error);
+        await Storage.removeItem("token");
         router.replace("/login");
       }
     };
@@ -56,7 +72,9 @@ export default function Index() {
     >
       <ActivityIndicator size="large" color={colors.text} />
 
-      <Text style={{ color: colors.text, marginTop: 10 }}>Loading...</Text>
+      <Text style={{ color: colors.text, marginTop: 10 }}>
+        Checking login...
+      </Text>
 
       <View
         style={{

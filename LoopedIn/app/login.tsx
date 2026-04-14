@@ -123,7 +123,7 @@ export default function Login() {
           }
 
           await Storage.setItem('token', data.token); //store jwt info
-          router.push("/userProfile"); // Redirect on success
+          router.replace("/userProfile"); // Redirect on success
         } else {
           console.log("Login failed:", data.message);
           if (data.message === "Incorrect password.") {
@@ -329,7 +329,7 @@ export default function Login() {
         }}>
             {/* Sign-up*/}
             <Text style={{ color: colors.text}}> Don't have an account? </Text>
-            <TouchableOpacity onPress ={() => router.push("/signup")}
+            <TouchableOpacity onPress ={() => router.replace("/signup")}
               accessible={true}
               accessibilityHint={"Double tap to sign up for a LoopedIn account."}
               accessibilityRole={"button"}> 
