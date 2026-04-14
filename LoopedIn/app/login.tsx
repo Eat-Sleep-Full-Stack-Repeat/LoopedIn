@@ -17,6 +17,10 @@ export default function Login() {
   const [text, onChangeText] = useState('');
   const [password, onChangePassword] = useState('');
   const [rememberEmail, setRememberEmail] = useState(false);
+  const [loginErrorOverlay, setLoginErrorOverlay] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -79,7 +83,10 @@ export default function Login() {
 
     //check is password is between 8 and 30 characters long
     if(password.length < 8){
-      alert("Password contains fewer than 8 characters. Passwords must be 8-30 characters long and alphanumeric.");
+      setLoginErrorOverlay({
+        title: "Invalid Password",
+        message: "Use at least 8 characters and include a number in your password.",
+      });
       return;
     } 
     else if (password.length > 30){
@@ -119,14 +126,25 @@ export default function Login() {
           router.push("/userProfile"); // Redirect on success
         } else {
           console.log("Login failed:", data.message);
+          if (data.message === "Incorrect password.") {
+            setLoginErrorOverlay({
+              title: "Wrong Password!",
+              message: "Oops! Wrong password. Give it another try.",
+            });
+            return;
+          }
+
           alert(data.message);
         }
         
     } catch (error) {
         console.log("Error during sign in:", error);
-        alert("Server error, please try again later.");
     }
 
+  };
+
+  const handleLoginErrorConfirm = () => {
+    setLoginErrorOverlay(null);
   };
 
 
@@ -138,52 +156,57 @@ export default function Login() {
     <View
       style={{
         flex: 1,
-        justifyContent: "flex-start",
-        alignItems: "center",
-        paddingTop: "30%",
         backgroundColor: colors.background,
       }}
     >
-      <Text style={{
-        fontSize: 32,
-        fontWeight: "500",
-        marginBottom: 40,
-        color: colors.welcomeText}}
-        accessible={true}
-        accessibilityRole={"header"}>
-        Welcome Back!
-        </Text>
-        
-        {/* Email*/}
-        <View style={{
-            width: "80%",
-            alignItems: "flex-start"
-        }}>
-        <Text style={{
-            marginLeft: 10,
-            marginBottom:5,
-            fontSize: 18,
-            color: colors.text}}> Email </Text>
-        <TextInput
-        placeholder="example@email.com"
-        placeholderTextColor={colors.text}
+      <View
         style={{
-            width: "100%",
-            height: 50,
-            backgroundColor: colors.background,
-            borderColor: colors.decorativeBackground,
-            borderWidth: 1,
-            borderRadius: 25,
-            marginBottom: 10,
-            paddingHorizontal: 10,
-            color: colors.text
+          flex: 1,
+          justifyContent: "flex-start",
+          alignItems: "center",
+          paddingTop: "30%",
         }}
-        onChangeText={onChangeText}
-        value={text}
-        autoCorrect={false}
-        autoCapitalize="none"
-        />
-        </View>
+      >
+        <Text style={{
+          fontSize: 32,
+          fontWeight: "500",
+          marginBottom: 40,
+          color: colors.welcomeText}}
+          accessible={true}
+          accessibilityRole={"header"}>
+          Welcome Back!
+          </Text>
+          
+          {/* Email*/}
+          <View style={{
+              width: "80%",
+              alignItems: "flex-start"
+          }}>
+          <Text style={{
+              marginLeft: 10,
+              marginBottom:5,
+              fontSize: 18,
+              color: colors.text}}> Email </Text>
+          <TextInput
+          placeholder="example@email.com"
+          placeholderTextColor={colors.text}
+          style={{
+              width: "100%",
+              height: 50,
+              backgroundColor: colors.background,
+              borderColor: colors.decorativeBackground,
+              borderWidth: 1,
+              borderRadius: 25,
+              marginBottom: 10,
+              paddingHorizontal: 10,
+              color: colors.text
+          }}
+          onChangeText={onChangeText}
+          value={text}
+          autoCorrect={false}
+          autoCapitalize="none"
+          />
+          </View>
 
         {/* Password*/}
         <View style={{
@@ -317,6 +340,82 @@ export default function Login() {
                     }}> Sign Up</Text>
             </TouchableOpacity>
         </View>
+      </View>
+      {loginErrorOverlay ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: 24,
+                fontWeight: "700",
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {loginErrorOverlay.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: 16,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {loginErrorOverlay.message}
+            </Text>
+            <Pressable
+              onPress={handleLoginErrorConfirm}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: 16,
+                  fontWeight: "700",
+                  lineHeight: 20,
+                }}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
