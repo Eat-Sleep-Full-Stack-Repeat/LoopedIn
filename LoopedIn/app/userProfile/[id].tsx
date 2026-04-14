@@ -30,6 +30,7 @@ import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
 import { Feather, Entypo } from "@expo/vector-icons";
 import { jwtDecode } from "jwt-decode";
+import { userReasons } from "@/components/reportReasons";
 
 type User = {
   userID: string;
@@ -124,6 +125,10 @@ export default function OtherUserProfile() {
 
   //tracking if current user blocked other user
   const [isBlockedUser, setIsBlockedUser] = useState(false);
+
+  //for report menu handling
+  const [reportMenuVisible, setReportMenuVisible] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
 
   //get rid of header
   useLayoutEffect(() => {
@@ -484,6 +489,45 @@ export default function OtherUserProfile() {
     }
   };
 
+  //handle user reporting
+  const handleReport = async (reason: string) => {
+    console.log("reason chosen:", reason)
+
+    setReportSending(true)
+
+    setReportMenuVisible(false)
+    const token = await Storage.getItem("token")
+
+    try {
+      const response = await fetch(`${API_URL}/api/report/users/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({reason: reason}),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(`Error: ${data.message}`)
+        return;
+      }
+
+      alert("User successfully reported!")
+
+    }
+    catch(error) {
+      alert(`Error reporting user: ${error}`)
+      return
+    }
+    finally {
+      setReportSending(false)
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       setReloadToken((t) => t + 1);
@@ -669,11 +713,23 @@ export default function OtherUserProfile() {
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      backgroundColor: colors.blockedBackground,
+      borderColor: colors.cancel, 
+      borderWidth: 1,
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
     },
+    reportMenuContainer: {
+      width: 320,
+      borderRadius: 12,
+      paddingTop: 30,
+      paddingBottom: 15,
+      paddingHorizontal: 15,
+    },
+    reportHeaderText: {
+      fontSize: 24,
+      textAlign: "center",
+    }
   });
 
   const renderHeader = () => (
@@ -980,6 +1036,21 @@ export default function OtherUserProfile() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              onPress={() => {
+                setMenuVisible(false);
+                setReportMenuVisible(true);
+              }}
+              style={styles.menuOption}
+              accessible={true}
+              accessibilityLabel={"Report"}
+              accessibilityHint={"Double tap to report this user to LoopedIn moderators."}
+            >
+              <Feather name="flag" size={18} color={colors.text} />
+              <Text style={[styles.menuText, { color: colors.text }]}>
+                Report
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => setMenuVisible(false)}
               accessible={true}
               accessibilityRole="button"
@@ -987,7 +1058,65 @@ export default function OtherUserProfile() {
               accessibilityHint="Double tap to exit user menu"
               style={styles.cancelBtn}
             >
-              <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+              <Text style={[styles.menuText, { color: colors.warning}]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/*report modal */}
+      <Modal
+        transparent
+        visible={reportMenuVisible}
+        animationType="fade"
+        onRequestClose={() => setReportMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          accessible={false}
+        >
+          <View
+            style={[
+              styles.reportMenuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
+          >
+            <View style={{paddingBottom: 20}}>
+              <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+            </View>
+
+            <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+            {userReasons.map((reason) => (
+              <View style={{flexDirection: "column"}} key={reason}>
+                <TouchableOpacity
+                  onPress={() => handleReport(reason)}
+                  style={styles.menuOption}
+                  key={reason}
+                  disabled={reportSending}
+                  accessible={true}
+                  accessibilityLabel={`Reason option: ${reason}`}
+                  accessibilityHint={"Double tap to report post for this reason."}
+                >
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    {reason}
+                  </Text>
+                </TouchableOpacity>
+                {/*line separator guy */}
+                <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              onPress={() => setReportMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit report menu"
+              style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
+                      alignItems: "center"}}
+            >
+              <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

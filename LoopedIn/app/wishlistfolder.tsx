@@ -51,6 +51,9 @@ export default function WishlistFolderScreen() {
   const [editedItemName, setEditedItemName] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [editedItemCount, setEditedItemCount] = useState("");
+  const isEditing = useRef(false);
+  const secondTextInput = useRef<TextInput>(null);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -72,84 +75,83 @@ export default function WishlistFolderScreen() {
 
   const { id } = useLocalSearchParams();
 
-//token-related variables + states
+  //token-related variables + states
   const [tokenOkay, setTokenOkay] = useState(false);
   const alreadyAlerted = useRef(false); //preventing double-alert in dev
   const [loading, setLoading] = useState(false);
   const [folderLoading, setFolderLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-    //check token before doing anything
-    const checkTokenOkay = async () => {
-      try{
-        const token = await Storage.getItem("token");
-        if (!token) {
-          throw new Error("no token");
-        }
-        else{
-          setTokenOkay(true);
-        }
-    }
-      catch(e){
-        if (!alreadyAlerted.current) {
-          console.log(e)
-          alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
-          router.replace("/");
-        }
+  //check token before doing anything
+  const checkTokenOkay = async () => {
+    try {
+      const token = await Storage.getItem("token");
+      if (!token) {
+        throw new Error("no token");
+      } else {
+        setTokenOkay(true);
+      }
+    } catch (e) {
+      if (!alreadyAlerted.current) {
+        console.log(e);
+        alreadyAlerted.current = true;
+        alert("Access denied, please log in and try again.");
+        router.replace("/");
       }
     }
-  
-    useEffect(() => {
-      checkTokenOkay();
-    }, []);
-  
-    //with good token, load up data
-    useEffect(() => {
-      if (!tokenOkay) { return };
-      //fetch data
-      fetchCategories()
-      fetchItems();
-    }, [tokenOkay]);
+  };
 
-    useEffect(() => {
-        if (!refreshing) return;
-    
-        const refreshNewData = async () => {
-          try {
-            console.log("getting items for this category:", selectedCategory);
-            //await fetchData();
-          } catch (e) {
-            console.log("error when refreshing data", e);
-          } finally {
-            setRefreshing(false);
-          }
-        };
-    
-        refreshNewData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [refreshing]);
+  useEffect(() => {
+    checkTokenOkay();
+  }, []);
 
-//category fetch handler
+  //with good token, load up data
+  useEffect(() => {
+    if (!tokenOkay) {
+      return;
+    }
+    //fetch data
+    fetchCategories();
+    fetchItems();
+  }, [tokenOkay]);
+
+  useEffect(() => {
+    if (!refreshing) return;
+
+    const refreshNewData = async () => {
+      try {
+        console.log("getting items for this category:", selectedCategory);
+        //await fetchData();
+      } catch (e) {
+        console.log("error when refreshing data", e);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+    refreshNewData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshing]);
+
+  //category fetch handler
   const fetchCategories = async () => {
-    if (!tokenOkay) { return };
-//    if (folderLoading) { return };
+    if (!tokenOkay) {
+      return;
+    }
+    //    if (folderLoading) { return };
 
-//    setFolderLoading(true);
+    //    setFolderLoading(true);
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/get-w-folders`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/get-w-folders`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -158,18 +160,14 @@ export default function WishlistFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         router.back();
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -181,7 +179,7 @@ export default function WishlistFolderScreen() {
       const data = await res.json();
 
       //map out all folders, or skip this step if there R none :P
-      if(!data.empty){
+      if (!data.empty) {
         const mappedFolders: Folder[] = data.feed.map((folder: any) => ({
           id: folder.fld_folder_pk,
           name: folder.fld_f_name,
@@ -189,36 +187,35 @@ export default function WishlistFolderScreen() {
 
         setCategories(mappedFolders);
       }
-
-    }
-    catch(error) {
-      console.log("Error when trying to fetch folder data:", error)
+    } catch (error) {
+      console.log("Error when trying to fetch folder data:", error);
     }
     // finally {
     //   setFolderLoading(false);
     // }
-  }
+  };
 
-//items fetch handler
+  //items fetch handler
   const fetchItems = async () => {
-    if (!tokenOkay) { return };
-    if (folderLoading) { return };
+    if (!tokenOkay) {
+      return;
+    }
+    if (folderLoading) {
+      return;
+    }
 
     setFolderLoading(true);
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/get-w-items`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
+      const res = await fetch(`${API_URL}/api/get-w-items`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -227,18 +224,14 @@ export default function WishlistFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         router.back();
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -249,9 +242,8 @@ export default function WishlistFolderScreen() {
 
       const data = await res.json();
 
-
       //map out all items, or skip this step if there R none :P
-      if(!data.empty){
+      if (!data.empty) {
         const mappedItems: WishlistItem[] = data.feed.map((inv: any) => ({
           id: inv.fld_item_pk,
           name: inv.fld_item_name,
@@ -261,15 +253,12 @@ export default function WishlistFolderScreen() {
 
         setItems(mappedItems);
       }
-    }
-    catch(error) {
-      console.log("Error when trying to fetch folder data:", error)
-    }
-    finally {
+    } catch (error) {
+      console.log("Error when trying to fetch folder data:", error);
+    } finally {
       setFolderLoading(false);
     }
-  }
-
+  };
 
   const handleAddCategory = async () => {
     const trimmed = newCategoryName.trim();
@@ -292,20 +281,17 @@ export default function WishlistFolderScreen() {
     }
 
     const token = await Storage.getItem("token");
-    const res = await fetch(
-      `${API_URL}/api/new-w-folder`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          name: trimmed,
-        })
-      }
-    );
+    const res = await fetch(`${API_URL}/api/new-w-folder`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        name: trimmed,
+      }),
+    });
 
     if (res.status == 404) {
       if (!alreadyAlerted.current) {
@@ -314,9 +300,7 @@ export default function WishlistFolderScreen() {
       }
       router.back();
       return;
-    }
-
-    else if (!res.ok) {
+    } else if (!res.ok) {
       if (!alreadyAlerted.current) {
         alreadyAlerted.current = true;
         alert("Whoops! Something went wrong... please try again later.");
@@ -332,17 +316,23 @@ export default function WishlistFolderScreen() {
       name: data.fName,
     };
 
-    setCategories((prev) => [
-      ...prev,
-      mappedFolder,
-    ]);
+    setCategories((prev) => [...prev, mappedFolder]);
     setNewCategoryName("");
     setIsAddingCategory(false);
   };
 
   const handleDeleteCategory = async (categoryToDelete: string) => {
     const token = await Storage.getItem("token");
-    const categoryObj = categories.find((category) => category.name === categoryToDelete);
+    const categoryObj = categories.find(
+      (category) => category.name === categoryToDelete
+    );
+
+    //check if the folder is empty:
+    const checkEmpty = items.find((item) => item.category === categoryToDelete);
+    if (checkEmpty !== undefined) {
+      alert("This category must be empty to delete");
+      return;
+    }
 
     if (!categoryObj) {
       return;
@@ -368,17 +358,13 @@ export default function WishlistFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -389,7 +375,9 @@ export default function WishlistFolderScreen() {
       setCategories((prev) =>
         prev.filter((category) => category.name !== categoryToDelete)
       );
-      setItems((prev) => prev.filter((item) => item.category !== categoryToDelete));
+      setItems((prev) =>
+        prev.filter((item) => item.category !== categoryToDelete)
+      );
 
       if (selectedCategory === categoryToDelete) {
         setSelectedCategory("All");
@@ -399,9 +387,8 @@ export default function WishlistFolderScreen() {
         setEditingCategory(null);
         setEditedCategoryName("");
       }
-    }
-    catch(error) {
-      console.log("Error when trying to delete folder:", error)
+    } catch (error) {
+      console.log("Error when trying to delete folder:", error);
     }
   };
 
@@ -436,21 +423,18 @@ export default function WishlistFolderScreen() {
     const token = await Storage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/rename-w-folder`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            folderId: categoryId,
-            name: trimmed,
-          }),
-        }
-      );
+      const res = await fetch(`${API_URL}/api/rename-w-folder`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          folderId: categoryId,
+          name: trimmed,
+        }),
+      });
 
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
@@ -459,17 +443,13 @@ export default function WishlistFolderScreen() {
         }
         router.replace("/");
         return;
-      }
-
-      else if (res.status == 404) {
+      } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert(`Folder does not exist. Please try again later.`);
         }
         return;
-      }
-
-      else if (!res.ok) {
+      } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
           alert("Whoops! Something went wrong... please try again later.");
@@ -496,51 +476,204 @@ export default function WishlistFolderScreen() {
 
       setEditingCategory(null);
       setEditedCategoryName("");
-    }
-    catch(error) {
-      console.log("Error when trying to rename folder:", error)
+    } catch (error) {
+      console.log("Error when trying to rename folder:", error);
     }
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     const trimmed = newItemName.trim();
     if (trimmed.length === 0) {
       return;
     }
 
-    setItems((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: trimmed,
-        itemCount: 0,
-        category: selectedCategory === "All" ? "General" : selectedCategory,
-      },
-    ]);
-    setNewItemName("");
-    setIsAddingItem(false);
-  };
-
-  const handleDeleteItem = (itemId: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== itemId));
-
-    if (editingItemId === itemId) {
-      setEditingItemId(null);
-      setEditedItemName("");
-    }
-  };
-
-  const handleRenameItem = (itemId: string) => {
-    const trimmed = editedItemName.trim();
-    if (trimmed.length === 0) {
+    if (trimmed.length > 40) {
+      alert("The name of the item must be less than 40 characters");
       return;
     }
 
-    setItems((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, name: trimmed } : item))
-    );
-    setEditingItemId(null);
-    setEditedItemName("");
+    //Add item to the backend
+
+    if (!isAddingItem) {
+      //check if item is still being added -> should be true all the time
+      console.log("User is no longer adding an item");
+      return;
+    }
+
+    if (selectedCategory === "All") {
+      alert("Item has category 'All' -> cannot add this item");
+      return;
+    }
+    //Send item name and category to backend
+
+    //token
+    const token = await Storage.getItem("token");
+
+    const newItem = {
+      itemName: trimmed.trim(),
+      itemCategory: selectedCategory.trim(),
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/api/add-wishlist-item`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(newItem),
+      });
+
+      //Get success code
+      if (!response.ok) {
+        alert("Could not add item. Try again later");
+        return;
+      }
+
+      const data = await response.json();
+
+      setItems((prev) => [
+        ...prev,
+        {
+          id: data.item.fld_item_pk,
+          name: trimmed,
+          itemCount: 0,
+          category: selectedCategory === "All" ? "General" : selectedCategory,
+        },
+      ]);
+    } catch (error) {
+      console.log("Error adding wishlist item: ", error);
+      alert("Could not add wishlist item. Please try again later.");
+    } finally {
+      setNewItemName("");
+      setIsAddingItem(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      const token = await Storage.getItem("token");
+
+      const response = await fetch(`${API_URL}/api/delete-wishlist-item`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ itemID: itemId }),
+      });
+
+      if (!response.ok) {
+        alert("Error while removing item. Try again later.");
+        return;
+      }
+
+      setItems((prev) => prev.filter((item) => item.id !== itemId));
+    } catch (e) {
+      console.log("Error when deleting wishlist item: ", e);
+      return;
+    } finally {
+      if (editingItemId === itemId) {
+        setEditingItemId(null);
+        setEditedItemName("");
+      }
+    }
+  };
+
+  const handleEditItem = async (item: WishlistItem) => {
+    try {
+      if (isEditing.current) {
+        return;
+      }
+      isEditing.current = true;
+
+      const itemId = item.id;
+      let updateName = true;
+      let updateCount = true;
+      let regex = /^\d+$/;
+      const token = await Storage.getItem("token");
+
+      const trimmed = editedItemName.trim();
+      if (trimmed.length === 0) {
+        return;
+      }
+
+      if (trimmed.length > 40) {
+        alert("Title of item must be less than 40 characters");
+        return;
+      }
+
+      const newCount = editedItemCount.trim();
+
+      if (!regex.test(newCount)) {
+        //The entered quantity is not a digit
+        alert("Please enter a whole number for quantity");
+        return;
+      }
+
+      if (Number(newCount) > 999) {
+        alert("Quantity must not exceed 999");
+        return;
+      }
+
+      if (item.itemCount === Number(newCount)) {
+        // Item count was not changed
+        updateCount = false;
+      }
+
+      if (item.name === trimmed) {
+        //The entered name is not new
+        updateName = false;
+      }
+
+      if (!updateCount && !updateName) {
+        console.log("Nothing to update!");
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/edit-wishlist-item`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itemID: itemId,
+          newName: trimmed,
+          newCount: newCount,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        alert("Server error occured. Please try again later.");
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((updateItem) =>
+          updateItem.id === itemId
+            ? {
+                ...updateItem,
+                name: updateName ? trimmed : updateItem.name,
+                itemCount: updateCount
+                  ? Number(newCount)
+                  : updateItem.itemCount,
+              }
+            : updateItem
+        )
+      );
+    } catch (e) {
+      alert("Unable to update item. Please try again later");
+      return;
+    } finally {
+      setEditingItemId(null);
+      setEditedItemName("");
+      setEditedItemCount("");
+      isEditing.current = false;
+    }
   };
 
   return (
@@ -552,18 +685,23 @@ export default function WishlistFolderScreen() {
     >
       <View style={styles.headerRow}>
         <View style={styles.headerSide}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
             accessible={true}
             accessibilityLabel={"Go Back"}
             accessibilityHint={"Navigates back to the previous page."}
-            accessibilityRole={"button"}>
+            accessibilityRole={"button"}
+          >
             <Feather name="arrow-left" size={22} color={colors.text} />
           </Pressable>
         </View>
         <View style={styles.headerCenter}>
-          <Text style={[styles.title, { color: colors.text }]}
+          <Text
+            style={[styles.title, { color: colors.text }]}
             accessible={true}
-            accessibilityRole={"header"}>
+            accessibilityRole={"header"}
+          >
             Wishlist
           </Text>
         </View>
@@ -590,9 +728,15 @@ export default function WishlistFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={isCategoryEditMode ? "Stop editing" : "Edit"}
-            accessibilityHint={isCategoryEditMode ? "Double tap to disable editing mode." : "Double tap to delete and edit wishlist categories and items."}
+            accessibilityHint={
+              isCategoryEditMode
+                ? "Double tap to disable editing mode."
+                : "Double tap to delete and edit wishlist categories and items."
+            }
             accessibilityRole={"button"}
-            accessibilityState={isCategoryEditMode ? {checked:true} : {checked:false}}
+            accessibilityState={
+              isCategoryEditMode ? { checked: true } : { checked: false }
+            }
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
@@ -622,9 +766,17 @@ export default function WishlistFolderScreen() {
             ]}
             onPress={() => setSelectedCategory("All")}
             accessible={true}
-            accessibilityHint={selectedCategory === "All" ? "Shows all wishlist items." : "Double tap to show all wishlist items."}
+            accessibilityHint={
+              selectedCategory === "All"
+                ? "Shows all wishlist items."
+                : "Double tap to show all wishlist items."
+            }
             accessibilityRole={"tab"}
-            accessibilityState={selectedCategory === "All" ? {checked:true} : {checked:false}}
+            accessibilityState={
+              selectedCategory === "All"
+                ? { checked: true }
+                : { checked: false }
+            }
           >
             <Text
               style={[
@@ -673,30 +825,40 @@ export default function WishlistFolderScreen() {
                 style={[
                   styles.categoryTab,
                   {
-                   backgroundColor: isSelected
-                     ? colors.decorativeBackground
+                    backgroundColor: isSelected
+                      ? colors.decorativeBackground
                       : colors.boxBackground,
                     borderColor: colors.topBackground,
                   },
-                ]}>
+                ]}
+              >
                 <View style={styles.categoryTabContent}>
                   <Pressable
-                  key={category.id}
-                  onPress={() => {
-                    if (isCategoryEditMode) {
-                      setEditingCategory(category.id);
-                      setEditedCategoryName(category.name);
-                      return;
+                    key={category.id}
+                    onPress={() => {
+                      if (isCategoryEditMode) {
+                        setEditingCategory(category.id);
+                        setEditedCategoryName(category.name);
+                        return;
+                      }
+                      setSelectedCategory(category.name);
+                    }}
+                    accessible={true}
+                    accessibilityHint={
+                      selectedCategory === category.name && !isCategoryEditMode
+                        ? "Shows wishlist items within the " +
+                          category.name + " category" : !isCategoryEditMode ?
+                         "Double tap to show wishlist items within the " +
+                          category.name + " category" :
+                          "Double tap to edit " + category.name + " category"
                     }
-                    setSelectedCategory(category.name);
-                  }}
-                  accessible={true}
-                  accessibilityHint={selectedCategory === category.name ? "Shows wishlist items within the " + category.name + " category" :
-                    "Double tap to show wishlist items within the " + category.name + " category"
-                  }
-                  accessibilityRole={"tab"}
-                  accessibilityState={selectedCategory === category.name ? {checked:true} : {checked:false}}
-                >
+                    accessibilityRole={"tab"}
+                    accessibilityState={
+                      selectedCategory === category.name
+                        ? { checked: true }
+                        : { checked: false }
+                    }
+                  >
                     <View
                       style={[
                         styles.editableCategoryBox,
@@ -710,7 +872,9 @@ export default function WishlistFolderScreen() {
                         style={[
                           styles.categoryTabText,
                           {
-                            color: isSelected ? colors.decorativeText : colors.text,
+                            color: isSelected
+                              ? colors.decorativeText
+                              : colors.text,
                           },
                         ]}
                       >
@@ -728,7 +892,11 @@ export default function WishlistFolderScreen() {
                       style={styles.categoryDeleteButton}
                       accessible={true}
                       accessibilityLabel={"Delete"}
-                      accessibilityHint={"Delete " + category.name + " category and its wishlist items"}
+                      accessibilityHint={
+                        "Delete " +
+                        category.name +
+                        " category and its wishlist items"
+                      }
                       accessibilityRole={"button"}
                     >
                       <Feather
@@ -783,7 +951,7 @@ export default function WishlistFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={"Add category"}
-            accessibilityHint={"Add a craft category to hold wishlist items"}
+            accessibilityHint={isCategoryEditMode ? "Disable editing to add a category." : "Add a craft category to hold wishlist items"}
             accessibilityRole={"button"}
           >
             <Feather name="plus" size={14} color={colors.text} />
@@ -791,7 +959,12 @@ export default function WishlistFolderScreen() {
         </ScrollView>
 
         <View style={[styles.searchBar, { borderColor: colors.topBackground }]}>
-          <Feather name="search" size={16} color={colors.settingsText} accessible={false}/>
+          <Feather
+            name="search"
+            size={16}
+            color={colors.settingsText}
+            accessible={false}
+          />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -803,11 +976,14 @@ export default function WishlistFolderScreen() {
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+            <Pressable
+              onPress={() => setSearchQuery("")}
+              hitSlop={10}
               accessible={true}
               accessibilityLabel={"Exit"}
               accessibilityHint={"Cancels and exits search"}
-              accessibilityRole={"button"}>
+              accessibilityRole={"button"}
+            >
               <Feather name="x" size={22} color={colors.settingsText} />
             </Pressable>
           )}
@@ -874,46 +1050,75 @@ export default function WishlistFolderScreen() {
                   }
                   setEditingItemId(item.id);
                   setEditedItemName(item.name);
+                  setEditedItemCount(String(item.itemCount));
                 }}
               >
                 {editingItemId === item.id ? (
-                  <TextInput
-                    value={editedItemName}
-                    onChangeText={setEditedItemName}
-                    placeholder="Rename item"
-                    placeholderTextColor={colors.settingsText}
-                    style={[
-                      styles.renameItemInput,
-                      {
-                        borderColor: colors.exploreBorder,
-                        backgroundColor:
-                          index % 2 === 0
-                            ? colors.boxBackground
-                            : colors.topBackground,
-                        color: colors.text,
-                      },
-                    ]}
-                    autoCorrect={false}
-                    autoCapitalize="words"
-                    returnKeyType="done"
-                    onSubmitEditing={() => handleRenameItem(item.id)}
-                    onBlur={() => {
-                      setEditingItemId(null);
-                      setEditedItemName("");
-                    }}
-                    autoFocus
-                  />
+                  <View>
+                    <TextInput
+                      value={editedItemName}
+                      onChangeText={setEditedItemName}
+                      maxLength={40}
+                      placeholder="Rename item"
+                      placeholderTextColor={colors.settingsText}
+                      style={[
+                        styles.renameItemInput,
+                        {
+                          borderColor: colors.exploreBorder,
+                          backgroundColor:
+                            index % 2 === 0
+                              ? colors.boxBackground
+                              : colors.topBackground,
+                          color: colors.text,
+                        },
+                      ]}
+                      autoCorrect={false}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                      onSubmitEditing={() => secondTextInput.current?.focus()}
+                      blurOnSubmit={false}
+                      autoFocus
+                    />
+                    <TextInput
+                      ref={secondTextInput}
+                      value={editedItemCount}
+                      onChangeText={setEditedItemCount}
+                      placeholder="Quantity"
+                      maxLength={3}
+                      placeholderTextColor={colors.settingsText}
+                      style={[
+                        styles.renameItemInput,
+                        {
+                          borderColor: colors.exploreBorder,
+                          backgroundColor:
+                            index % 2 === 0
+                              ? colors.boxBackground
+                              : colors.topBackground,
+                          color: colors.text,
+                        },
+                      ]}
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => handleEditItem(item)}
+                      onBlur={() => handleEditItem(item)}
+                      blurOnSubmit={true}
+                    />
+                  </View>
                 ) : (
-                  <Text
-                    style={[styles.itemName, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {item.name}
-                  </Text>
+                  <View>
+                    <Text
+                      style={[styles.itemName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={[styles.itemMeta, { color: colors.settingsText }]}
+                    >
+                      {item.itemCount} items
+                    </Text>
+                  </View>
                 )}
-                <Text style={[styles.itemMeta, { color: colors.settingsText }]}>
-                  {item.itemCount} items
-                </Text>
               </Pressable>
               {isCategoryEditMode ? (
                 <Pressable
@@ -922,7 +1127,9 @@ export default function WishlistFolderScreen() {
                   style={styles.itemDeleteButton}
                   accessible={true}
                   accessibilityLabel={"Delete"}
-                  accessibilityHint={"Delete " + item.name + " category and its wishlist items"}
+                  accessibilityHint={
+                    "Delete " + item.name + " category and its wishlist items"
+                  }
                   accessibilityRole={"button"}
                 >
                   <Feather name="x" size={22} color={colors.text} />
@@ -955,7 +1162,11 @@ export default function WishlistFolderScreen() {
           onPress={() => setIsAddingItem(true)}
           accessible={true}
           accessibilityLabel={"Add Wishlist Item"}
-          accessibilityHint={"Double tap to add a wishlist item under " + selectedCategory + " category."}
+          accessibilityHint={
+            "Double tap to add a wishlist item under " +
+            selectedCategory +
+            " category."
+          }
           accessibilityRole={"button"}
         >
           <Feather name="plus" size={24} color={colors.decorativeText} />

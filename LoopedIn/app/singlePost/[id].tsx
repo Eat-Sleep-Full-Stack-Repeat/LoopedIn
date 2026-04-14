@@ -23,6 +23,7 @@ import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
+import { reasons } from "@/components/reportReasons";
 
 type PhotoCard = {
   pic: string;
@@ -74,8 +75,13 @@ export default function SinglePost() {
   const [imageIndex, setImageIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
 
+  //for report menu handling
+  const [reportMenuVisible, setReportMenuVisible] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
+
   //for triple-dot handling
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   //comments
   const [areCommentsVisible, setAreCommentsVisible] = useState(false);
@@ -338,12 +344,63 @@ export default function SinglePost() {
         alert("Error while deleting the post. Please try again later.");
         return;
       }
+
+      setShowDeleteSuccess(true);
     } catch (e) {
       console.log("Error when deleting post", e);
-    } finally {
-      router.back();
     }
   };
+
+  const handleDeleteSuccessYes = () => {
+    setShowDeleteSuccess(false);
+    router.replace("/newpost");
+  };
+
+  const handleDeleteSuccessNo = () => {
+    setShowDeleteSuccess(false);
+    router.replace("/userProfile");
+  };
+
+
+  //handle post reporting
+  const handleReport = async (reason: string) => {
+    console.log("reason chosen:", reason)
+
+    setReportSending(true)
+
+    setReportMenuVisible(false)
+    const token = await Storage.getItem("token")
+
+    try {
+      const response = await fetch(`${API_URL}/api/report/posts/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({reason: reason}),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(`Error: ${data.message}`)
+        return;
+      }
+
+      alert("Post successfully reported!")
+
+    }
+    catch(error) {
+      alert(`Error reporting post: ${error}`)
+      return
+    }
+    finally {
+      setReportSending(false)
+    }
+  }
+
 
   //begin the REAL UI
   const thisIsMyPost = currentUser === post.creatorID;
@@ -699,15 +756,15 @@ export default function SinglePost() {
               <TouchableOpacity
                 onPress={() => {
                   setMenuVisible(false);
-                  console.log("Report pressed (not implemented yet)");
+                  setReportMenuVisible(true);
                 }}
                 style={styles.menuOption}
                 accessible={true}
                 accessibilityLabel={"Report"}
                 accessibilityHint={"Double tap to report this explore post to LoopedIn moderators."}
               >
-                <Feather name="flag" size={18} color={colors.warning} />
-                <Text style={[styles.menuText, { color: colors.warning }]}>
+                <Feather name="flag" size={18} color={colors.text} />
+                <Text style={[styles.menuText, { color: colors.text }]}>
                   Report
                 </Text>
               </TouchableOpacity>
@@ -718,10 +775,10 @@ export default function SinglePost() {
               accessibilityRole="button"
               accessibilityLabel="Close menu"
               accessibilityHint="Double tap to exit explore post menu"
-              style={{marginTop: 10, padding: 8, backgroundColor: colors.blockedBackground, borderRadius: 12, width: "100%",
+              style={{marginTop: 10, padding: 8, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
                       alignItems: "center"}}
             >
-              <Text style={[styles.menuText, { color: colors.text}]}>Close</Text>
+              <Text style={[styles.menuText, { color: colors.cancel}]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -736,6 +793,125 @@ export default function SinglePost() {
         currentPost={currentPost.current}
         postCreator={creatorID.current}
       ></ExploreCommentsModal>
+      {showDeleteSuccess ? (
+        <View
+          style={[
+            styles.successBackdrop,
+            {
+              backgroundColor: `${colors.background}E6`,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.successCard,
+              {
+                backgroundColor: colors.boxBackground,
+                borderColor: colors.blockedBackground,
+              },
+            ]}
+          >
+            <Text style={[styles.successTitle, { color: colors.text }]}>
+              Successfully Deleted!
+            </Text>
+            <Text style={[styles.successDescription, { color: colors.settingsText }]}>
+              Ready to start a new post?
+            </Text>
+            <View style={styles.successButtonRow}>
+              <Pressable
+                onPress={handleDeleteSuccessYes}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.activeContainer },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.background },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteSuccessNo}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.disabledButton },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.disabledButtonText },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {/*report modal */}
+      <Modal
+        transparent
+        visible={reportMenuVisible}
+        animationType="fade"
+        onRequestClose={() => setReportMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          accessible={false}
+        >
+          <View
+            style={[
+              styles.reportMenuContainer,
+              { backgroundColor: colors.exploreCardBackground },
+            ]}
+          >
+            <View style={{paddingBottom: 20}}>
+              <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+            </View>
+
+            <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+            {reasons.map((reason) => (
+              <View style={{flexDirection: "column"}} key={reason}>
+                <TouchableOpacity
+                  onPress={() => handleReport(reason)}
+                  style={styles.menuOption}
+                  key={reason}
+                  disabled={reportSending}
+                  accessible={true}
+                  accessibilityLabel={`Reason option: ${reason}`}
+                  accessibilityHint={"Double tap to report post for this reason."}
+                >
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    {reason}
+                  </Text>
+                </TouchableOpacity>
+                {/*line separator guy */}
+                <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              onPress={() => setReportMenuVisible(false)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              accessibilityHint="Double tap to exit report menu"
+              style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
+                      alignItems: "center"}}
+            >
+              <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -860,5 +1036,62 @@ const styles = StyleSheet.create({
   },
   imageCountText: {
     fontSize: 14,
+  },
+  reportMenuContainer: {
+    width: 320,
+    borderRadius: 12,
+    paddingTop: 30,
+    paddingBottom: 15,
+    paddingHorizontal: 15,
+  },
+  reportHeaderText: {
+    fontSize: 24,
+    textAlign: "center",
+  },
+  successBackdrop: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "center",
+    left: 0,
+    padding: 24,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 999,
+  },
+  successCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    maxWidth: 420,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    width: "100%",
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  successDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  successButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  successButton: {
+    alignItems: "center",
+    borderRadius: 999,
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  successButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

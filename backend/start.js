@@ -110,6 +110,7 @@ const postRouter = require("./api/post.js");
 const trackerRouter = require("./api/tracker");
 const inventoryRouter = require("./api/inventory");
 const wishlistRouter = require("./api/wishlist");
+const reportRouter = require("./api/report");
 
 //get ready to use that bad boy ("mount")
 app.use('/api/login', loginProcess);
@@ -123,6 +124,7 @@ app.use("/api", postRouter);
 app.use("/api", trackerRouter);
 app.use("/api", inventoryRouter);
 app.use("/api", wishlistRouter);
+app.use("/api", reportRouter)
 
 
 // -------------------- RUNNING SERVER --------------------------- 
