@@ -399,7 +399,7 @@ export default function ForumFeed() {
     craftTags: {
       flexDirection: "row",
       justifyContent: "space-between",
-      gap: 15,
+      gap: 10,
     },
     buttonPressed: {
       backgroundColor: colors.decorativeBackground,
@@ -410,9 +410,9 @@ export default function ForumFeed() {
       borderColor: colors.decorativeBackground,
     },
     buttonBase: {
-      padding: 10,
+      padding: 5,
       borderRadius: 50,
-      width: 90,
+      width: 85,
       alignItems: "center",
     },
     savedPostsHeader: {
@@ -545,7 +545,9 @@ export default function ForumFeed() {
         data={savedForumData}
         horizontal={true}
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => <ForumPostView postInfo={item} />}
+        renderItem={({ item }) => (
+          <ForumPostView postInfo={item} hasSideBar={true} />
+        )}
         contentContainerStyle={{
           gap: 15,
           marginBottom: 20,
@@ -625,7 +627,13 @@ export default function ForumFeed() {
               return <ActivityIndicator size="small" color={colors.text} />;
             } else {
               return (
-                <View style={{ paddingVertical: 40, marginLeft: 50 }}>
+                <View
+                  style={{
+                    paddingVertical: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Text
                     style={{ color: colors.settingsText, fontWeight: "bold" }}
                   >

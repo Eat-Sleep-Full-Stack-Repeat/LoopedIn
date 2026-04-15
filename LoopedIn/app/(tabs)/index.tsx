@@ -75,7 +75,13 @@ export default function Index() {
     >
       <ActivityIndicator size="large" color={colors.text} />
 
-      <Text style={{ color: colors.text, marginTop: 10 }}>
+      <Text
+        style={{
+          color: colors.text,
+          marginTop: 10,
+          fontSize: size.font.bodyText,
+        }}
+      >
         Checking login...
       </Text>
 
@@ -87,7 +93,10 @@ export default function Index() {
           marginTop: 20,
         }}
       >
-        <Text style={{ color: colors.text }}> Dark Mode? </Text>
+        <Text style={{ color: colors.text, fontSize: size.font.bodyText }}>
+          {" "}
+          Dark Mode?{" "}
+        </Text>
         <Switch
           onValueChange={toggleSwitch}
           trackColor={{ false: "#767577", true: "#E0D5DD" }}

@@ -660,6 +660,7 @@ export default function FolderScreen() {
       borderRadius: 12,
       padding: 12,
       marginBottom: 15,
+      color: colors.text,
     },
     iconRow: {
       flexDirection: "row",
@@ -956,6 +957,7 @@ export default function FolderScreen() {
               value={folderName}
               onChangeText={setFolderName}
               placeholder="Enter name"
+              placeholderTextColor={colors.inputContainerPlaceholderText}
               style={styles.input}
             />
 

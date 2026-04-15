@@ -102,15 +102,6 @@ export default function SinglePost() {
     getPost();
   }, []);
 
-  //reload upon return from editing
-  // useEffect(() => {
-  //   if (!updatedCaption) return;
-
-  //   setPostInfo(prev =>
-  //     prev ? { ...prev, content: updatedCaption } : prev
-  //   );
-  // }, [updatedCaption, editVersion]);
-
   useEffect(() => {
     if (updatedCaption && post) {
       setPostInfo({ ...post, content: updatedCaption });
@@ -922,13 +913,22 @@ export default function SinglePost() {
               },
             ]}
           >
-            <Text style={[styles.successTitle, { color: colors.text }]}>
+            <Text
+              style={[
+                styles.successTitle,
+                {
+                  color: colors.text,
+                  fontSize: size.font.titleText,
+                  fontWeight: size.weight.largeTitle,
+                },
+              ]}
+            >
               Successfully Deleted!
             </Text>
             <Text
               style={[
                 styles.successDescription,
-                { color: colors.settingsText },
+                { color: colors.settingsText, fontSize: size.font.button },
               ]}
             >
               Ready to start a new post?
@@ -942,10 +942,11 @@ export default function SinglePost() {
                 ]}
               >
                 <Text
-                  style={[
-                    styles.successButtonText,
-                    { color: colors.background },
-                  ]}
+                  style={{
+                    color: colors.disabledButtonText,
+                    fontSize: size.font.button,
+                    fontWeight: size.weight.largeTitle,
+                  }}
                 >
                   Yes
                 </Text>
@@ -958,10 +959,11 @@ export default function SinglePost() {
                 ]}
               >
                 <Text
-                  style={[
-                    styles.successButtonText,
-                    { color: colors.disabledButtonText },
-                  ]}
+                  style={{
+                    color: colors.disabledButtonText,
+                    fontSize: size.font.button,
+                    fontWeight: size.weight.largeTitle,
+                  }}
                 >
                   No
                 </Text>
@@ -1197,13 +1199,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   successTitle: {
-    fontSize: 24,
-    fontWeight: "700",
     marginBottom: 12,
     textAlign: "center",
   },
   successDescription: {
-    fontSize: 16,
     lineHeight: 24,
     marginBottom: 20,
     textAlign: "center",
@@ -1218,9 +1217,5 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingVertical: 14,
-  },
-  successButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
   },
 });

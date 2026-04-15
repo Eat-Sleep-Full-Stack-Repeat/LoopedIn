@@ -174,9 +174,8 @@ export default function Login() {
       <View
         style={{
           flex: 1,
-          justifyContent: "flex-start",
+          justifyContent: "center",
           alignItems: "center",
-          paddingTop: "30%",
         }}
       >
         <Text
@@ -435,8 +434,8 @@ export default function Login() {
             <Text
               style={{
                 color: colors.text,
-                fontSize: 24,
-                fontWeight: "700",
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
                 marginBottom: 12,
                 textAlign: "center",
               }}
@@ -446,7 +445,7 @@ export default function Login() {
             <Text
               style={{
                 color: colors.settingsText,
-                fontSize: 16,
+                fontSize: size.font.button,
                 lineHeight: 24,
                 marginBottom: 20,
                 textAlign: "center",
@@ -469,8 +468,8 @@ export default function Login() {
               <Text
                 style={{
                   color: colors.background,
-                  fontSize: 16,
-                  fontWeight: "700",
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
                   lineHeight: 20,
                 }}
               >

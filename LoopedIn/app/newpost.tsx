@@ -718,13 +718,13 @@ export default function NewPost() {
       width: "100%",
     },
     successTitle: {
-      fontSize: 24,
-      fontWeight: "700",
+      fontSize: size.font.titleText,
+      fontWeight: size.weight.largeTitle,
       marginBottom: 12,
       textAlign: "center",
     },
     successDescription: {
-      fontSize: 16,
+      fontSize: size.font.button,
       lineHeight: 24,
       marginBottom: 20,
       textAlign: "center",
@@ -743,8 +743,8 @@ export default function NewPost() {
       paddingVertical: 14,
     },
     successButtonText: {
-      fontSize: 16,
-      fontWeight: "700",
+      fontSize: size.font.button,
+      fontWeight: size.weight.largeTitle,
       lineHeight: 20,
     },
     singleOverlayButton: {
