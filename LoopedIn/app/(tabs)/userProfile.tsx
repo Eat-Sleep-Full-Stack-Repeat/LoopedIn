@@ -715,7 +715,7 @@ export default function UserProfile() {
     await Storage.removeItem("token");
 
     setTimeout(() => {
-      router.push("/"); //index for dev purposes; later should be login
+      router.replace("/login"); //index for dev purposes; later should be login
       setSettingsOpen(false);
     }, 0);
 
@@ -749,7 +749,7 @@ export default function UserProfile() {
             You need to log in to access this page.
           </Text>
           <TouchableOpacity
-            onPress={() => router.push("/login")}
+            onPress={() => router.replace("/login")}
             style={[s.primaryBtn, { paddingHorizontal: 20, minWidth: 160 }]}
           >
             <Text style={s.primaryBtnText}>Go to Log In</Text>

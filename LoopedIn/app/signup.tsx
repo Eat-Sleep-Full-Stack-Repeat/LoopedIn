@@ -116,7 +116,7 @@ export default function Login() {
 
       if (data.token) {
         await Storage.setItem("token", data.token);
-        router.push("/userProfile"); // Redirect on success
+        router.replace("/userProfile"); // Redirect on success
       } else {
         console.log("Sign-up failed:", data.message);
         alert(data.message);
@@ -324,7 +324,7 @@ export default function Login() {
       >
         {/*Login*/}
         <Text style={{ color: colors.text }}> Already have an account? </Text>
-        <TouchableOpacity onPress={() => router.push("/login")}
+        <TouchableOpacity onPress={() => router.replace("/login")}
           accessible={true}
           accessibilityHint={"Double tap to navigate to the log in page."}
           accessibilityRole={"button"}>

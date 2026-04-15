@@ -3,10 +3,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
-import {
-  Pressable,
-  View,
-} from "react-native";
+import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 //variable to store the size of icons
@@ -21,19 +18,44 @@ type IconProps = {
 
 //array of objects for the nav bar icons
 const icons: Record<string, IconProps> = {
-  userProfile: { name: "account", size: ICONSIZE + 2, label: "Profile", hint: "account page" },
-  forumFeed: { name: "forum", size: ICONSIZE, label: "Forums", hint: "forum feed" },
-  mystuff: { name: "bag-personal", size: ICONSIZE, label: "My Stuff", hint: "inventory and wishlist page" },
-  explore: { name: "home", size: ICONSIZE + 3, label: "Explore", hint: "posts feed" },
-  folderscreen: { name: "notebook", size: ICONSIZE, label: "Project Tracker", hint: "project folder page" },
-  index: { name: "cake", size: ICONSIZE, label: "Dev Screen yippee", hint: "this will be deleted page" },
+  userProfile: {
+    name: "account",
+    size: ICONSIZE + 2,
+    label: "Profile",
+    hint: "account page",
+  },
+  forumFeed: {
+    name: "forum",
+    size: ICONSIZE,
+    label: "Forums",
+    hint: "forum feed",
+  },
+  mystuff: {
+    name: "bag-personal",
+    size: ICONSIZE,
+    label: "My Stuff",
+    hint: "inventory and wishlist page",
+  },
+  explore: {
+    name: "home",
+    size: ICONSIZE + 3,
+    label: "Explore",
+    hint: "posts feed",
+  },
+  folderscreen: {
+    name: "notebook",
+    size: ICONSIZE,
+    label: "Project Tracker",
+    hint: "project folder page",
+  },
 };
 
-// Bottom tab bar style
-function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const insets = useSafeAreaInsets();
+
+  const visibleRoutes = state.routes.filter((route) => icons[route.name]);
 
   return (
     <View
@@ -49,10 +71,13 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         paddingBottom: insets.bottom,
       }}
     >
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
-        const label = options.title;
+      {visibleRoutes.map((route) => {
+        const iconConfig = icons[route.name];
+        if (!iconConfig) return null;
+
+        const originalIndex = state.routes.findIndex((r) => r.key === route.key);
+        const isFocused = state.index === originalIndex;
+
         return (
           <Pressable
             key={route.key}
@@ -61,8 +86,8 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             }}
             style={{ alignItems: "center", flex: 1 }}
             accessible={true}
-            accessibilityLabel={icons[route.name].label}
-            accessibilityHint={"Navigates to the " + icons[route.name].hint}
+            accessibilityLabel={iconConfig.label}
+            accessibilityHint={"Navigates to the " + iconConfig.hint}
             accessibilityState={isFocused ? { selected: true } : { selected: false }}
             accessibilityRole={"menuitem"}
           >
@@ -70,7 +95,6 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               style={{
                 alignItems: "center",
                 justifyContent: "center",
-                // marginTop: 5,
                 height: ICONSIZE + 15,
                 width: ICONSIZE + 15,
               }}
@@ -84,13 +108,12 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                     position: "absolute",
                     borderRadius: ICONSIZE + 10,
                   }}
-                ></View>
-              ) : (
-                <></>
-              )}
+                />
+              ) : null}
+
               <MaterialCommunityIcons
-                name={icons[route.name].name}
-                size={icons[route.name].size}
+                name={iconConfig.name}
+                size={iconConfig.size}
                 color={colors.text}
               />
             </View>
@@ -110,19 +133,18 @@ export default function TabLayout() {
         animation: "none",
       }}
     >
-      {/* Link to the developers screen */}
       <Tabs.Screen
         name="index"
-        options={{ title: "Dev", tabBarAccessibilityLabel: "Development" }}
+        options={{
+          href: null,
+        }}
       />
 
-      {/* Link to the profile screen */}
       <Tabs.Screen
         name="userProfile"
         options={{ title: "Profile", tabBarAccessibilityLabel: "Profile page" }}
       />
 
-      {/* Link to the tracker screen */}
       <Tabs.Screen
         name="folderscreen"
         options={{
@@ -131,13 +153,11 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Link to the explore screen */}
       <Tabs.Screen
         name="explore"
         options={{ title: "Explore", tabBarAccessibilityLabel: "Explore page" }}
       />
 
-      {/* Link to the Forum Feed screen */}
       <Tabs.Screen
         name="forumFeed"
         options={{
@@ -146,7 +166,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Link to the mystuff screen (inventory + wishlist) */}
       <Tabs.Screen
         name="mystuff"
         options={{ headerShown: false, animation: "none" }}
