@@ -280,10 +280,14 @@ export default function ExplorePage() {
       } else if (!response.ok) {
         const txt = await response.text().catch(() => "");
         console.log("Explore fetch failed:", response.status, txt);
-        alert(
-          "Error during post fetch from backend. You're probably not logged in."
-        );
-        router.replace("/");
+
+        if (response.status === 401 || response.status === 403) {
+          alert("You are not logged in.");
+          router.replace("/login");
+          return;
+        }
+
+        alert("Error loading posts.");
         return;
       }
 

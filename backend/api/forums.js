@@ -488,7 +488,10 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
       }
 
       console.log("successful post creation");
-      res.status(200).json({message: "successful post creation"})
+      res.status(200).json({
+        message: "successful post creation",
+        postId: postID.rows[0].fld_post_pk,
+      })
     }
 
     else {
@@ -519,7 +522,10 @@ router.post("/forum-post", upload.single("file"), authenticateToken, async (req,
 
 
       console.log("successful post creation");
-      res.status(200).json({message: "successful post creation"})
+      res.status(200).json({
+        message: "successful post creation",
+        postId: postID.rows[0].fld_post_pk,
+      })
     }
   }
 

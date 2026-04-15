@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
@@ -11,7 +17,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
 import { Feather, Entypo } from "@expo/vector-icons";
@@ -80,6 +89,7 @@ export default function MyPosts() {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   const size = useAppSize();
 
@@ -141,10 +151,7 @@ export default function MyPosts() {
           return;
         }
 
-        alert("Forum post successfully deleted!");
-
-        //for refreshing
-        router.replace("/myposts");
+        setShowDeleteSuccess(true);
       } catch (error) {
         alert("Server error. Please try again later.");
         console.log("Error editing post:", error);
@@ -390,6 +397,16 @@ export default function MyPosts() {
     }
   }, [refreshing]);
 
+  const handleDeleteSuccessNo = () => {
+    setShowDeleteSuccess(false);
+    router.replace("/myposts");
+  };
+
+  const handleDeleteSuccessYes = () => {
+    setShowDeleteSuccess(false);
+    router.push("/newforumpost");
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -523,6 +540,52 @@ export default function MyPosts() {
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
+    },
+    successBackdrop: {
+      alignItems: "center",
+      bottom: 0,
+      justifyContent: "center",
+      left: 0,
+      padding: 24,
+      position: "absolute",
+      right: 0,
+      top: 0,
+      zIndex: 999,
+    },
+    successCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      maxWidth: 420,
+      paddingHorizontal: 24,
+      paddingVertical: 28,
+      width: "100%",
+    },
+    successTitle: {
+      fontSize: 24,
+      fontWeight: "700",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    successDescription: {
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    successButtonRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    successButton: {
+      alignItems: "center",
+      borderRadius: 999,
+      flex: 1,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+    },
+    successButtonText: {
+      fontSize: 16,
+      fontWeight: "700",
     },
   });
 
@@ -704,6 +767,73 @@ export default function MyPosts() {
       >
         <BottomFab />
       </Pressable>
+
+      {showDeleteSuccess ? (
+        <View
+          style={[
+            styles.successBackdrop,
+            {
+              backgroundColor: `${colors.background}E6`,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.successCard,
+              {
+                backgroundColor: colors.boxBackground,
+                borderColor: colors.blockedBackground,
+              },
+            ]}
+          >
+            <Text style={[styles.successTitle, { color: colors.text }]}>
+              Successfully Deleted!
+            </Text>
+            <Text
+              style={[
+                styles.successDescription,
+                { color: colors.settingsText },
+              ]}
+            >
+              Ready to start a new forum?
+            </Text>
+            <View style={styles.successButtonRow}>
+              <Pressable
+                onPress={handleDeleteSuccessYes}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.activeContainer },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.background },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteSuccessNo}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.disabledButton },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.disabledButtonText },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

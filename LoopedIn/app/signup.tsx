@@ -1,11 +1,17 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Text, TextInput, TouchableOpacity, View, Pressable} from "react-native";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Pressable,
+} from "react-native";
 import { useState } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from "@/utils/config";
-import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
+import Ionicons from "@expo/vector-icons/Ionicons"; //for password visibility
 import { useAppSize } from "@/Hooks/useSize";
 
 export default function Login() {
@@ -119,7 +125,7 @@ export default function Login() {
 
       if (data.token) {
         await Storage.setItem("token", data.token);
-        router.push("/userProfile"); // Redirect on success
+        router.replace("/userProfile"); // Redirect on success
       } else {
         console.log("Sign-up failed:", data.message);
         alert(data.message);
@@ -345,7 +351,7 @@ export default function Login() {
           Already have an account?
         </Text>
         <TouchableOpacity
-          onPress={() => router.push("/login")}
+          onPress={() => router.replace("/login")}
           accessible={true}
           accessibilityHint={"Double tap to navigate to the log in page."}
           accessibilityRole={"button"}

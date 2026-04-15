@@ -49,12 +49,6 @@ const icons: Record<string, IconProps> = {
     label: "Project Tracker",
     hint: "project folder page",
   },
-  index: {
-    name: "cake",
-    size: ICONSIZE,
-    label: "Dev Screen",
-    hint: "this will be deleted page",
-  },
 };
 
 // Bottom tab bar style
@@ -69,6 +63,7 @@ function CustomTabBar({
   const insets = useSafeAreaInsets();
 
   const size = useAppSize();
+  const visibleRoutes = state.routes.filter((route) => icons[route.name]);
 
   return (
     <View
@@ -101,10 +96,13 @@ function CustomTabBar({
         </Text>
       ) : null}
 
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
-        const label = options.title;
+      {visibleRoutes.map((route) => {
+        const iconConfig = icons[route.name];
+        if (!iconConfig) return null;
+
+        const originalIndex = state.routes.findIndex((r) => r.key === route.key);
+        const isFocused = state.index === originalIndex;
+
         return (
           <Pressable
             key={route.key}
@@ -122,11 +120,9 @@ function CustomTabBar({
               paddingHorizontal: 20,
             }}
             accessible={true}
-            accessibilityLabel={icons[route.name].label}
-            accessibilityHint={"Navigates to the " + icons[route.name].hint}
-            accessibilityState={
-              isFocused ? { selected: true } : { selected: false }
-            }
+            accessibilityLabel={iconConfig.label}
+            accessibilityHint={"Navigates to the " + iconConfig.hint}
+            accessibilityState={isFocused ? { selected: true } : { selected: false }}
             accessibilityRole={"menuitem"}
           >
             <View
@@ -141,24 +137,10 @@ function CustomTabBar({
                 marginVertical: isLargeScreen ? 5 : undefined,
               }}
             >
-              {/* TODO: delete this
-              {isFocused ? (
-                <View
-                  style={{
-                    backgroundColor: colors.secondaryButton,
-                    height: "100%",
-                    width: "100%",
-                    position: "absolute",
-                    borderRadius: ICONSIZE + 10,
-                  }}
-                ></View>
-              ) : (
-                <></>
-              )} */}
 
               <MaterialCommunityIcons
-                name={icons[route.name].name}
-                size={icons[route.name].size}
+                name={iconConfig.name}
+                size={iconConfig.size}
                 color={isFocused ? colors.decorativeBackground : colors.text}
               />
 
@@ -198,10 +180,11 @@ export default function TabLayout() {
         tabBarPosition: isLargeScreen ? "left" : "bottom",
       }}
     >
-      {/* Link to the developers screen */}
       <Tabs.Screen
         name="index"
-        options={{ title: "Dev", tabBarAccessibilityLabel: "Development" }}
+        options={{
+          href: null,
+        }}
       />
 
       <Tabs.Screen
@@ -209,7 +192,6 @@ export default function TabLayout() {
         options={{ title: "Profile", tabBarAccessibilityLabel: "Profile page" }}
       />
 
-      {/* Link to the tracker screen */}
       <Tabs.Screen
         name="folderscreen"
         options={{
@@ -218,13 +200,11 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Link to the explore screen */}
       <Tabs.Screen
         name="explore"
         options={{ title: "Explore", tabBarAccessibilityLabel: "Explore page" }}
       />
 
-      {/* Link to the Forum Feed screen */}
       <Tabs.Screen
         name="forumFeed"
         options={{
@@ -233,7 +213,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Link to the mystuff screen (inventory + wishlist) */}
       <Tabs.Screen
         name="mystuff"
         options={{ headerShown: false, animation: "none" }}

@@ -1,5 +1,7 @@
 import { SizeProvider } from "@/context/SizeContext";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { ServerStatusProvider } from "@/context/ServerStatusContext";
+import ServerDisconnectedOverlay from "@/components/ServerDisconnectedOverlay";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
@@ -12,84 +14,87 @@ export default function RootLayout() {
   return (
     <SizeProvider>
       <ThemeProvider>
-        <ThemedStatusBar />
-        <Stack>
-          <Stack.Screen
-            name="(tabs)"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          {/*<Stack.Screen name="otherUserProfile" options={{headerShown: false, animation: "none"}}/>*/}
-          <Stack.Screen
-            name="welcomePage"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="newforumpost"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          {/* <Stack.Screen name="singleForums" options={{headerShown: false, animation: "none"}}/> */}
-          <Stack.Screen
-            name="newpost"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="login"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="signup"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="editforum/[id]"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="editpost/[id]"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="editproject/[id]"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="myposts"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="savedposts"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="singlePost/[id]"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="exploreSearch"
-            options={{ headerShown: false, animation: "none" }}
-          />
+        <ServerStatusProvider>
+          <ThemedStatusBar />
+          <Stack>
+            <Stack.Screen
+              name="(tabs)"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            {/*<Stack.Screen name="otherUserProfile" options={{headerShown: false, animation: "none"}}/>*/}
+            <Stack.Screen
+              name="welcomePage"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="newforumpost"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            {/* <Stack.Screen name="singleForums" options={{headerShown: false, animation: "none"}}/> */}
+            <Stack.Screen
+              name="newpost"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="login"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="signup"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="editforum/[id]"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="editpost/[id]"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="editproject/[id]"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="myposts"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="savedposts"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="singlePost/[id]"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="exploreSearch"
+              options={{ headerShown: false, animation: "none" }}
+            />
 
-          <Stack.Screen
-            name="trackerFolder/[id]"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="singleProject/[id]"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="newproject"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="inventoryfolder"
-            options={{ headerShown: false, animation: "none" }}
-          />
-          <Stack.Screen
-            name="wishlistfolder"
-            options={{ headerShown: false, animation: "none" }}
-          />
-        </Stack>
+            <Stack.Screen
+              name="trackerFolder/[id]"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="singleProject/[id]"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="newproject"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="inventoryfolder"
+              options={{ headerShown: false, animation: "none" }}
+            />
+            <Stack.Screen
+              name="wishlistfolder"
+              options={{ headerShown: false, animation: "none" }}
+            />
+          </Stack>
+          <ServerDisconnectedOverlay />
+        </ServerStatusProvider>
       </ThemeProvider>
     </SizeProvider>
   );

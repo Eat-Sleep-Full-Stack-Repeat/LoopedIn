@@ -1,11 +1,17 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Text, TextInput, TouchableOpacity, View, Pressable } from "react-native";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Pressable,
+} from "react-native";
 import { useEffect, useState } from "react";
 import { Storage } from "../utils/storage";
-import API_URL from '../utils/config';
-import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
+import API_URL from "../utils/config";
+import Ionicons from "@expo/vector-icons/Ionicons"; //for password visibility
 import { useAppSize } from "@/Hooks/useSize";
 
 const REMEMBERED_EMAIL_KEY = "rememberedEmail";
@@ -18,6 +24,10 @@ export default function Login() {
   const [text, onChangeText] = useState("");
   const [password, onChangePassword] = useState("");
   const [rememberEmail, setRememberEmail] = useState(false);
+  const [loginErrorOverlay, setLoginErrorOverlay] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
 
   const size = useAppSize();
 
@@ -89,9 +99,11 @@ export default function Login() {
 
     //check is password is between 8 and 30 characters long
     if (password.length < 8) {
-      alert(
-        "Password contains fewer than 8 characters. Passwords must be 8-30 characters long and alphanumeric."
-      );
+      setLoginErrorOverlay({
+        title: "Invalid Password",
+        message:
+          "Use at least 8 characters and include a number in your password.",
+      });
       return;
     } else if (password.length > 30) {
       alert(
@@ -129,256 +141,345 @@ export default function Login() {
         } else {
           await Storage.removeItem(REMEMBERED_EMAIL_KEY);
         }
-
         await Storage.setItem("token", data.token); //store jwt info
-        router.push("/userProfile"); // Redirect on success
+        router.replace("/userProfile"); // Redirect on success
       } else {
         console.log("Login failed:", data.message);
+        if (data.message === "Incorrect password.") {
+          setLoginErrorOverlay({
+            title: "Wrong Password!",
+            message: "Oops! Wrong password. Give it another try.",
+          });
+          return;
+        }
+
         alert(data.message);
       }
     } catch (error) {
       console.log("Error during sign in:", error);
-      alert("Server error, please try again later.");
     }
   };
 
-  //---------------------------------------------------------------------------------
+  const handleLoginErrorConfirm = () => {
+    setLoginErrorOverlay(null);
+  };
 
   return (
     <View
       style={{
         flex: 1,
-        justifyContent: "flex-start",
-        alignItems: "center",
-        paddingTop: "30%",
         backgroundColor: colors.background,
       }}
     >
-      <Text
-        style={{
-          fontSize: size.font.welcomeText,
-          fontWeight: size.weight.largeTitle,
-          marginBottom: 40,
-          color: colors.decorativeBackground,
-        }}
-        accessible={true}
-        accessibilityRole={"header"}
-      >
-        Welcome Back!
-      </Text>
-
-      {/* Email*/}
       <View
         style={{
-          width: "80%",
-          alignItems: "flex-start",
+          flex: 1,
+          justifyContent: "flex-start",
+          alignItems: "center",
+          paddingTop: "30%",
         }}
       >
         <Text
           style={{
-            marginLeft: 10,
-            marginBottom: 5,
-            fontSize: size.font.headline,
-            color: colors.text,
+            fontSize: size.font.welcomeText,
+            fontWeight: size.weight.largeTitle,
+            marginBottom: 40,
+            color: colors.decorativeBackground,
           }}
+          accessible={true}
+          accessibilityRole={"header"}
         >
-          {" "}
-          Email{" "}
+          Welcome Back!
         </Text>
-        <TextInput
-          placeholder="example@email.com"
-          placeholderTextColor={colors.inputContainerPlaceholderText}
-          style={{
-            width: "100%",
-            height: 50,
-            backgroundColor: colors.background,
-            borderColor: colors.decorativeBackground,
-            borderWidth: 1,
-            borderRadius: 25,
-            marginBottom: 10,
-            paddingHorizontal: 10,
-            color: colors.text,
-            fontSize: size.font.bodyText,
-          }}
-          onChangeText={onChangeText}
-          value={text}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-      </View>
 
-      {/* Password*/}
-      <View
-        style={{
-          width: "80%",
-          alignItems: "flex-start",
-        }}
-      >
-        <Text
-          style={{
-            marginLeft: 10,
-            marginBottom: 5,
-            fontSize: size.font.headline,
-            color: colors.text,
-          }}
-        >
-          Password
-        </Text>
+        {/* Email*/}
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            width: "100%",
-            height: 50,
-            borderColor: colors.decorativeBackground,
-            backgroundColor: colors.background,
-            borderWidth: 1,
-            borderRadius: 25,
-            paddingHorizontal: 10,
+            width: "80%",
+            alignItems: "flex-start",
           }}
         >
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor={colors.inputContainerPlaceholderText}
-            secureTextEntry={passwordVisible}
+          <Text
             style={{
-              flex: 1,
+              marginLeft: 10,
+              marginBottom: 5,
+              fontSize: size.font.headline,
+              color: colors.text,
+            }}
+          >
+            {" "}
+            Email{" "}
+          </Text>
+          <TextInput
+            placeholder="example@email.com"
+            placeholderTextColor={colors.inputContainerPlaceholderText}
+            style={{
+              width: "100%",
+              height: 50,
+              backgroundColor: colors.background,
+              borderColor: colors.decorativeBackground,
+              borderWidth: 1,
+              borderRadius: 25,
+              marginBottom: 10,
+              paddingHorizontal: 10,
               color: colors.text,
               fontSize: size.font.bodyText,
             }}
-            onChangeText={onChangePassword}
-            value={password}
+            onChangeText={onChangeText}
+            value={text}
             autoCorrect={false}
             autoCapitalize="none"
           />
-          <Pressable
-            onPress={() => setPasswordVisible(!passwordVisible)}
-            accessible={true}
-            accessibilityLabel={
-              passwordVisible ? "View password" : "Stop viewing password"
-            }
-            accessibilityRole={"button"}
-          >
-            <Text>
-              <Ionicons
-                name={passwordVisible ? "eye-off" : "eye"}
-                size={size.iconSize + 2}
-                color={colors.text}
-                style={{ marginHorizontal: 10 }}
-              />{" "}
-              {/* The eye emoji in the password section */}{" "}
-            </Text>
-          </Pressable>
         </View>
+
+        {/* Password*/}
         <View
           style={{
-            width: "100%",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginTop: 5,
+            width: "80%",
+            alignItems: "flex-start",
           }}
         >
-          <Pressable
-            onPress={() => setRememberEmail((previous) => !previous)}
-            accessible={true}
-            accessibilityRole={"checkbox"}
-            accessibilityState={{ checked: rememberEmail }}
+          <Text
+            style={{
+              marginLeft: 10,
+              marginBottom: 5,
+              fontSize: size.font.headline,
+              color: colors.text,
+            }}
+          >
+            Password
+          </Text>
+          <View
             style={{
               flexDirection: "row",
               alignItems: "center",
+              width: "100%",
+              height: 50,
+              borderColor: colors.decorativeBackground,
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderRadius: 25,
+              paddingHorizontal: 10,
             }}
           >
-            <Ionicons
-              name={rememberEmail ? "checkbox" : "square-outline"}
-              size={size.iconSize + 2}
-              color={colors.text}
-              style={{ marginRight: 8 }}
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={colors.inputContainerPlaceholderText}
+              secureTextEntry={passwordVisible}
+              style={{
+                flex: 1,
+                color: colors.text,
+                fontSize: size.font.bodyText,
+              }}
+              onChangeText={onChangePassword}
+              value={password}
+              autoCorrect={false}
+              autoCapitalize="none"
             />
-            <Text style={{ color: colors.text, fontSize: size.font.button }}>
-              Remember email
-            </Text>
-          </Pressable>
+            <Pressable
+              onPress={() => setPasswordVisible(!passwordVisible)}
+              accessible={true}
+              accessibilityLabel={
+                passwordVisible ? "View password" : "Stop viewing password"
+              }
+              accessibilityRole={"button"}
+            >
+              <Text>
+                <Ionicons
+                  name={passwordVisible ? "eye-off" : "eye"}
+                  size={size.iconSize + 2}
+                  color={colors.text}
+                  style={{ marginHorizontal: 10 }}
+                />{" "}
+                {/* The eye emoji in the password section */}{" "}
+              </Text>
+            </Pressable>
+          </View>
+          <View
+            style={{
+              width: "100%",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 5,
+            }}
+          >
+            <Pressable
+              onPress={() => setRememberEmail((previous) => !previous)}
+              accessible={true}
+              accessibilityRole={"checkbox"}
+              accessibilityState={{ checked: rememberEmail }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name={rememberEmail ? "checkbox" : "square-outline"}
+                size={size.iconSize + 2}
+                color={colors.text}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={{ color: colors.text, fontSize: size.font.button }}>
+                Remember email
+              </Text>
+            </Pressable>
 
-          {/* Forgot Password*/}
+            {/* Forgot Password*/}
+            <TouchableOpacity
+              onPress={() => console.log("Forgot Password tapped")}
+              accessible={true}
+              accessibilityHint={"Double tap if password is forgotten."}
+              accessibilityRole={"button"}
+            >
+              <Text
+                style={{
+                  color: colors.linkText,
+                  marginRight: 5,
+                  fontSize: size.font.button,
+                }}
+              >
+                Forgot Password?
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {/* Login button*/}
+        <TouchableOpacity
+          onPress={onPressSignIn}
+          accessible={true}
+          accessibilityHint={"Double tap to log into your LoopedIn account."}
+          accessibilityRole={"button"}
+          style={{
+            width: "80%",
+            height: 55,
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.decorativeBackground,
+            borderWidth: 1,
+            marginTop: 40,
+            marginBottom: 5,
+            borderRadius: 25,
+            paddingHorizontal: 10,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: size.font.titleText,
+              fontWeight: size.weight.title,
+              color: colors.antiText,
+            }}
+          >
+            Login
+          </Text>
+        </TouchableOpacity>
+
+        <View
+          style={{
+            width: "80%",
+            alignItems: "flex-start",
+            flexDirection: "row",
+            marginTop: 5,
+          }}
+        >
+          {/* Sign-up*/}
+          <Text style={{ color: colors.text, fontSize: size.font.button }}>
+            Don't have an account?
+          </Text>
           <TouchableOpacity
-            onPress={() => console.log("Forgot Password tapped")}
+            onPress={() => router.push("/signup")}
             accessible={true}
-            accessibilityHint={"Double tap if password is forgotten."}
+            accessibilityHint={"Double tap to sign up for a LoopedIn account."}
             accessibilityRole={"button"}
           >
             <Text
               style={{
                 color: colors.linkText,
-                marginRight: 5,
+                marginLeft: 5,
                 fontSize: size.font.button,
               }}
             >
-              Forgot Password?
+              Sign Up
             </Text>
           </TouchableOpacity>
         </View>
       </View>
-      {/* Login button*/}
-      <TouchableOpacity
-        onPress={onPressSignIn}
-        accessible={true}
-        accessibilityHint={"Double tap to log into your LoopedIn account."}
-        accessibilityRole={"button"}
-        style={{
-          width: "80%",
-          height: 55,
-          borderColor: colors.decorativeBackground,
-          backgroundColor: colors.decorativeBackground,
-          borderWidth: 1,
-          marginTop: 40,
-          marginBottom: 5,
-          borderRadius: 25,
-          paddingHorizontal: 10,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text
+      {loginErrorOverlay ? (
+        <View
           style={{
-            fontSize: size.font.titleText,
-            fontWeight: size.weight.title,
-            color: colors.antiText,
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
           }}
         >
-          Login
-        </Text>
-      </TouchableOpacity>
-
-      <View
-        style={{
-          width: "80%",
-          alignItems: "flex-start",
-          flexDirection: "row",
-          marginTop: 5,
-        }}
-      >
-        {/* Sign-up*/}
-        <Text style={{ color: colors.text, fontSize: size.font.button }}>
-          Don't have an account?
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.push("/signup")}
-          accessible={true}
-          accessibilityHint={"Double tap to sign up for a LoopedIn account."}
-          accessibilityRole={"button"}
-        >
-          <Text
+          <View
             style={{
-              color: colors.linkText,
-              marginLeft: 5,
-              fontSize: size.font.button,
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
             }}
           >
-            Sign Up
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: 24,
+                fontWeight: "700",
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {loginErrorOverlay.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: 16,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {loginErrorOverlay.message}
+            </Text>
+            <Pressable
+              onPress={handleLoginErrorConfirm}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: 16,
+                  fontWeight: "700",
+                  lineHeight: 20,
+                }}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

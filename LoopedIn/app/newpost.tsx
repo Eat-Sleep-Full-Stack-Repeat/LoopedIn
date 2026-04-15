@@ -87,6 +87,8 @@ export default function NewPost() {
   const [captionSectionY, setCaptionSectionY] = useState(0);
   const [tagSectionY, setTagSectionY] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [createdPostId, setCreatedPostId] = useState<string | null>(null);
+  const [showMissingPhotoOverlay, setShowMissingPhotoOverlay] = useState(false);
 
   const handleAddTag = () => {
     const trimmed = newTag.trim();
@@ -256,7 +258,7 @@ export default function NewPost() {
     try {
       const hasAnyPhoto = photoCards.some((c) => c.hasImage && c.localUri);
       if (!hasAnyPhoto) {
-        Alert.alert("Missing photo", "Please add at least one photo.");
+        setShowMissingPhotoOverlay(true);
         return;
       }
 
@@ -317,14 +319,39 @@ export default function NewPost() {
         return;
       }
 
-      Alert.alert("Posted!", "Your post has been created.");
-      router.back();
+      const data = await response.json();
+      const newPostId = String(data?.postId ?? "");
+
+      if (!newPostId) {
+        Alert.alert("Posted!", "Your post has been created.");
+        router.replace("/userProfile");
+        return;
+      }
+
+      setCreatedPostId(newPostId);
     } catch (err: any) {
       console.log("Submit error:", err);
       Alert.alert("Error", err?.message || "Failed to create post.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleViewNewPost = () => {
+    if (!createdPostId) return;
+
+    router.replace({
+      pathname: "/singlePost/[id]",
+      params: { id: createdPostId },
+    });
+  };
+
+  const handleGoToProfile = () => {
+    router.replace("/userProfile");
+  };
+
+  const handleMissingPhotoConfirm = () => {
+    setShowMissingPhotoOverlay(false);
   };
 
   const styles = StyleSheet.create({
@@ -670,6 +697,64 @@ export default function NewPost() {
       color: colors.antiText,
       fontSize: size.font.button,
       fontWeight: size.weight.largeTitle,
+    },
+    successBackdrop: {
+      alignItems: "center",
+      bottom: 0,
+      justifyContent: "center",
+      left: 0,
+      padding: 24,
+      position: "absolute",
+      right: 0,
+      top: 0,
+      zIndex: 999,
+    },
+    successCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      maxWidth: 420,
+      paddingHorizontal: 24,
+      paddingVertical: 28,
+      width: "100%",
+    },
+    successTitle: {
+      fontSize: 24,
+      fontWeight: "700",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    successDescription: {
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    successButtonRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    successButton: {
+      alignItems: "center",
+      borderRadius: 999,
+      flex: 1,
+      justifyContent: "center",
+      minHeight: 52,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+    },
+    successButtonText: {
+      fontSize: 16,
+      fontWeight: "700",
+      lineHeight: 20,
+    },
+    singleOverlayButton: {
+      alignItems: "center",
+      borderRadius: 999,
+      justifyContent: "center",
+      minHeight: 52,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+      width: "100%",
     },
   });
 
@@ -1068,6 +1153,110 @@ export default function NewPost() {
 
         <View style={styles.contentSpacer} />
       </ScrollView>
+      {createdPostId ? (
+        <View
+          style={[
+            styles.successBackdrop,
+            {
+              backgroundColor: `${colors.background}E6`,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.successCard,
+              {
+                backgroundColor: colors.boxBackground,
+                borderColor: colors.blockedBackground,
+              },
+            ]}
+          >
+            <Text style={[styles.successTitle, { color: colors.text }]}>
+              Your post is live!
+            </Text>
+            <Text style={[styles.successDescription, { color: colors.settingsText }]}>
+              Want to check it out?
+            </Text>
+            <View style={styles.successButtonRow}>
+              <Pressable
+                onPress={handleViewNewPost}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.activeContainer },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.background },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleGoToProfile}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.disabledButton },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.disabledButtonText },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
+      {showMissingPhotoOverlay ? (
+        <View
+          style={[
+            styles.successBackdrop,
+            {
+              backgroundColor: `${colors.background}E6`,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.successCard,
+              {
+                backgroundColor: colors.boxBackground,
+                borderColor: colors.blockedBackground,
+              },
+            ]}
+          >
+            <Text style={[styles.successTitle, { color: colors.text }]}>
+              Missing Photo
+            </Text>
+            <Text style={[styles.successDescription, { color: colors.settingsText }]}>
+              Don&apos;t forget to add at least one photo!
+            </Text>
+            <Pressable
+              onPress={handleMissingPhotoConfirm}
+              style={[
+                styles.singleOverlayButton,
+                { backgroundColor: colors.activeContainer },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.successButtonText,
+                  { color: colors.background },
+                ]}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }

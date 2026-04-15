@@ -14,7 +14,10 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
@@ -23,7 +26,7 @@ import API_URL from "@/utils/config";
 import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
-import {reasons} from "@/components/reportReasons";
+import { reasons } from "@/components/reportReasons";
 import { useAppSize } from "@/Hooks/useSize";
 
 type PhotoCard = {
@@ -82,6 +85,7 @@ export default function SinglePost() {
 
   //for triple-dot handling
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   //comments
   const [areCommentsVisible, setAreCommentsVisible] = useState(false);
@@ -343,11 +347,21 @@ export default function SinglePost() {
         alert("Error while deleting the post. Please try again later.");
         return;
       }
+
+      setShowDeleteSuccess(true);
     } catch (e) {
       console.log("Error when deleting post", e);
-    } finally {
-      router.back();
     }
+  };
+
+  const handleDeleteSuccessYes = () => {
+    setShowDeleteSuccess(false);
+    router.replace("/newpost");
+  };
+
+  const handleDeleteSuccessNo = () => {
+    setShowDeleteSuccess(false);
+    router.replace("/userProfile");
   };
 
   //handle post reporting
@@ -890,6 +904,72 @@ export default function SinglePost() {
         currentPost={currentPost.current}
         postCreator={creatorID.current}
       ></ExploreCommentsModal>
+      {showDeleteSuccess ? (
+        <View
+          style={[
+            styles.successBackdrop,
+            {
+              backgroundColor: `${colors.background}E6`,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.successCard,
+              {
+                backgroundColor: colors.boxBackground,
+                borderColor: colors.blockedBackground,
+              },
+            ]}
+          >
+            <Text style={[styles.successTitle, { color: colors.text }]}>
+              Successfully Deleted!
+            </Text>
+            <Text
+              style={[
+                styles.successDescription,
+                { color: colors.settingsText },
+              ]}
+            >
+              Ready to start a new post?
+            </Text>
+            <View style={styles.successButtonRow}>
+              <Pressable
+                onPress={handleDeleteSuccessYes}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.activeContainer },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.background },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteSuccessNo}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.disabledButton },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.disabledButtonText },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       {/*report modal */}
       <Modal
@@ -1096,5 +1176,51 @@ const styles = StyleSheet.create({
   },
   reportHeaderText: {
     textAlign: "center",
+  },
+  successBackdrop: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "center",
+    left: 0,
+    padding: 24,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 999,
+  },
+  successCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    maxWidth: 420,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    width: "100%",
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  successDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  successButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  successButton: {
+    alignItems: "center",
+    borderRadius: 999,
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  successButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
