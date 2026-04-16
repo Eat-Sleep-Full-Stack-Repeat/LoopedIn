@@ -8,6 +8,7 @@ import {
   View,
   ActivityIndicator,
   Image,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Storage } from "../../utils/storage";
 import API_URL from "@/utils/config";
+import { useAppSize } from "@/Hooks/useSize";
 
 type PhotoCard = {
   pic: string;
@@ -59,6 +61,9 @@ export default function SingleProject() {
   const [project, setProject] = useState<SingleProjectPayload | null>(null);
 
   const projectId = Array.isArray(id) ? id[0] : id;
+
+  const size = useAppSize();
+  const { width } = useWindowDimensions();
 
   const checkTokenOkay = async () => {
     try {
@@ -182,14 +187,16 @@ export default function SingleProject() {
     screen: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: insets.top + 8,
+      paddingTop: insets.top,
       paddingHorizontal: 20,
     },
     headerRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 8,
-      justifyContent: "space-between",
+      justifyContent: "center",
+      position: "relative",
+      marginTop: 10,
+      marginBottom: 20,
     },
     headerSide: {
       width: 32,
@@ -197,8 +204,12 @@ export default function SingleProject() {
       justifyContent: "center",
     },
     backButton: {
-      paddingRight: 8,
-      paddingVertical: 6,
+      position: "absolute",
+      left: 0,
+    },
+    backArrow: {
+      fontSize: size.font.largeTitleText,
+      color: colors.text,
     },
     headerCenter: {
       flex: 1,
@@ -206,18 +217,13 @@ export default function SingleProject() {
       justifyContent: "center",
       paddingHorizontal: 8,
     },
-    createButton: {
-      paddingLeft: 8,
-      paddingVertical: 6,
-    },
     title: {
       color: colors.text,
-      fontSize: 18,
-      fontWeight: "600",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
     },
     statusPill: {
       alignSelf: "center",
-      marginTop: 8,
       paddingVertical: 6,
       paddingHorizontal: 14,
       borderRadius: 999,
@@ -226,21 +232,21 @@ export default function SingleProject() {
     },
     statusText: {
       color: colors.text,
-      fontSize: 12,
-      fontWeight: "600",
+      fontSize: size.font.bodyText,
+      fontWeight: size.weight.title,
     },
     startDateText: {
       color: colors.settingsText,
-      fontSize: 12,
+      fontSize: size.font.caption,
       marginTop: 6,
       textAlign: "center",
     },
     mainPhotoPlaceholder: {
       marginTop: 12,
-      width: 240,
+      width: "80%",
       aspectRatio: 3 / 4,
       borderRadius: 16,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
@@ -251,8 +257,8 @@ export default function SingleProject() {
     mainPhotoText: {
       color: colors.settingsText,
       marginTop: 8,
-      fontSize: 12,
-      fontWeight: "500",
+      fontSize: size.font.bodyText,
+      fontWeight: size.weight.headline,
     },
     mainImage: {
       width: "100%",
@@ -265,10 +271,10 @@ export default function SingleProject() {
       paddingRight: 8,
     },
     thumbCard: {
-      width: 70,
+      width: width * 0.2,
       aspectRatio: 3 / 4,
       borderRadius: 10,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
@@ -289,7 +295,7 @@ export default function SingleProject() {
       width: "100%",
       minHeight: 180,
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "flex-start",
       justifyContent: "flex-start",
       paddingHorizontal: 14,
@@ -301,7 +307,7 @@ export default function SingleProject() {
     },
     noteText: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
       lineHeight: 20,
       textAlignVertical: Platform.OS === "android" ? "top" : "auto",
       flexShrink: 1,
@@ -311,7 +317,8 @@ export default function SingleProject() {
 
   const titleText =
     project?.info?.fld_p_name ?? (loading ? "Loading..." : "Project Title");
-  const statusText = project?.info?.fld_status ?? (loading ? "" : "Not Started");
+  const statusText =
+    project?.info?.fld_status ?? (loading ? "" : "Not Started");
   const startedLabel = project?.info?.fld_date_started
     ? `Started: ${formatDate(project.info.fld_date_started)}`
     : "";
@@ -332,20 +339,26 @@ export default function SingleProject() {
       >
         <View style={styles.headerRow}>
           <View style={styles.headerSide}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}
+            <Pressable
+              style={styles.backButton}
+              onPress={() => router.back()}
               accessible={true}
               accessibilityLabel={"Go Back"}
               accessibilityHint={"Navigates back to the previous page."}
-              accessibilityRole={"button"}>
-              <Feather name="arrow-left" size={22} color={colors.text} />
+              accessibilityRole={"button"}
+            >
+              <Text style={styles.backArrow}>←</Text>
             </Pressable>
           </View>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.title} numberOfLines={1}
+            <Text
+              style={styles.title}
+              numberOfLines={1}
               accessible={true}
               accessibilityHint={"Project title"}
-              accessibilityRole={"header"}>
+              accessibilityRole={"header"}
+            >
               {titleText}
             </Text>
           </View>
@@ -354,16 +367,20 @@ export default function SingleProject() {
         </View>
 
         {loading && !project ? (
-          <View style={{ paddingTop: 12, alignItems: "center" }}
+          <View
+            style={{ paddingTop: 12, alignItems: "center" }}
             accessible={true}
-            accessibilityLabel={"loading"}>
+            accessibilityLabel={"loading"}
+          >
             <ActivityIndicator size="small" color={colors.text} />
           </View>
         ) : null}
 
-        <View style={styles.statusPill}
+        <View
+          style={styles.statusPill}
           accessible={true}
-          accessibilityLabel={"Project status: " + statusText}>
+          accessibilityLabel={"Project status: " + statusText}
+        >
           <Text style={styles.statusText}>{statusText}</Text>
         </View>
 
@@ -381,12 +398,18 @@ export default function SingleProject() {
               accessibilityLabel="Project Image"
             />
           ) : (
-            <View style={{ alignItems: "center", justifyContent: "center" }}
+            <View
+              style={{ alignItems: "center", justifyContent: "center" }}
               accessible={true}
-              accessibilityLabel={"No pictures yet... Edit this project to add up to 5 pictures!"}>
+              accessibilityLabel={
+                "No pictures yet... Edit this project to add up to 5 pictures!"
+              }
+            >
               <Feather name="image" size={40} color={colors.decorativeText} />
               <Text style={styles.mainPhotoText}>No pictures yet...</Text>
-              <Text style={styles.mainPhotoText}>Edit this project to add up to 5 pictures!</Text>
+              <Text style={styles.mainPhotoText}>
+                Edit this project to add up to 5 pictures!
+              </Text>
             </View>
           )}
         </View>
@@ -422,9 +445,11 @@ export default function SingleProject() {
           </ScrollView>
         </View>
 
-        <View style={styles.notePlaceholder}
+        <View
+          style={styles.notePlaceholder}
           accessible={true}
-          accessibilityLabel={"Note: " + notesText}>
+          accessibilityLabel={"Note: " + notesText}
+        >
           <Text style={styles.noteText}>{notesText}</Text>
         </View>
       </ScrollView>

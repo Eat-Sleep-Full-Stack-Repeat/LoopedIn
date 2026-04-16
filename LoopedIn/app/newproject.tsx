@@ -25,7 +25,7 @@ import { useTheme } from "@/context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
 import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
-
+import { useAppSize } from "@/Hooks/useSize";
 
 type PhotoCard = {
   id: string;
@@ -67,8 +67,8 @@ export default function SingleProject() {
     hasImage: false,
   });
   const [photoCards, setPhotoCards] = useState<PhotoCard[]>([
-      createEmptyPhotoCard(),
-    ]);
+    createEmptyPhotoCard(),
+  ]);
   const photoScrollRef = useRef<ScrollView | null>(null);
   const formScrollRef = useRef<ScrollView | null>(null);
   const previousPhotoCountRef = useRef<number>(photoCards.length);
@@ -79,6 +79,7 @@ export default function SingleProject() {
   const CARD_ALT_TEXT_LIMIT = 100;
   const CARD_WIDTH = Math.min(Dimensions.get("window").width - 64, 400);
 
+  const size = useAppSize();
 
   useEffect(() => {
     if (photoCards.length > previousPhotoCountRef.current) {
@@ -200,7 +201,6 @@ export default function SingleProject() {
     }
   };
 
-
   const handleAddPhotoCard = () => {
     setPhotoCards((prev) => {
       if (prev.length >= PHOTO_LIMIT) {
@@ -230,7 +230,6 @@ export default function SingleProject() {
     });
   };
 
-
   const handleSubmit = async () => {
     if (submitting) return;
     const fid = await Storage.getItem("folderID");
@@ -238,9 +237,7 @@ export default function SingleProject() {
     console.log("folder id is", fid);
 
     try {
-      const hasAnyPhoto = photoCards.some(
-        (c) => c.hasImage && c.localUri
-      );
+      const hasAnyPhoto = photoCards.some((c) => c.hasImage && c.localUri);
       // if (!hasAnyPhoto) {
       //   Alert.alert("Missing photo", "Please add at least one photo.");
       //   return;
@@ -284,14 +281,11 @@ export default function SingleProject() {
         const type =
           ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
 
-        formData.append(
-          "photos",
-          {
-            uri,
-            name,
-            type,
-          } as any
-        );
+        formData.append("photos", {
+          uri,
+          name,
+          type,
+        } as any);
       });
 
       //ACTUAL CALL
@@ -320,33 +314,28 @@ export default function SingleProject() {
     }
   };
 
-
   const styles = StyleSheet.create({
     screen: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: insets.top + 8,
+      paddingTop: insets.top,
       paddingHorizontal: 20,
     },
     headerRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 8,
-      justifyContent: "space-between",
-    },
-    headerSide: {
-      width: 32,
-      alignItems: "center",
       justifyContent: "center",
+      marginBottom: 20,
+      marginTop: 10,
+      position: "relative",
     },
     backButton: {
-      paddingRight: 8,
-      paddingVertical: 6,
+      position: "absolute",
+      left: 0,
     },
-    headerCenter: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
+    backArrow: {
+      fontSize: size.font.largeTitleText,
+      color: colors.text,
     },
     createButton: {
       paddingLeft: 8,
@@ -354,91 +343,27 @@ export default function SingleProject() {
     },
     title: {
       color: colors.text,
-      fontSize: 18,
-      fontWeight: "600",
-    },
-    statusPill: {
-      alignSelf: "center",
-      marginTop: 8,
-      paddingVertical: 6,
-      paddingHorizontal: 14,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.topBackground,
-    },
-    statusText: {
-      color: colors.text,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    startDateText: {
-      color: colors.settingsText,
-      fontSize: 12,
-      marginTop: 6,
-      textAlign: "center",
-    },
-    mainPhotoPlaceholder: {
-      marginTop: 12,
-      width: 240,
-      aspectRatio: 3 / 4,
-      borderRadius: 16,
-      backgroundColor: "transparent",
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: colors.topBackground,
-      alignSelf: "center",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
     },
     mainPhotoText: {
       color: colors.text,
       marginTop: 8,
-      fontSize: 16,
-      fontWeight: "600",
+      fontSize: size.font.button,
+      fontWeight: size.weight.title,
     },
     mainPhotoText2: {
-      color: `${colors.text}aa`,
+      color: colors.inputContainerPlaceholderText,
       marginTop: 8,
-      fontSize: 14,
+      fontSize: size.font.caption,
       textAlign: "center",
-    },
-    thumbRow: {
-      marginTop: 8,
-    },
-    thumbList: {
-      paddingRight: 8,
-    },
-    thumbCard: {
-      width: 70,
-      aspectRatio: 3 / 4,
-      borderRadius: 10,
-      backgroundColor: "transparent",
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: colors.topBackground,
-      marginRight: 10,
-    },
-    thumbCardSelected: {
-      borderWidth: 2,
-      borderColor: colors.decorativeBackground,
-    },
-    addThumbCard: {
-      width: 70,
-      aspectRatio: 3 / 4,
-      borderRadius: 10,
-      backgroundColor: "transparent",
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: colors.topBackground,
-      marginRight: 10,
     },
     notePlaceholder: {
       marginTop: 6,
       width: "100%",
       minHeight: 180,
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "flex-start",
       justifyContent: "flex-start",
       paddingHorizontal: 14,
@@ -452,7 +377,7 @@ export default function SingleProject() {
       marginTop: 6,
       width: "100%",
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "flex-start",
       justifyContent: "flex-start",
       paddingHorizontal: 14,
@@ -472,7 +397,7 @@ export default function SingleProject() {
       marginTop: 5,
       width: "100%",
       borderRadius: 14,
-      backgroundColor: "transparent",
+      backgroundColor: colors.topBackground,
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 14,
@@ -483,14 +408,14 @@ export default function SingleProject() {
     },
     dateInput: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.caption,
       textAlign: "center",
       width: "100%",
     },
     dateLabel: {
       marginTop: 16,
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.caption,
     },
     dateModalOverlay: {
       flex: 1,
@@ -511,17 +436,14 @@ export default function SingleProject() {
       justifyContent: "flex-end",
       marginBottom: 8,
     },
-    dateModalHeaderHidden: {
-      display: "none",
-    },
     dateModalButton: {
       paddingVertical: 6,
       paddingHorizontal: 8,
     },
     dateModalButtonText: {
       color: colors.decorativeText,
-      fontSize: 15,
-      fontWeight: "600",
+      fontSize: size.font.caption,
+      fontWeight: size.weight.title,
     },
     datePicker: {
       alignSelf: "center",
@@ -537,17 +459,17 @@ export default function SingleProject() {
       alignSelf: "center",
     },
     addProjectButtonText: {
-      color: colors.decorativeText,
-      fontSize: 16,
-      fontWeight: "600",
+      color: colors.antiText,
+      fontSize: size.font.button,
+      fontWeight: size.weight.title,
     },
     countText: {
       color: colors.settingsText,
-      fontSize: 12,
+      fontSize: size.font.detailText,
     },
     noteText: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
       lineHeight: 20,
       textAlignVertical: Platform.OS === "android" ? "top" : "auto",
       flexShrink: 1,
@@ -555,13 +477,13 @@ export default function SingleProject() {
     },
     noteTitleInput: {
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
       paddingVertical: 4,
       width: "100%",
     },
     noteBodyInput: {
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
       lineHeight: 20,
       textAlignVertical: Platform.OS === "android" ? "top" : "auto",
       minHeight: 120,
@@ -597,24 +519,24 @@ export default function SingleProject() {
     },
     cardTitle: {
       color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
+      fontSize: size.font.button,
+      fontWeight: size.weight.headline,
     },
     removePhotoButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: size.iconSize + 24,
+      height: size.iconSize + 24,
+      borderRadius: 50,
       borderWidth: 1,
-      borderColor: colors.decorativeText,
+      borderColor: colors.decorativeBackground,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: `${colors.decorativeBackground}33`,
+      backgroundColor: colors.secondaryButton,
     },
     uploadArea: {
       height: 200,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: colors.decorativeText,
+      borderColor: colors.secondaryText,
       borderStyle: "dashed",
       justifyContent: "center",
       alignItems: "center",
@@ -639,18 +561,18 @@ export default function SingleProject() {
     cardAltInput: {
       minHeight: 50,
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
     },
     cardCounterText: {
-      color: `${colors.text}99`,
-      fontSize: 12,
+      color: colors.settingsMenuText,
+      fontSize: size.font.caption,
       marginTop: 8,
       textAlign: "left",
     },
     photoHelperText: {
       marginTop: 16,
-      color: `${colors.text}aa`,
-      fontSize: 14,
+      color: colors.settingsMenuText,
+      fontSize: size.font.caption,
     },
     addCardRow: {
       marginTop: 12,
@@ -661,17 +583,17 @@ export default function SingleProject() {
     },
     photoCountText: {
       color: colors.text,
-      fontWeight: "600",
+      fontWeight: size.weight.title,
     },
     addPhotoFab: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      borderWidth: 1.5,
-      borderColor: colors.decorativeText,
+      width: size.iconSize + 24,
+      height: size.iconSize + 24,
+      borderRadius: 50,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.background,
+      backgroundColor: colors.secondaryButton,
     },
     addPhotoFabDisabled: {
       opacity: 0.4,
@@ -689,266 +611,289 @@ export default function SingleProject() {
           contentContainerStyle={{ paddingBottom: 32 }}
           keyboardShouldPersistTaps="handled"
         >
-        <View style={styles.headerRow}>
-          <View style={styles.headerSide}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}
+          <View style={styles.headerRow}>
+            <Pressable
+              style={styles.backButton}
+              onPress={() => router.back()}
               accessible={true}
               accessibilityLabel={"Go Back"}
               accessibilityHint={"Navigates back to the previous page."}
-              accessibilityRole={"button"}>
-              <Feather name="arrow-left" size={22} color={colors.text} />
-            </Pressable>
-          </View>
-          <View style={styles.headerCenter}
-            accessible={true}
-            accessibilityRole={"header"}>
-            <Text style={styles.title}>Create New Project</Text>
-          </View>
-          <View style={styles.headerSide}>
-          </View>
-        </View>
-
-        {/* PRE-PHOTO-UPLOADS */}
-        <View style={styles.noteHeaderRow}>
-          <Text style={styles.dateLabel}>Title</Text>
-          <Text style={styles.countText}
-            accessible={true}
-            accessibilityLabel={`${titleText.length} out of  40 characters are used.`}>
-            {titleText.length}/40
-          </Text>
-        </View>
-        <View style={styles.noteTitleBox}>
-          <TextInput
-            placeholderTextColor={colors.settingsText}
-            maxLength={40}
-            style={styles.noteTitleInput}
-            value={titleText}
-            onChangeText={setTitleText}
-          />
-        </View>
-        <Text style={styles.dateLabel}>Start Date</Text>
-        <Pressable
-          style={styles.dateField}
-          onPress={() => {
-            const baseDate = startDate ?? new Date();
-            if (Platform.OS === "android") {
-              DateTimePickerAndroid.open({
-                value: baseDate,
-                mode: "date",
-                display: "spinner",
-                onChange: (event, selectedDate) => {
-                  if (event.type === "set" && selectedDate) {
-                    setStartDate(selectedDate);
-                  }
-                },
-              });
-              return;
-            }
-            setTempDate(baseDate);
-            setIsDatePickerVisible(true);
-          }}
-          accessible={true}
-          accessibilityLabel={"Add Start Date"}
-          accessibilityHint={"Double tap to add a project start date."}
-          accessibilityRole={"spinbutton"}
-        >
-          <Text style={styles.dateInput}>{formattedStartDate}</Text>
-        </Pressable>
-        <Modal
-          visible={isDatePickerVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setIsDatePickerVisible(false)}
-        >
-          <Pressable
-            style={styles.dateModalOverlay}
-            onPress={() => setIsDatePickerVisible(false)}
-          >
-            <Pressable style={styles.dateModalCard}>
-              <View style={styles.dateModalHeader}>
-                <Pressable
-                  style={styles.dateModalButton}
-                  onPress={() => {
-                    setStartDate(tempDate);
-                    setIsDatePickerVisible(false);
-                  }}
-                >
-                  <Text style={styles.dateModalButtonText}>Confirm</Text>
-                </Pressable>
-              </View>
-              <DateTimePicker
-                value={tempDate}
-                mode="date"
-                display="spinner"
-                style={styles.datePicker}
-                onChange={(event, selectedDate) => {
-                  if (selectedDate) {
-                    setTempDate(selectedDate);
-                  }
-                }}
-              />
-            </Pressable>
-          </Pressable>
-        </Modal>
-        <View style={styles.noteHeaderRow}>
-          <Text style={styles.dateLabel}>Note</Text>
-          <Text style={styles.countText}
-            accessible={true}
-            accessibilityLabel={`${noteText.length} out of 5000 characters are used.`}>
-          {noteText.length}/5000
-        </Text>
-        </View>
-        <View style={styles.notePlaceholder}>
-          <TextInput
-            placeholderTextColor={colors.settingsText}
-            maxLength={5000}
-            multiline
-            style={styles.noteBodyInput}
-            value={noteText}
-            onChangeText={setNoteText}
-          />
-        </View>
-
-
-        {/* UPLOAD TIME BABEY */}
-        <View style={styles.uploadContainer}>
-          <View style={styles.photosWrapper}>
-            <ScrollView
-              ref={photoScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photoScrollContent}
-              scrollEnabled={photoCards.length > 1}
-              pagingEnabled
-              decelerationRate="fast"
-              snapToInterval={CARD_WIDTH + 16}
-              snapToAlignment="start"
+              accessibilityRole={"button"}
             >
-              {photoCards.map((card, index) => (
-                <View
-                  key={card.id}
-                  style={[
-                    styles.photoCard,
-                    index !== photoCards.length - 1 &&
-                      styles.photoCardSpacing,
-                  ]}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>
-                      Photo {index + 1}
-                    </Text>
-                    <Pressable
-                      style={styles.removePhotoButton}
-                      onPress={() => handleRemovePhotoCard(card.id)}
-                      accessible={true}
-                      accessibilityLabel={"Delete photo."}
-                      accessibilityHint={`Removes photo ${index + 1} from selection.`}
-                      accessibilityRole={"button"}
-                    >
-                      <Feather
-                        name="trash-2"
-                        size={16}
-                        color={colors.decorativeText}
-                      />
-                    </Pressable>
-                  </View>
-                  <Pressable
-                    style={styles.uploadArea}
-                    onPress={
-                      card.hasImage
-                        ? undefined
-                        : () => handleUploadPress(card.id)
-                    }
-                    accessible={true}
-                    accessibilityLabel={card.hasImage ? "Uploaded Photo" : "Upload a photo"}
-                    accessibilityHint={card.hasImage ? "" : "Double tap to choose from your library or camera."}
-                    accessibilityRole={card.hasImage ? "image" : "button"}
-                    disabled={card.hasImage}
-                  >
-                    {card.hasImage && card.localUri ? (
-                      <Image
-                        source={{ uri: card.localUri }}
-                        style={styles.uploadImagePreview}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <>
-                        <Feather
-                          name="image"
-                          size={40}
-                          color={colors.decorativeText}
-                        />
-                        <Text style={styles.mainPhotoText}>Upload a photo</Text>
-                        <Text style={styles.mainPhotoText2}>
-                          Tap to choose from your library or camera.
-                        </Text>
-                      </>
-                    )}
-                  </Pressable>
-                  <View style={styles.cardAltWrapper}>
-                    <TextInput
-                      value={card.altText}
-                      onChangeText={(text) =>
-                        handleAltTextChange(card.id, text)
-                      }
-                      placeholder="Describe this photo for accessibility (max 100 characters)"
-                      placeholderTextColor={`${colors.decorativeText}cc`}
-                      style={styles.cardAltInput}
-                      multiline
-                      maxLength={CARD_ALT_TEXT_LIMIT}
-                    />
-                    <Text style={styles.cardCounterText}
-                      accessible={true}
-                      accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}>
-                      {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-          <Text style={styles.photoHelperText}>
-            Add up to 5 cards. Each card holds one photo with its own alt text.
-          </Text>
-          <View style={styles.addCardRow}>
-            <Text style={styles.photoCountText}
+              <Text style={styles.backArrow}>←</Text>
+            </Pressable>
+            <Text
+              style={styles.title}
               accessible={true}
-              accessibilityLabel={`${photoCards.length} out of ${PHOTO_LIMIT} cards are taken.`}>
-              {photoCards.length}/{PHOTO_LIMIT}
+              accessibilityRole={"header"}
+            >
+              Create New Project
             </Text>
-            <Pressable
-              style={[
-                styles.addPhotoFab,
-                photoCards.length >= PHOTO_LIMIT &&
-                  styles.addPhotoFabDisabled,
-              ]}
-              onPress={handleAddPhotoCard}
-              disabled={photoCards.length >= PHOTO_LIMIT}
-              accessible={true}
-              accessibilityLabel={"Add Card"}
-              accessibilityHint={photoCards.length >= PHOTO_LIMIT ? "Cannot add more cards. Reached 5 card maximum." 
-                : "Double tap to add another card"}
-            >
-              <Feather
-                name="plus"
-                size={20}
-                color={
-                  photoCards.length >= PHOTO_LIMIT
-                    ? colors.text
-                    : colors.decorativeText
-                }
-              />
-            </Pressable>
           </View>
-        </View>
-        
-        
-        <Pressable style={styles.addProjectButton} onPress={handleSubmit} disabled={submitting}
-          accessible={true}
-          accessibilityHint={"Add project to folder"}
-          accessibilityRole={"button"}>
-          <Text style={styles.addProjectButtonText}>Add Project</Text>
-        </Pressable>
+
+          {/* PRE-PHOTO-UPLOADS */}
+          <View style={styles.noteHeaderRow}>
+            <Text style={styles.dateLabel}>Title</Text>
+            <Text
+              style={styles.countText}
+              accessible={true}
+              accessibilityLabel={`${titleText.length} out of  40 characters are used.`}
+            >
+              {titleText.length}/40
+            </Text>
+          </View>
+          <View style={styles.noteTitleBox}>
+            <TextInput
+              placeholderTextColor={colors.settingsText}
+              maxLength={40}
+              style={styles.noteTitleInput}
+              value={titleText}
+              onChangeText={setTitleText}
+            />
+          </View>
+          <Text style={styles.dateLabel}>Start Date</Text>
+          <Pressable
+            style={styles.dateField}
+            onPress={() => {
+              const baseDate = startDate ?? new Date();
+              if (Platform.OS === "android") {
+                DateTimePickerAndroid.open({
+                  value: baseDate,
+                  mode: "date",
+                  display: "spinner",
+                  onChange: (event, selectedDate) => {
+                    if (event.type === "set" && selectedDate) {
+                      setStartDate(selectedDate);
+                    }
+                  },
+                });
+                return;
+              }
+              setTempDate(baseDate);
+              setIsDatePickerVisible(true);
+            }}
+            accessible={true}
+            accessibilityLabel={"Add Start Date"}
+            accessibilityHint={"Double tap to add a project start date."}
+            accessibilityRole={"spinbutton"}
+          >
+            <Text style={styles.dateInput}>{formattedStartDate}</Text>
+          </Pressable>
+          <Modal
+            visible={isDatePickerVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setIsDatePickerVisible(false)}
+          >
+            <Pressable
+              style={styles.dateModalOverlay}
+              onPress={() => setIsDatePickerVisible(false)}
+            >
+              <Pressable style={styles.dateModalCard}>
+                <View style={styles.dateModalHeader}>
+                  <Pressable
+                    style={styles.dateModalButton}
+                    onPress={() => {
+                      setStartDate(tempDate);
+                      setIsDatePickerVisible(false);
+                    }}
+                  >
+                    <Text style={styles.dateModalButtonText}>Confirm</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display="spinner"
+                  style={styles.datePicker}
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setTempDate(selectedDate);
+                    }
+                  }}
+                />
+              </Pressable>
+            </Pressable>
+          </Modal>
+          <View style={styles.noteHeaderRow}>
+            <Text style={styles.dateLabel}>Note</Text>
+            <Text
+              style={styles.countText}
+              accessible={true}
+              accessibilityLabel={`${noteText.length} out of 5000 characters are used.`}
+            >
+              {noteText.length}/5000
+            </Text>
+          </View>
+          <View style={styles.notePlaceholder}>
+            <TextInput
+              placeholderTextColor={colors.settingsText}
+              maxLength={5000}
+              multiline
+              style={styles.noteBodyInput}
+              value={noteText}
+              onChangeText={setNoteText}
+            />
+          </View>
+
+          {/* UPLOAD TIME BABEY */}
+          <View style={styles.uploadContainer}>
+            <View style={styles.photosWrapper}>
+              <ScrollView
+                ref={photoScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photoScrollContent}
+                scrollEnabled={photoCards.length > 1}
+                pagingEnabled
+                decelerationRate="fast"
+                snapToInterval={CARD_WIDTH + 16}
+                snapToAlignment="start"
+              >
+                {photoCards.map((card, index) => (
+                  <View
+                    key={card.id}
+                    style={[
+                      styles.photoCard,
+                      index !== photoCards.length - 1 &&
+                        styles.photoCardSpacing,
+                    ]}
+                  >
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>Photo {index + 1}</Text>
+                      <Pressable
+                        style={styles.removePhotoButton}
+                        onPress={() => handleRemovePhotoCard(card.id)}
+                        accessible={true}
+                        accessibilityLabel={"Delete photo."}
+                        accessibilityHint={`Removes photo ${
+                          index + 1
+                        } from selection.`}
+                        accessibilityRole={"button"}
+                      >
+                        <Feather
+                          name="trash-2"
+                          size={size.iconSize}
+                          color={colors.decorativeBackground}
+                        />
+                      </Pressable>
+                    </View>
+                    <Pressable
+                      style={styles.uploadArea}
+                      onPress={
+                        card.hasImage
+                          ? undefined
+                          : () => handleUploadPress(card.id)
+                      }
+                      accessible={true}
+                      accessibilityLabel={
+                        card.hasImage ? "Uploaded Photo" : "Upload a photo"
+                      }
+                      accessibilityHint={
+                        card.hasImage
+                          ? ""
+                          : "Double tap to choose from your library or camera."
+                      }
+                      accessibilityRole={card.hasImage ? "image" : "button"}
+                      disabled={card.hasImage}
+                    >
+                      {card.hasImage && card.localUri ? (
+                        <Image
+                          source={{ uri: card.localUri }}
+                          style={styles.uploadImagePreview}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <>
+                          <Feather
+                            name="image"
+                            size={40}
+                            color={colors.decorativeText}
+                          />
+                          <Text style={styles.mainPhotoText}>
+                            Upload a photo
+                          </Text>
+                          <Text style={styles.mainPhotoText2}>
+                            Tap to choose from your library or camera.
+                          </Text>
+                        </>
+                      )}
+                    </Pressable>
+                    <View style={styles.cardAltWrapper}>
+                      <TextInput
+                        value={card.altText}
+                        onChangeText={(text) =>
+                          handleAltTextChange(card.id, text)
+                        }
+                        placeholder="Describe this photo for accessibility (max 100 characters)"
+                        placeholderTextColor={`${colors.decorativeText}cc`}
+                        style={styles.cardAltInput}
+                        multiline
+                        maxLength={CARD_ALT_TEXT_LIMIT}
+                      />
+                      <Text
+                        style={styles.cardCounterText}
+                        accessible={true}
+                        accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}
+                      >
+                        {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+            <Text style={styles.photoHelperText}>
+              Add up to 5 cards. Each card holds one photo with its own alt
+              text.
+            </Text>
+            <View style={styles.addCardRow}>
+              <Text
+                style={styles.photoCountText}
+                accessible={true}
+                accessibilityLabel={`${photoCards.length} out of ${PHOTO_LIMIT} cards are taken.`}
+              >
+                {photoCards.length}/{PHOTO_LIMIT}
+              </Text>
+              <Pressable
+                style={[
+                  styles.addPhotoFab,
+                  photoCards.length >= PHOTO_LIMIT &&
+                    styles.addPhotoFabDisabled,
+                ]}
+                onPress={handleAddPhotoCard}
+                disabled={photoCards.length >= PHOTO_LIMIT}
+                accessible={true}
+                accessibilityLabel={"Add Card"}
+                accessibilityHint={
+                  photoCards.length >= PHOTO_LIMIT
+                    ? "Cannot add more cards. Reached 5 card maximum."
+                    : "Double tap to add another card"
+                }
+              >
+                <Feather
+                  name="plus"
+                  size={size.iconSize}
+                  color={
+                    photoCards.length >= PHOTO_LIMIT
+                      ? colors.secondaryText
+                      : colors.decorativeBackground
+                  }
+                />
+              </Pressable>
+            </View>
+          </View>
+
+          <Pressable
+            style={styles.addProjectButton}
+            onPress={handleSubmit}
+            disabled={submitting}
+            accessible={true}
+            accessibilityHint={"Add project to folder"}
+            accessibilityRole={"button"}
+          >
+            <Text style={styles.addProjectButtonText}>Add Project</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

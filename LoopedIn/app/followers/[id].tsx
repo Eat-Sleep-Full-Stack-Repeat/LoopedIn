@@ -6,6 +6,9 @@ import { Colors } from "@/Styles/colors";
 import { Storage } from "../../utils/storage";
 import { jwtDecode } from "jwt-decode";
 import API_URL from "@/utils/config";
+import { useAppSize } from "@/Hooks/useSize";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 
 // Define a type for a user
 type User = {
@@ -26,7 +29,9 @@ export default function FollowersScreen() {
   const [followers, setFollowers] = useState<User[]>([]);
   const { id } = useLocalSearchParams();
 
-  const [currentUser, setCurrentUser] = useState<string>("")
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const size = useAppSize();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     //get followers
@@ -34,33 +39,38 @@ export default function FollowersScreen() {
       //obtain token
       const token = await Storage.getItem("token");
       if (!token) {
-        alert("Token does not exist")
-        router.replace("/")
-        return
+        alert("Token does not exist");
+        router.replace("/");
+        return;
       }
 
-      const decoded = jwtDecode<Payload>(token)
-      setCurrentUser(decoded.userID)
+      const decoded = jwtDecode<Payload>(token);
+      setCurrentUser(decoded.userID);
 
       if (!id) {
-        alert(`Cannot fetch followers at this time. User ID does not exist: ${id}`)
-        return
+        alert(
+          `Cannot fetch followers at this time. User ID does not exist: ${id}`
+        );
+        return;
       }
 
-      console.log("getting followers")
+      console.log("getting followers");
 
       //obtain followers
       try {
-        const response = await fetch(`${API_URL}/api/follow/get-followers/${id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${API_URL}/api/follow/get-followers/${id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          }
+        );
 
-        console.log("got followers")
+        console.log("got followers");
 
         if (!response.ok) {
           alert("Error fetching followers. Try again later.");
@@ -75,38 +85,38 @@ export default function FollowersScreen() {
           id: row.fld_user_pk ?? row.id,
           username: row.fld_username ?? row.username,
           image:
-          typeof row.avatarUrl === "string" && /^https?:\/\//i.test(row.avatarUrl)
-          ? { uri: row.avatarUrl }
-          : require("@/assets/images/icons8-cat-profile-100.png"),
+            typeof row.avatarUrl === "string" &&
+            /^https?:\/\//i.test(row.avatarUrl)
+              ? { uri: row.avatarUrl }
+              : require("@/assets/images/icons8-cat-profile-100.png"),
         }));
 
-        setFollowers(format_followers)
-
-      }
-      catch(error) {
-        console.log("Error while fetching followers:", (error as Error).message);
+        setFollowers(format_followers);
+      } catch (error) {
+        console.log(
+          "Error while fetching followers:",
+          (error as Error).message
+        );
         alert("Server error, please try again later.");
       }
+    };
 
-    }
+    getFollowers();
+  }, []);
 
-    getFollowers()
-
-  }, [])
-
-  const filteredFollowers = followers.filter(f =>
+  const filteredFollowers = followers.filter((f) =>
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const removeFollower = (id: string) => {
-    setFollowers(prev => prev.filter(f => f.id !== id));
+    setFollowers((prev) => prev.filter((f) => f.id !== id));
 
     //get followed people for current user logged in
     const removeFollowerAPI = async () => {
       //obtain token
       const token = await Storage.getItem("token");
 
-      console.log("remove follower")
+      console.log("remove follower");
 
       //obtain the followed dudes
       try {
@@ -120,32 +130,27 @@ export default function FollowersScreen() {
           body: JSON.stringify({ followerID: parseInt(id) }),
         });
 
-
         if (!response.ok) {
           alert("Error while removing follower. Try again later.");
           router.replace("/userProfile");
           return;
         }
-
-      }
-      catch(error) {
+      } catch (error) {
         console.log("Error while removing follower:", (error as Error).message);
         alert("Server error, please try again later.");
       }
+    };
 
-    }
-    
-    removeFollowerAPI()
+    removeFollowerAPI();
   };
 
-
   const blockFollower = (id: string) => {
-    setFollowers(prev => prev.filter(f => f.id !== id));
+    setFollowers((prev) => prev.filter((f) => f.id !== id));
 
     const blockFollowerAPI = async () => {
       const token = await Storage.getItem("token");
 
-      console.log("block follower")
+      console.log("block follower");
 
       //block a follower of yours
       try {
@@ -158,19 +163,17 @@ export default function FollowersScreen() {
           credentials: "include",
         });
 
-
         if (!response.ok) {
           alert("Error while blocking follower. Try again later.");
           router.replace("/userProfile");
           return;
         }
-      }
-      catch(error) {
+      } catch (error) {
         console.log("Error while blocking follower:", (error as Error).message);
         alert("Server error, please try again later.");
       }
-    }
-    blockFollowerAPI()
+    };
+    blockFollowerAPI();
   };
 
   //to remove the auto-generated header... remove if we hate this!
@@ -180,28 +183,32 @@ export default function FollowersScreen() {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
       paddingHorizontal: 20,
-      paddingTop: 60,
+      paddingTop: insets.top,
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
       marginBottom: 20,
+      marginTop: 10,
+      position: "relative",
+      justifyContent: "center",
+    },
+    backButton: {
+      position: "absolute",
+      left: 0,
     },
     backArrow: {
-      fontSize: 28,
-      marginRight: 15,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     headerText: {
-      fontSize: 26,
-      fontWeight: "600",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       color: colors.text,
     },
     searchBar: {
@@ -212,7 +219,10 @@ export default function FollowersScreen() {
       paddingHorizontal: 20,
       height: 45,
       marginBottom: 15,
-      color: colors.text
+      color: colors.text,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
     },
     userCard: {
       flexDirection: "row",
@@ -239,15 +249,11 @@ export default function FollowersScreen() {
       backgroundColor: "#fff",
     },
     username: {
-      fontWeight: "600",
-      fontSize: 16,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
       color: colors.text,
       flexShrink: 1,
       minWidth: 0,
-    },
-    name: {
-      fontSize: 14,
-      color: colors.text,
     },
     actionButton: {
       paddingHorizontal: 12,
@@ -256,7 +262,7 @@ export default function FollowersScreen() {
     },
     buttonText: {
       color: "#fff",
-      fontWeight: "600",
+      fontWeight: size.weight.headline,
     },
   });
 
@@ -264,28 +270,40 @@ export default function FollowersScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}
+        <TouchableOpacity
+          onPress={() => router.back()}
           accessible={true}
           accessibilityLabel={"Go Back"}
           accessibilityHint={"Navigates back to the previous page."}
-          accessibilityRole={"button"}>
+          accessibilityRole={"button"}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerText}
+        <Text
+          style={styles.headerText}
           accessible={true}
-          accessibilityRole={"header"}>
+          accessibilityRole={"header"}
+        >
           Followers
         </Text>
       </View>
 
       {/* Search Bar */}
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search followers"
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholderTextColor={colors.text}
-      />
+      <View style={styles.searchBar}>
+        <Feather
+          name={"search"}
+          size={size.iconSize - 4}
+          color={colors.inputContainerPlaceholderText}
+        />
+        <TextInput
+          placeholder="Search followers"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor={colors.inputContainerPlaceholderText}
+          style={{ fontSize: size.font.bodyText }}
+        />
+      </View>
 
       {/* List */}
       <FlatList
@@ -294,43 +312,60 @@ export default function FollowersScreen() {
         renderItem={({ item }) => (
           <View style={styles.userCard}>
             <View style={styles.userInfo}>
-              <TouchableOpacity onPress={() => router.replace({
-                  pathname: "/userProfile/[id]",
-                  params: { id: item.id },
-                })}
+              <TouchableOpacity
+                onPress={() =>
+                  router.replace({
+                    pathname: "/userProfile/[id]",
+                    params: { id: item.id },
+                  })
+                }
                 accessible={true}
                 accessibilityLabel={item.username + " profile picture."}
                 accessibilityHint={"Double tap to view profile"}
-                accessibilityRole={"image"}>
+                accessibilityRole={"image"}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
                 <Image source={item.image} style={styles.avatar} />
+                <View style={{ flexShrink: 1, minWidth: 0 }}>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={styles.username}
+                  >
+                    {item.username}
+                  </Text>
+                </View>
               </TouchableOpacity>
-              <View style={{flexShrink: 1, minWidth: 0}}>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
-              </View>
             </View>
             {currentUser !== "" && currentUser === id ? (
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
-                onPress={() => removeFollower(item.id)}
-                accessible={true}
-                accessibilityHint={"Double tap to remove this follower"}
-                accessibilityRole={"button"}
-              >
-                <Text style={styles.buttonText}>Remove</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: "#6C757D" }]}
-                onPress={() => blockFollower(item.id)}
-                accessible={true}
-                accessibilityHint={"Double tap to block this follower"}
-                accessibilityRole={"button"}
-              >
-                <Text style={styles.buttonText}>Block</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: "#D9534F" }]}
+                  onPress={() => removeFollower(item.id)}
+                  accessible={true}
+                  accessibilityHint={"Double tap to remove this follower"}
+                  accessibilityRole={"button"}
+                >
+                  <Text style={styles.buttonText}>Remove</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: "#6C757D" }]}
+                  onPress={() => blockFollower(item.id)}
+                  accessible={true}
+                  accessibilityHint={"Double tap to block this follower"}
+                  accessibilityRole={"button"}
+                >
+                  <Text style={styles.buttonText}>Block</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
-            <View></View>)}
+              <View></View>
+            )}
           </View>
         )}
       />

@@ -14,7 +14,10 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/Styles/colors";
@@ -24,6 +27,7 @@ import { Storage } from "../../utils/storage";
 import ExploreCommentsModal from "@/components/exploreComments";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import { reasons } from "@/components/reportReasons";
+import { useAppSize } from "@/Hooks/useSize";
 
 type PhotoCard = {
   pic: string;
@@ -88,6 +92,8 @@ export default function SinglePost() {
   const currentPost = useRef<number | null>(null);
   const creatorID = useRef<number | null>(null);
 
+  const size = useAppSize();
+
   //actually call the refresh
   useEffect(() => {
     const getPost = async () => {
@@ -95,15 +101,6 @@ export default function SinglePost() {
     };
     getPost();
   }, []);
-
-  //reload upon return from editing
-  // useEffect(() => {
-  //   if (!updatedCaption) return;
-
-  //   setPostInfo(prev =>
-  //     prev ? { ...prev, content: updatedCaption } : prev
-  //   );
-  // }, [updatedCaption, editVersion]);
 
   useEffect(() => {
     if (updatedCaption && post) {
@@ -293,19 +290,16 @@ export default function SinglePost() {
           },
         ]}
       >
-        {/* back arrow for testing */}
-        {/* <View>
-        <Pressable onPress={router.back} hitSlop={10}>
-          <Feather name="arrow-left" size={24} color={colors.text} />
-        </Pressable>
-      </View> */}
-
         {/* Centered message */}
         <View>
           <Text
             style={[
               styles.content,
-              { color: colors.text, fontStyle: "italic" },
+              {
+                color: colors.text,
+                fontStyle: "italic",
+                fontSize: size.font.caption,
+              },
             ]}
           >
             Loading page content...
@@ -361,15 +355,14 @@ export default function SinglePost() {
     router.replace("/userProfile");
   };
 
-
   //handle post reporting
   const handleReport = async (reason: string) => {
-    console.log("reason chosen:", reason)
+    console.log("reason chosen:", reason);
 
-    setReportSending(true)
+    setReportSending(true);
 
-    setReportMenuVisible(false)
-    const token = await Storage.getItem("token")
+    setReportMenuVisible(false);
+    const token = await Storage.getItem("token");
 
     try {
       const response = await fetch(`${API_URL}/api/report/posts/${id}`, {
@@ -379,64 +372,71 @@ export default function SinglePost() {
           Authorization: `Bearer ${token}`,
         },
         credentials: "include",
-        body: JSON.stringify({reason: reason}),
-      })
+        body: JSON.stringify({ reason: reason }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        alert(`Error: ${data.message}`)
+        alert(`Error: ${data.message}`);
         return;
       }
 
-      alert("Post successfully reported!")
-
+      alert("Post successfully reported!");
+    } catch (error) {
+      alert(`Error reporting post: ${error}`);
+      return;
+    } finally {
+      setReportSending(false);
     }
-    catch(error) {
-      alert(`Error reporting post: ${error}`)
-      return
-    }
-    finally {
-      setReportSending(false)
-    }
-  }
-
+  };
 
   //begin the REAL UI
   const thisIsMyPost = currentUser === post.creatorID;
   return (
-    <SafeAreaView
+    <View
       style={[
         styles.container,
         {
-          paddingTop: insets.top,
           backgroundColor: colors.exploreBackground, // match Explore
+          paddingTop: insets.top,
         },
       ]}
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={router.back} hitSlop={10}
+        <Pressable
+          onPress={router.back}
+          hitSlop={10}
           accessible={true}
           accessibilityLabel={"Go Back"}
           accessibilityHint={"Navigates back to the previous page."}
-          accessibilityRole={"button"}>
-          <Feather name="arrow-left" size={24} color={colors.text} />
+          accessibilityRole={"button"}
+          style={styles.backButton}
+        >
+          <Text
+            style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+          >
+            ←
+          </Text>
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text }]}
+        <Text
+          style={{
+            color: colors.text,
+            fontSize: size.font.largeTitleText,
+            fontWeight: size.weight.title,
+          }}
           accessible={true}
-          accessibilityRole={"header"}>
+          accessibilityRole={"header"}
+        >
           More About This Post
         </Text>
-        {/* spacer so title stays centered */}
-        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: insets.bottom + 120,
-          paddingHorizontal: 16,
         }}
       >
         <View
@@ -459,7 +459,9 @@ export default function SinglePost() {
                 })
               }
               accessible={true}
-              accessibilityHint={"Double tap to view " + post.username + " profile"}
+              accessibilityHint={
+                "Double tap to view " + post.username + " profile"
+              }
             >
               <View>
                 <Image
@@ -473,30 +475,56 @@ export default function SinglePost() {
               </View>
               <View>
                 <Text
-                  style={[
-                    styles.username,
-                    { color: colors.text, paddingTop: 2 },
-                  ]}
+                  style={{
+                    color: colors.text,
+                    paddingTop: 2,
+                    fontSize: size.font.headline,
+                    fontWeight: size.weight.headline,
+                    marginBottom: 3,
+                  }}
                 >
                   {post.username}
                 </Text>
-                <Text style={[styles.date, { color: colors.text }]}>
-                  {new Date(post.datePosted).toDateString()}
+                <Text
+                  style={[
+                    styles.date,
+                    { color: colors.text, fontSize: size.font.detailText },
+                  ]}
+                >
+                  {new Date(post.datePosted).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </Text>
               </View>
             </Pressable>
 
             <View style={{ flex: 1 }} />
 
-            <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}
+            <Pressable
+              hitSlop={10}
+              onPress={() => setMenuVisible(true)}
               accessible={true}
               accessibilityLabel={"Explore Post Menu"}
-              accessibilityHint={"Double tap to view the explore post menu options."}
-              accessibilityRole={"button"}>
+              accessibilityHint={
+                "Double tap to view the explore post menu options."
+              }
+              accessibilityRole={"button"}
+              style={{
+                backgroundColor: colors.secondaryButton,
+                padding: 15,
+                borderRadius: 99,
+                width: size.iconSize + 30,
+                height: size.iconSize + 30,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               <Entypo
                 name="dots-three-vertical"
-                size={22}
-                color={colors.text}
+                size={size.iconSize}
+                color={colors.decorativeBackground}
               />
             </Pressable>
           </View>
@@ -517,7 +545,7 @@ export default function SinglePost() {
                 decelerationRate="fast"
                 snapToInterval={containerWidth}
                 snapToAlignment="center"
-                style={{ flexGrow: 0, borderRadius: 16 }}
+                style={{ flexGrow: 0, borderRadius: 20 }}
                 onMomentumScrollEnd={(
                   event: NativeSyntheticEvent<NativeScrollEvent>
                 ) => {
@@ -526,17 +554,6 @@ export default function SinglePost() {
                   setImageIndex(index);
                 }}
               >
-                {/* {post.imageUrls.map((uri, index) => (
-            <Pressable key={index} onPress={() => onImagePress(uri)}>
-              <Image
-                source={{ uri }}
-                style={{ width: containerWidth, height: containerWidth }}
-                resizeMode="cover"
-              />
-            </Pressable> */}
-
-                {/* ))} */}
-
                 {post.imageUrls.map((photo, index) => {
                   if (!photo?.pic) return null;
 
@@ -564,13 +581,18 @@ export default function SinglePost() {
 
           {/* image count numbers */}
           <View style={{ paddingVertical: 5 }}>
-            <Text style={[styles.imageCountText, { color: colors.text }]}>
+            <Text style={{ color: colors.text, fontSize: size.font.caption }}>
               {imageIndex + 1} / {post.imageUrls.length}
             </Text>
           </View>
 
           {/* Caption / content */}
-          <Text style={[styles.content, { color: colors.text }]}>
+          <Text
+            style={[
+              styles.content,
+              { color: colors.text, fontSize: size.font.caption },
+            ]}
+          >
             {post.content}
           </Text>
 
@@ -591,11 +613,23 @@ export default function SinglePost() {
                   {tag.tagName === "Knit" ||
                   tag.tagName === "Crochet" ||
                   tag.tagName === "Misc" ? (
-                    <Text style={[styles.tagText, { color: colors.text }]}>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: size.font.detailText,
+                        fontWeight: size.weight.title,
+                      }}
+                    >
                       🌟{tag.tagName}
                     </Text>
                   ) : (
-                    <Text style={[styles.tagText, { color: colors.text }]}>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: size.font.detailText,
+                        fontWeight: size.weight.title,
+                      }}
+                    >
                       #{tag.tagName}
                     </Text>
                   )}
@@ -606,57 +640,89 @@ export default function SinglePost() {
 
           {/* Action row (like / comment / save) */}
           <View style={styles.actionsRow}>
-            <Pressable style={styles.actionButton} onPress={handleLikePress}
+            <Pressable
+              style={styles.actionButton}
+              onPress={handleLikePress}
               accessible={true}
               accessibilityLabel={"Like"}
-              accessibilityHint={liked? "double tap to unlike this post" : "double tap to like this post"}
-              accessibilityState={liked? {checked: true} : {checked: false}}
-              accessibilityRole={"button"}>
+              accessibilityHint={
+                liked
+                  ? "double tap to unlike this post"
+                  : "double tap to like this post"
+              }
+              accessibilityState={
+                liked ? { checked: true } : { checked: false }
+              }
+              accessibilityRole={"button"}
+            >
               <Feather
                 name="heart"
-                size={24}
+                size={size.iconSize + 4}
                 color={liked ? "#E57373" : colors.text}
               />
-              <Text style={[styles.actionText, { color: colors.text }]}>
+              <Text
+                style={[
+                  styles.actionText,
+                  { color: colors.text, fontSize: size.font.caption },
+                ]}
+              >
                 {liked ? "Liked" : "Like"}
               </Text>
             </Pressable>
-
-            {/* <Pressable style={styles.actionButton}>\
-              <Feather name="message-circle" size={24} color={colors.text} />
-              <Text style={[styles.actionText, { color: colors.text }]}>
-                Comment
-              </Text>
-            </Pressable> */}
 
             <Pressable
               onPress={() => showComments(post)}
               style={styles.actionButton}
               accessible={true}
               accessibilityLabel={"Comment feed"}
-              accessibilityHint={"Double tap to open comment section on this post"}
+              accessibilityHint={
+                "Double tap to open comment section on this post"
+              }
               accessibilityRole={"button"}
             >
-              <Feather name="message-circle" size={24} color={colors.text} />
-              <Text style={[styles.actionText, { color: colors.text }]}>
+              <Feather
+                name="message-circle"
+                size={size.iconSize + 4}
+                color={colors.text}
+              />
+              <Text
+                style={[
+                  styles.actionText,
+                  { color: colors.text, fontSize: size.font.caption },
+                ]}
+              >
                 Comment
               </Text>
             </Pressable>
 
             <View style={{ flex: 1 }} />
 
-            <Pressable style={styles.actionButton} onPress={handleSavePress}
+            <Pressable
+              style={styles.actionButton}
+              onPress={handleSavePress}
               accessible={true}
               accessibilityLabel={"Save"}
-              accessibilityHint={saved ? "double tap to unsave this post" : "double tap to save this post"}
-              accessibilityState={saved ? {checked: true} : {checked: false}}
-              accessibilityRole={"button"}>
+              accessibilityHint={
+                saved
+                  ? "double tap to unsave this post"
+                  : "double tap to save this post"
+              }
+              accessibilityState={
+                saved ? { checked: true } : { checked: false }
+              }
+              accessibilityRole={"button"}
+            >
               <Feather
                 name="bookmark"
-                size={24}
+                size={size.iconSize + 4}
                 color={saved ? colors.exploreFilterSelected : colors.text}
               />
-              <Text style={[styles.actionText, { color: colors.text }]}>
+              <Text
+                style={[
+                  styles.actionText,
+                  { color: colors.text, fontSize: size.font.caption },
+                ]}
+              >
                 {saved ? "Saved" : "Save"}
               </Text>
             </Pressable>
@@ -730,10 +796,18 @@ export default function SinglePost() {
                   style={styles.menuOption}
                   accessible={true}
                   accessibilityLabel={"Edit"}
-                  accessibilityHint={"Navigates to the edit explore post screen. Double tap to edit this post."}
+                  accessibilityHint={
+                    "Navigates to the edit explore post screen. Double tap to edit this post."
+                  }
                 >
-                  <Feather name="edit" size={18} color={colors.text} />
-                  <Text style={[styles.menuText, { color: colors.text }]}>
+                  <Feather
+                    name="edit"
+                    size={size.iconSize - 2}
+                    color={colors.text}
+                  />
+                  <Text
+                    style={{ color: colors.text, fontSize: size.font.button }}
+                  >
                     Edit
                   </Text>
                 </TouchableOpacity>
@@ -745,8 +819,17 @@ export default function SinglePost() {
                   accessibilityLabel={"Delete"}
                   accessibilityHint={"Double tap to delete this explore post."}
                 >
-                  <Feather name="trash-2" size={18} color={colors.warning} />
-                  <Text style={[styles.menuText, { color: colors.warning }]}>
+                  <Feather
+                    name="trash-2"
+                    size={size.iconSize - 2}
+                    color={colors.warning}
+                  />
+                  <Text
+                    style={{
+                      color: colors.warning,
+                      fontSize: size.font.button,
+                    }}
+                  >
                     Delete
                   </Text>
                 </TouchableOpacity>
@@ -761,10 +844,18 @@ export default function SinglePost() {
                 style={styles.menuOption}
                 accessible={true}
                 accessibilityLabel={"Report"}
-                accessibilityHint={"Double tap to report this explore post to LoopedIn moderators."}
+                accessibilityHint={
+                  "Double tap to report this explore post to LoopedIn moderators."
+                }
               >
-                <Feather name="flag" size={18} color={colors.text} />
-                <Text style={[styles.menuText, { color: colors.text }]}>
+                <Feather
+                  name="flag"
+                  size={size.iconSize - 2}
+                  color={colors.text}
+                />
+                <Text
+                  style={{ color: colors.text, fontSize: size.font.button }}
+                >
                   Report
                 </Text>
               </TouchableOpacity>
@@ -775,10 +866,21 @@ export default function SinglePost() {
               accessibilityRole="button"
               accessibilityLabel="Close menu"
               accessibilityHint="Double tap to exit explore post menu"
-              style={{marginTop: 10, padding: 8, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
-                      alignItems: "center"}}
+              style={{
+                marginTop: 10,
+                padding: 8,
+                borderColor: colors.cancel,
+                borderWidth: 1,
+                borderRadius: 12,
+                width: "100%",
+                alignItems: "center",
+              }}
             >
-              <Text style={[styles.menuText, { color: colors.cancel}]}>Close</Text>
+              <Text
+                style={{ color: colors.cancel, fontSize: size.font.button }}
+              >
+                Close
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -811,10 +913,24 @@ export default function SinglePost() {
               },
             ]}
           >
-            <Text style={[styles.successTitle, { color: colors.text }]}>
+            <Text
+              style={[
+                styles.successTitle,
+                {
+                  color: colors.text,
+                  fontSize: size.font.titleText,
+                  fontWeight: size.weight.largeTitle,
+                },
+              ]}
+            >
               Successfully Deleted!
             </Text>
-            <Text style={[styles.successDescription, { color: colors.settingsText }]}>
+            <Text
+              style={[
+                styles.successDescription,
+                { color: colors.settingsText, fontSize: size.font.button },
+              ]}
+            >
               Ready to start a new post?
             </Text>
             <View style={styles.successButtonRow}>
@@ -826,10 +942,11 @@ export default function SinglePost() {
                 ]}
               >
                 <Text
-                  style={[
-                    styles.successButtonText,
-                    { color: colors.background },
-                  ]}
+                  style={{
+                    color: colors.disabledButtonText,
+                    fontSize: size.font.button,
+                    fontWeight: size.weight.largeTitle,
+                  }}
                 >
                   Yes
                 </Text>
@@ -842,10 +959,11 @@ export default function SinglePost() {
                 ]}
               >
                 <Text
-                  style={[
-                    styles.successButtonText,
-                    { color: colors.disabledButtonText },
-                  ]}
+                  style={{
+                    color: colors.disabledButtonText,
+                    fontSize: size.font.button,
+                    fontWeight: size.weight.largeTitle,
+                  }}
                 >
                   No
                 </Text>
@@ -873,13 +991,26 @@ export default function SinglePost() {
               { backgroundColor: colors.exploreCardBackground },
             ]}
           >
-            <View style={{paddingBottom: 20}}>
-              <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+            <View style={{ paddingBottom: 20 }}>
+              <Text
+                style={[
+                  styles.reportHeaderText,
+                  { color: colors.text, fontSize: size.font.button },
+                ]}
+              >
+                Report Reason
+              </Text>
             </View>
 
-            <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+            <View
+              style={{
+                backgroundColor: colors.blockedBackground,
+                height: 1,
+                width: "100%",
+              }}
+            />
             {reasons.map((reason) => (
-              <View style={{flexDirection: "column"}} key={reason}>
+              <View style={{ flexDirection: "column" }} key={reason}>
                 <TouchableOpacity
                   onPress={() => handleReport(reason)}
                   style={styles.menuOption}
@@ -887,14 +1018,24 @@ export default function SinglePost() {
                   disabled={reportSending}
                   accessible={true}
                   accessibilityLabel={`Reason option: ${reason}`}
-                  accessibilityHint={"Double tap to report post for this reason."}
+                  accessibilityHint={
+                    "Double tap to report post for this reason."
+                  }
                 >
-                  <Text style={[styles.menuText, { color: colors.text }]}>
+                  <Text
+                    style={{ color: colors.text, fontSize: size.font.button }}
+                  >
                     {reason}
                   </Text>
                 </TouchableOpacity>
                 {/*line separator guy */}
-                <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+                <View
+                  style={{
+                    backgroundColor: colors.blockedBackground,
+                    height: 1,
+                    width: "100%",
+                  }}
+                />
               </View>
             ))}
 
@@ -904,35 +1045,48 @@ export default function SinglePost() {
               accessibilityRole="button"
               accessibilityLabel="Close menu"
               accessibilityHint="Double tap to exit report menu"
-              style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
-                      alignItems: "center"}}
+              style={{
+                marginTop: 20,
+                padding: 10,
+                borderColor: colors.cancel,
+                borderWidth: 1,
+                borderRadius: 12,
+                width: "100%",
+                alignItems: "center",
+              }}
             >
-              <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
+              <Text
+                style={{ color: colors.cancel, fontSize: size.font.button }}
+              >
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 20,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    marginBottom: 20,
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    position: "relative",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+  backButton: {
+    position: "absolute",
+    left: 0,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 16,
     marginTop: 8,
@@ -953,18 +1107,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 10,
   },
-  username: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
   date: {
-    fontSize: 12,
     opacity: 0.7,
-  },
-  titleText: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
   },
   imageWrapper: {
     width: "100%",
@@ -988,11 +1132,9 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   actionText: {
-    fontSize: 14,
     marginLeft: 6,
   },
   content: {
-    fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
   },
@@ -1008,10 +1150,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 1,
     backgroundColor: "transparent",
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
@@ -1031,12 +1169,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 8,
   },
-  menuText: {
-    fontSize: 16,
-  },
-  imageCountText: {
-    fontSize: 14,
-  },
   reportMenuContainer: {
     width: 320,
     borderRadius: 12,
@@ -1045,7 +1177,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   reportHeaderText: {
-    fontSize: 24,
     textAlign: "center",
   },
   successBackdrop: {
@@ -1068,13 +1199,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   successTitle: {
-    fontSize: 24,
-    fontWeight: "700",
     marginBottom: 12,
     textAlign: "center",
   },
   successDescription: {
-    fontSize: 16,
     lineHeight: 24,
     marginBottom: 20,
     textAlign: "center",
@@ -1089,9 +1217,5 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingVertical: 14,
-  },
-  successButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
   },
 });

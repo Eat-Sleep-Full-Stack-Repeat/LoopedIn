@@ -32,7 +32,8 @@ import { Storage } from "../../utils/storage";
 import { TextInput } from "react-native-gesture-handler";
 import ForumReplyModal from "@/components/forumReply";
 import EditForumReplyModal from "@/components/editForumReply";
-import { reasons } from "@/components/reportReasons"
+import {reasons} from "@/components/reportReasons"
+import { useAppSize } from "@/Hooks/useSize";
 
 type Comment = {
   id: string;
@@ -78,13 +79,13 @@ type Tag = {
   tagID: string;
   tagColor: string;
   tagName: string;
-}
+};
 
 type BackendTags = {
   tagid: string;
   tagname: string;
   tagcolor: string;
-}
+};
 
 // hide the reply action on comments at or beyond this depth
 const MAX_REPLY_DEPTH = 4;
@@ -143,6 +144,8 @@ export default function ForumPostDetail() {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const size = useAppSize();
+
   useLayoutEffect(() => {
     navigation.setOptions?.({ headerShown: false });
   }, [navigation]);
@@ -153,18 +156,18 @@ export default function ForumPostDetail() {
 
   useEffect(() => {
     if (post) {
-      fetchComments()
+      fetchComments();
       fetchSaved();
     }
   }, [post]);
 
   //handle post reporting
   const handleReport = async (reason: string) => {
-    console.log("reason chosen:", reason)
-    setReportSending(true)
+    console.log("reason chosen:", reason);
+    setReportSending(true);
 
-    setReportMenuVisible(false)
-    const token = await Storage.getItem("token")
+    setReportMenuVisible(false);
+    const token = await Storage.getItem("token");
 
     try {
       const response = await fetch(`${API_URL}/api/report/forums/${id}`, {
@@ -174,27 +177,24 @@ export default function ForumPostDetail() {
           Authorization: `Bearer ${token}`,
         },
         credentials: "include",
-        body: JSON.stringify({reason: reason}),
-      })
+        body: JSON.stringify({ reason: reason }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        alert(`Error: ${data.message}`)
+        alert(`Error: ${data.message}`);
         return;
       }
 
-      alert("Post successfully reported!")
-
+      alert("Post successfully reported!");
+    } catch (error) {
+      alert(`Error reporting post: ${error}`);
+      return;
+    } finally {
+      setReportSending(false);
     }
-    catch(error) {
-      alert(`Error reporting post: ${error}`)
-      return
-    }
-    finally {
-      setReportSending(false)
-    }
-  }
+  };
 
   const handleRefresh = async () => {
     if (refreshing) {
@@ -211,8 +211,7 @@ export default function ForumPostDetail() {
 
   useEffect(() => {
     if (refreshing) {
-
-      const refreshNewData = async() => {
+      const refreshNewData = async () => {
         try {
           await fetchPostInfo();
           await fetchSaved();
@@ -222,10 +221,9 @@ export default function ForumPostDetail() {
         } finally {
           setRefreshing(false);
         }
-      }
+      };
 
       refreshNewData();
-      
     }
   }, [refreshing]);
 
@@ -255,20 +253,17 @@ export default function ForumPostDetail() {
       currentUserInfo.current = responseData.currentUserInfo[0];
 
       //structure and set the tag data
-      let tempTagData: Tag[] = responseData.tags.map(
-        (tag: BackendTags) => ({
-          tagID: tag.tagid,
-          tagName: tag.tagname,
-          tagColor: tag.tagcolor,
-        })
-      )
+      let tempTagData: Tag[] = responseData.tags.map((tag: BackendTags) => ({
+        tagID: tag.tagid,
+        tagName: tag.tagname,
+        tagColor: tag.tagcolor,
+      }));
 
       setTagData(tempTagData);
-
     } catch (e) {
       console.log("Error when fetching post data", e);
     }
-  }
+  };
 
   const fetchSaved = async () => {
     const token = await Storage.getItem("token");
@@ -293,9 +288,9 @@ export default function ForumPostDetail() {
       const responseData = await res.json();
       setIsSaved(responseData.saveStatus);
     } catch (e) {
-      console.log("Error when fetching save status", e)
+      console.log("Error when fetching save status", e);
     }
-  }
+  };
 
   const fetchComments = async () => {
     const token = await Storage.getItem("token");
@@ -341,21 +336,20 @@ export default function ForumPostDetail() {
     }
   };
 
+  const handleSavePress = async () => {
+    //"lock" button during api call to prevent spamming
+    if (isSaving) return;
+    setIsSaving(true);
 
-  const handleSavePress = async() => {
-      //"lock" button during api call to prevent spamming
-      if (isSaving) return;
-      setIsSaving(true);
+    const token = await Storage.getItem("token");
 
-      const token = await Storage.getItem("token");
+    //update UI immediately
+    const original = isSaved;
+    setIsSaved(!original);
 
-      //update UI immediately
-      const original = isSaved;
-      setIsSaved(!original); 
-
-      //unsave
-      if(isSaved){
-        try{
+    //unsave
+    if (isSaved) {
+      try {
         const res = await fetch(
           `${API_URL}/api/forum/unsave_forum?id=${postID}`,
           {
@@ -375,13 +369,13 @@ export default function ForumPostDetail() {
         }
       } catch (e) {
         console.log("Error when unsaving", e);
-      } finally{
+      } finally {
         //add timeout? or api rate limiter
         setIsSaving(false);
       }
-      }
-      else{ //save
-        try{
+    } else {
+      //save
+      try {
         const res = await fetch(
           `${API_URL}/api/forum/save_forum?id=${postID}`,
           {
@@ -399,23 +393,23 @@ export default function ForumPostDetail() {
           setIsSaved(original);
           alert("Failed to save post, please try again.");
         }
-
       } catch (e) {
         console.log("Error when saving", e);
-      } finally{
+      } finally {
         //add timeout? or api rate limiter
         setIsSaving(false);
       }
     }
-  }
+  };
 
   // will display the modal where the user can enter a reply
-  const handleReplyPress = useCallback((
-    replyInfo: Post | Comment
-  ) => {
-    setIsReplyVisible(true);
-    setReplyInformation(replyInfo);
-  }, [isReplyVisible, replyInformation]);
+  const handleReplyPress = useCallback(
+    (replyInfo: Post | Comment) => {
+      setIsReplyVisible(true);
+      setReplyInformation(replyInfo);
+    },
+    [isReplyVisible, replyInformation]
+  );
 
   //will actually post the reply in the databases
   const handlePostReply = async (replyText: string) => {
@@ -721,18 +715,17 @@ export default function ForumPostDetail() {
             return id;
           } else if (child.children.length > 0) {
             var x = getParents(child.children, id);
-  
+
             if (x) return Array.isArray(x) ? [...x, child.id] : [x, child.id];
           }
         }
       }
-  
+
       const result: string[] = getParents(passedComments, commentID);
 
       let updateArray = structuredClone(passedComments); //temporarily store the array
       let count = result.length - 1; //get the last id in the path (last id is the root id)
       let index = updateArray.findIndex((obj) => obj.id === result[count]); //get the index of the first id in the path
-
 
       const updateCommentsArr = (index: number, item: Comment[]) => {
         let tempItem = item[index]; //get the comment in the path
@@ -774,8 +767,6 @@ export default function ForumPostDetail() {
       }
 
       setPassedComments(updateArray);
-
-
     } catch (e) {
       console.log("Error when trying to update comment information", e);
     }
@@ -787,29 +778,26 @@ export default function ForumPostDetail() {
   }, []);
 
   const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: 20,
+    },
 
     backFab: {
       position: "absolute",
-      top: insets.top + 8,
-      left: 10,
+      top: insets.top,
+      marginTop: 10,
+      marginBottom: 20,
+      left: 20,
       zIndex: 10,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.boxBackground,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 4,
-      elevation: 3,
     },
-
+    backArrow: {
+      fontSize: size.font.largeTitleText,
+      color: colors.text,
+    },
     postCard: {
       backgroundColor: colors.topBackground,
-      marginHorizontal: 8,
       marginTop: insets.top + 60,
       borderRadius: 16,
       padding: 16,
@@ -820,17 +808,30 @@ export default function ForumPostDetail() {
       marginBottom: 10,
     },
     avatarCircle: {
-      width: 48,
-      height: 48,
+      width: size.iconSize + 28,
+      height: size.iconSize + 28,
       borderRadius: 24,
       backgroundColor: colors.boxBackground,
       marginRight: 12,
     },
-    postTitle: { color: colors.text, fontSize: 20, fontWeight: "700" },
+    postTitle: {
+      color: colors.text,
+      fontSize: size.font.headline,
+      fontWeight: size.weight.title,
+    },
     postUserRow: { flexDirection: "row", alignItems: "center" },
-    postUser: { color: colors.text, marginRight: 8, fontWeight: "600" },
-    postDate: { color: colors.text, fontSize: 12 },
-    postBody: { color: colors.text, marginTop: 8, lineHeight: 20 },
+    postUser: {
+      color: colors.text,
+      marginRight: 8,
+      fontWeight: size.weight.title,
+    },
+    postDate: { color: colors.text, fontSize: size.font.detailText },
+    postBody: {
+      color: colors.text,
+      marginTop: 8,
+      lineHeight: 20,
+      fontSize: size.font.bodyText,
+    },
 
     imagePlaceholder: {
       borderRadius: 12,
@@ -851,10 +852,14 @@ export default function ForumPostDetail() {
       gap: 6,
       paddingVertical: 6,
       paddingHorizontal: 10,
-      backgroundColor: colors.boxBackground,
+      backgroundColor: colors.secondaryButton,
       borderRadius: 10,
     },
-    actionText: { color: colors.text, fontWeight: "600" },
+    actionText: {
+      color: colors.decorativeBackground,
+      fontWeight: size.weight.title,
+      fontSize: size.font.button,
+    },
     tagRow: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -870,13 +875,17 @@ export default function ForumPostDetail() {
       marginBottom: 8,
     },
     tagText: {
-      fontSize: 12,
-      fontWeight: "600",
+      fontSize: size.font.detailText,
+      fontWeight: size.weight.title,
       color: colors.text,
     },
 
     sectionHeader: { marginHorizontal: 10, marginTop: 20, marginBottom: 8 },
-    sectionTitle: { color: colors.text, fontWeight: "700", fontSize: 18 },
+    sectionTitle: {
+      color: colors.text,
+      fontWeight: size.weight.largeTitle,
+      fontSize: size.font.headline,
+    },
 
     commentWrap: {
       marginTop: 10,
@@ -898,8 +907,8 @@ export default function ForumPostDetail() {
       justifyContent: "space-between",
     },
     commentAvatarInline: {
-      width: 34,
-      height: 34,
+      width: size.iconSize + 14,
+      height: size.iconSize + 14,
       borderRadius: 17,
       backgroundColor: colors.boxBackground,
     },
@@ -910,9 +919,18 @@ export default function ForumPostDetail() {
       flexShrink: 1,
       minWidth: 0,
     },
-    commentUser: { color: colors.text, fontWeight: "700" },
-    commentDate: { color: colors.text, fontSize: 12 },
-    commentText: { color: colors.text, marginTop: 6, lineHeight: 18 },
+    commentUser: {
+      color: colors.text,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
+    },
+    commentDate: { color: colors.text, fontSize: size.font.detailText },
+    commentText: {
+      color: colors.text,
+      marginTop: 6,
+      lineHeight: 18,
+      fontSize: size.font.bodyText,
+    },
 
     commentActions: {
       flexDirection: "row",
@@ -920,8 +938,21 @@ export default function ForumPostDetail() {
       marginTop: 8,
       alignItems: "center",
     },
-    smallAction: { flexDirection: "row", alignItems: "center", gap: 4 },
-    smallIconText: { color: colors.text, fontWeight: "600", fontSize: 12 },
+    smallAction: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: colors.secondaryButton,
+      padding: 5,
+      borderWidth: 0.5,
+      borderColor: colors.decorativeBackground,
+      borderRadius: 15,
+    },
+    smallIconText: {
+      color: colors.secondaryText,
+      fontWeight: size.weight.title,
+      fontSize: size.font.detailText,
+    },
 
     seeMoreChip: {
       alignSelf: "flex-start",
@@ -935,16 +966,18 @@ export default function ForumPostDetail() {
       backgroundColor: colors.decorativeBackground,
     },
     actionTextSaved: {
-      color: colors.decorativeText,
+      color: colors.antiText,
     },
     divider: { height: 10 },
     cancelBtn: {
       marginTop: 10,
       padding: 8,
-      backgroundColor: colors.blockedBackground,
+      backgroundColor: colors.topBackground,
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.cancel,
     },
     modalOverlay: {
       flex: 1,
@@ -965,7 +998,7 @@ export default function ForumPostDetail() {
       paddingVertical: 8,
     },
     menuText: {
-      fontSize: 16,
+      fontSize: size.font.button,
     },
     reportMenuContainer: {
       width: 320,
@@ -975,9 +1008,9 @@ export default function ForumPostDetail() {
       paddingHorizontal: 15,
     },
     reportHeaderText: {
-      fontSize: 24,
+      fontSize: size.font.titleText,
       textAlign: "center",
-    }
+    },
   });
 
   const PostCard = () => {
@@ -1035,7 +1068,9 @@ export default function ForumPostDetail() {
               })
             }
             accessible={true}
-            accessibilityHint={"Double tap to view " + post.username + " profile"}
+            accessibilityHint={
+              "Double tap to view " + post.username + " profile"
+            }
           >
             {post.profileuri ? (
               <Image
@@ -1057,37 +1092,52 @@ export default function ForumPostDetail() {
               <Text style={styles.postUser}>{post.username}</Text>
               {post.dateposted ? (
                 <Text style={styles.postDate}>
-                  {new Date(post.dateposted).toDateString()}
+                  {new Date(post.dateposted).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </Text>
               ) : (
                 <Text style={styles.postDate}> Unknown Date</Text>
               )}
             </View>
           </View>
-          {currentUser !== post.creator && (
-            <Pressable hitSlop={10} onPress={() => setMenuVisible(true)}
-              accessible={true}
-              accessibilityLabel={"Forum Post Menu"}
-              accessibilityHint={"Double tap to view the forum post menu options."}
-              accessibilityRole={"button"}>
-              <Entypo
-                name="dots-three-vertical"
-                size={22}
-                color={colors.text}
-              />
-            </Pressable>
-          )}
+          <Pressable
+            hitSlop={10}
+            onPress={() => setMenuVisible(true)}
+            accessible={true}
+            accessibilityLabel={"Forum Post Menu"}
+            accessibilityHint={
+              "Double tap to view the forum post menu options."
+            }
+            accessibilityRole={"button"}
+            style={{
+              backgroundColor: colors.secondaryButton,
+              padding: 10,
+              borderRadius: 50,
+            }}
+          >
+            <Entypo
+              name="dots-three-vertical"
+              size={size.iconSize}
+              color={colors.decorativeBackground}
+            />
+          </Pressable>
         </View>
-
-        
 
         <Text style={styles.postBody}>{post.content}</Text>
 
         {!!tagData.length && (
           <View style={styles.tagRow}>
             {tagData.map((tag) => (
-              <View key={`${post.id}-${tag.tagID}`} style={[styles.tagChip, {borderColor: tag.tagColor}]}>
-                {tag.tagName === "Knit" || tag.tagName === "Crochet" || tag.tagName === "Misc" ? (
+              <View
+                key={`${post.id}-${tag.tagID}`}
+                style={[styles.tagChip, { borderColor: tag.tagColor }]}
+              >
+                {tag.tagName === "Knit" ||
+                tag.tagName === "Crochet" ||
+                tag.tagName === "Misc" ? (
                   <Text style={[styles.tagText, { color: colors.text }]}>
                     🌟{tag.tagName}
                   </Text>
@@ -1121,34 +1171,58 @@ export default function ForumPostDetail() {
         null}
 
         <View style={styles.actionRow}>
-          <Pressable  disabled={isSaving} style={[styles.actionBtn, isSaved && styles.actionBtnSaved, isSaving && { opacity: 0.5 }]} onPress={handleSavePress}
+          <Pressable
+            disabled={isSaving}
+            style={[
+              styles.actionBtn,
+              isSaved && styles.actionBtnSaved,
+              isSaving && { opacity: 0.5 },
+            ]}
+            onPress={handleSavePress}
             accessible={true}
             accessibilityLabel={isSaved ? "unsave post" : "save post"}
-            accessibilityHint={isSaved ? "double tap to unsave this post" : "double tap to save this post"}
-            accessibilityState={isSaved ? {checked: true} : {checked: false}}
-            accessibilityRole={"button"}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            {isSaving ? (
-            <ActivityIndicator size="small" color={colors.text} />) : (
-            <Feather
-              name={isSaved ? "bookmark" : "bookmark"}
-              size={18}
-              color={isSaved ? colors.decorativeText : colors.text}
-            />)}
-            <Text style={[styles.actionText, isSaved && styles.actionTextSaved]}>
-              {isSaved ? "Saved" : "Save"}
-            </Text>
+            accessibilityHint={
+              isSaved
+                ? "double tap to unsave this post"
+                : "double tap to save this post"
+            }
+            accessibilityState={
+              isSaved ? { checked: true } : { checked: false }
+            }
+            accessibilityRole={"button"}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <Feather
+                  name={isSaved ? "bookmark" : "bookmark"}
+                  size={size.iconSize - 2}
+                  color={
+                    isSaved ? colors.antiText : colors.decorativeBackground
+                  }
+                />
+              )}
+              <Text
+                style={[styles.actionText, isSaved && styles.actionTextSaved]}
+              >
+                {isSaved ? "Saved" : "Save"}
+              </Text>
             </View>
           </Pressable>
           <Pressable
             style={styles.actionBtn}
             onPress={() => handleReplyPress(post)}
-              accessible={true}
-              accessibilityLabel={"Reply"}
-              accessibilityHint={"double tap to reply to this forum post"}
-              accessibilityRole={"button"}
+            accessible={true}
+            accessibilityLabel={"Reply"}
+            accessibilityHint={"double tap to reply to this forum post"}
+            accessibilityRole={"button"}
           >
-            <Feather name="message-circle" size={18} color={colors.text} />
+            <Feather
+              name="message-circle"
+              size={size.iconSize - 2}
+              color={colors.decorativeBackground}
+            />
             <Text style={styles.actionText}>Reply</Text>
           </Pressable>
         </View>
@@ -1170,7 +1244,8 @@ export default function ForumPostDetail() {
               style={[
                 styles.menuContainer,
                 { backgroundColor: colors.exploreCardBackground },
-              ]}>
+              ]}
+            >
               <TouchableOpacity
                 onPress={() => {
                   setMenuVisible(false);
@@ -1179,9 +1254,15 @@ export default function ForumPostDetail() {
                 style={styles.menuOption}
                 accessible={true}
                 accessibilityLabel={"Report"}
-                accessibilityHint={"Double tap to report this forum post to LoopedIn moderators."}
+                accessibilityHint={
+                  "Double tap to report this forum post to LoopedIn moderators."
+                }
               >
-                <Feather name="flag" size={18} color={colors.text} />
+                <Feather
+                  name="flag"
+                  size={size.iconSize - 2}
+                  color={colors.text}
+                />
                 <Text style={[styles.menuText, { color: colors.text }]}>
                   Report
                 </Text>
@@ -1192,15 +1273,23 @@ export default function ForumPostDetail() {
                 accessibilityRole="button"
                 accessibilityLabel="Close menu"
                 accessibilityHint="Double tap to exit forum post menu"
-                style={{marginTop: 10, padding: 8, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
-                        alignItems: "center"}}
+                style={{
+                  marginTop: 10,
+                  padding: 8,
+                  borderColor: colors.cancel,
+                  borderWidth: 1,
+                  borderRadius: 12,
+                  width: "100%",
+                  alignItems: "center",
+                }}
               >
-                <Text style={[styles.menuText, { color: colors.cancel}]}>Close</Text>
+                <Text style={[styles.menuText, { color: colors.cancel }]}>
+                  Close
+                </Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </Modal>
-
 
         <Modal
           transparent
@@ -1219,13 +1308,21 @@ export default function ForumPostDetail() {
                 { backgroundColor: colors.exploreCardBackground },
               ]}
             >
-              <View style={{paddingBottom: 20}}>
-                <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+              <View style={{ paddingBottom: 20 }}>
+                <Text style={[styles.reportHeaderText, { color: colors.text }]}>
+                  Report Reason
+                </Text>
               </View>
 
-              <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+              <View
+                style={{
+                  backgroundColor: colors.blockedBackground,
+                  height: 1,
+                  width: "100%",
+                }}
+              />
               {reasons.map((reason) => (
-                <View style={{flexDirection: "column"}} key={reason}>
+                <View style={{ flexDirection: "column" }} key={reason}>
                   <TouchableOpacity
                     onPress={() => handleReport(reason)}
                     style={styles.menuOption}
@@ -1233,14 +1330,22 @@ export default function ForumPostDetail() {
                     disabled={reportSending}
                     accessible={true}
                     accessibilityLabel={`Reason option: ${reason}`}
-                    accessibilityHint={"Double tap to report forum post for this reason."}
+                    accessibilityHint={
+                      "Double tap to report forum post for this reason."
+                    }
                   >
                     <Text style={[styles.menuText, { color: colors.text }]}>
                       {reason}
                     </Text>
                   </TouchableOpacity>
                   {/*line separator guy */}
-                  <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+                  <View
+                    style={{
+                      backgroundColor: colors.blockedBackground,
+                      height: 1,
+                      width: "100%",
+                    }}
+                  />
                 </View>
               ))}
 
@@ -1250,10 +1355,19 @@ export default function ForumPostDetail() {
                 accessibilityRole="button"
                 accessibilityLabel="Close menu"
                 accessibilityHint="Double tap to exit report menu"
-                style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
-                        alignItems: "center"}}
+                style={{
+                  marginTop: 20,
+                  padding: 10,
+                  borderColor: colors.cancel,
+                  borderWidth: 1,
+                  borderRadius: 12,
+                  width: "100%",
+                  alignItems: "center",
+                }}
               >
-                <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
+                <Text style={[styles.menuText, { color: colors.cancel }]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -1267,15 +1381,24 @@ export default function ForumPostDetail() {
   type CommentBranchProps = {
     node: Comment;
     depth: number;
-    ancestorExpanded: boolean,
+    ancestorExpanded: boolean;
     currentUser: number | null;
     handleReplyPress: (replyInfo: Post | Comment) => void;
     toggleExpanded: (id: string) => void;
     expanded: Record<string, boolean>;
     post: Post | null;
-  }
+  };
 
-  const CommentBranch = React.memo(function renderCommentBranch({node, depth, ancestorExpanded = false, currentUser, handleReplyPress, toggleExpanded, expanded, post} : CommentBranchProps) {
+  const CommentBranch = React.memo(function renderCommentBranch({
+    node,
+    depth,
+    ancestorExpanded = false,
+    currentUser,
+    handleReplyPress,
+    toggleExpanded,
+    expanded,
+    post,
+  }: CommentBranchProps) {
     const children = node.children || [];
 
     const isGateDepth = depth >= HIDE_AFTER_DEPTH;
@@ -1294,9 +1417,12 @@ export default function ForumPostDetail() {
       !ancestorExpanded &&
       !thisNodeExpanded;
 
-    const bubbleStyle = useMemo(() => ({
-      marginLeft: bubbleLeftForDepth(depth)
-    }), [depth])
+    const bubbleStyle = useMemo(
+      () => ({
+        marginLeft: bubbleLeftForDepth(depth),
+      }),
+      [depth]
+    );
 
     return (
       <View key={node.id} style={styles.commentWrap}>
@@ -1326,12 +1452,7 @@ export default function ForumPostDetail() {
           )}
         {node.text !== "This comment has been deleted" &&
           node.isdeleted === false && (
-            <View
-              style={[
-                styles.commentBubble,
-                bubbleStyle,
-              ]}
-            >
+            <View style={[styles.commentBubble, bubbleStyle]}>
               <View style={styles.commentHeaderRow}>
                 <TouchableOpacity
                   onPress={() =>
@@ -1341,7 +1462,9 @@ export default function ForumPostDetail() {
                     })
                   }
                   accessible={true}
-                  accessibilityHint={"Double tap to view " + node.username + " profile"}
+                  accessibilityHint={
+                    "Double tap to view " + node.username + " profile"
+                  }
                 >
                   <View style={{ flexDirection: "row" }}>
                     {node.profileuri ? (
@@ -1369,11 +1492,27 @@ export default function ForumPostDetail() {
                           <Text style={{ color: colors.text }}>(You)</Text>
                         )}
                       </View>
-                      <View style={{flexDirection: "row", alignItems: "center"}}>
+                      <View
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                      >
                         <Text style={styles.commentDate}>
-                          {new Date(node.date).toDateString()}
+                          {new Date(node.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
                         </Text>
-                        {node.isedited ? <Text style={{fontSize: 12, color: colors.text}}> - Edited </Text> : null}
+                        {node.isedited ? (
+                          <Text
+                            style={{
+                              fontSize: size.font.detailText,
+                              color: colors.text,
+                            }}
+                          >
+                            {" "}
+                            - Edited{" "}
+                          </Text>
+                        ) : null}
                       </View>
                     </View>
                   </View>
@@ -1385,13 +1524,20 @@ export default function ForumPostDetail() {
                       setNodeToDelete(node);
                     }}
                     accessibilityLabel={"Forum Reply Menu"}
-                    accessibilityHint={"Double tap to edit or delete this reply"}
+                    accessibilityHint={
+                      "Double tap to edit or delete this reply"
+                    }
                     accessibilityRole={"button"}
+                    style={{
+                      backgroundColor: colors.secondaryButton,
+                      padding: 10,
+                      borderRadius: 50,
+                    }}
                   >
                     <Entypo
                       name="dots-three-vertical"
-                      size={22}
-                      color={colors.text}
+                      size={size.iconSize}
+                      color={colors.decorativeBackground}
                     />
                   </Pressable>
                 )}
@@ -1411,8 +1557,8 @@ export default function ForumPostDetail() {
                   >
                     <Feather
                       name="message-circle"
-                      size={14}
-                      color={colors.text}
+                      size={size.iconSize - 6}
+                      color={colors.secondaryText}
                     />
                     <Text style={styles.smallIconText}>Reply</Text>
                   </Pressable>
@@ -1422,27 +1568,26 @@ export default function ForumPostDetail() {
           )}
 
         {showChildren &&
-          children.map((child) =>
-            <CommentBranch 
-            key={child.id}
-            node={child}
-            depth={depth + 1}
-            ancestorExpanded={ancestorExpanded || (isGateDepth && thisNodeExpanded)}
-            currentUser={currentUser}
-            handleReplyPress={handleReplyPress}
-            toggleExpanded={toggleExpanded}
-            expanded={expanded}
-            post={post}
+          children.map((child) => (
+            <CommentBranch
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              ancestorExpanded={
+                ancestorExpanded || (isGateDepth && thisNodeExpanded)
+              }
+              currentUser={currentUser}
+              handleReplyPress={handleReplyPress}
+              toggleExpanded={toggleExpanded}
+              expanded={expanded}
+              post={post}
             />
-          )}
+          ))}
 
         {shouldShowSeeMore && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
-            style={[
-              styles.seeMoreChip,
-              bubbleStyle,
-            ]}
+            style={[styles.seeMoreChip, bubbleStyle]}
           >
             <Text style={{ color: colors.text, fontWeight: "600" }}>
               See more replies
@@ -1453,10 +1598,7 @@ export default function ForumPostDetail() {
         {isGateDepth && thisNodeExpanded && !ancestorExpanded && (
           <Pressable
             onPress={() => toggleExpanded(node.id)}
-            style={[
-              styles.seeMoreChip,
-              bubbleStyle,
-            ]}
+            style={[styles.seeMoreChip, bubbleStyle]}
           >
             <Text style={{ color: colors.text, fontWeight: "600" }}>
               Hide replies
@@ -1465,29 +1607,35 @@ export default function ForumPostDetail() {
         )}
       </View>
     );
-  })
+  });
 
-  const renderItem = useCallback(({item} : {item: Comment}) => (
-    <CommentBranch 
-            node={item}
-            depth={0}
-            ancestorExpanded={false}
-            currentUser={currentUser}
-            handleReplyPress={handleReplyPress}
-            toggleExpanded={toggleExpanded}
-            expanded={expanded}
-            post={post}
-            />
-  ), [expanded, currentUser, post, toggleExpanded, handleReplyPress])
+  const renderItem = useCallback(
+    ({ item }: { item: Comment }) => (
+      <CommentBranch
+        node={item}
+        depth={0}
+        ancestorExpanded={false}
+        currentUser={currentUser}
+        handleReplyPress={handleReplyPress}
+        toggleExpanded={toggleExpanded}
+        expanded={expanded}
+        post={post}
+      />
+    ),
+    [expanded, currentUser, post, toggleExpanded, handleReplyPress]
+  );
 
   return (
     <View style={styles.screen}>
-      <Pressable style={styles.backFab} onPress={() => router.back()}
+      <Pressable
+        style={styles.backFab}
+        onPress={() => router.back()}
         accessible={true}
         accessibilityLabel={"Go Back"}
         accessibilityHint={"Navigates back to the previous page."}
-        accessibilityRole={"button"}>
-        <Feather name="chevron-left" size={22} color={colors.text} />
+        accessibilityRole={"button"}
+      >
+        <Text style={styles.backArrow}>←</Text>
       </Pressable>
 
       <FlatList
@@ -1512,7 +1660,12 @@ export default function ForumPostDetail() {
             return <ActivityIndicator size="small" color={colors.text} />;
           } else {
             return (
-              <View style={{ paddingVertical: 40, marginLeft: 50 }}>
+              <View
+                style={{
+                  paddingVertical: 40,
+                  alignItems: "center",
+                }}
+              >
                 <Text
                   style={{ color: colors.settingsText, fontWeight: "bold" }}
                 >
@@ -1569,27 +1722,37 @@ export default function ForumPostDetail() {
                 justifyContent: "center",
               }}
             >
-              <TouchableWithoutFeedback
-               accessible={false}>
+              <TouchableWithoutFeedback accessible={false}>
                 <View
                   style={{
-                    backgroundColor: "white",
+                    backgroundColor: colors.topBackground,
                     flexDirection: "column",
-                    width: "35%",
+                    width: 180,
                     gap: 10,
-                    alignItems: "center",
+                    alignItems: "flex-start",
+                    justifyContent: "flex-start",
                     padding: 15,
                     borderRadius: 20,
                   }}
                   accessible={false}
                 >
-                  <Pressable onPress={() => handleEditReply(nodeToDelete)}
+                  <Pressable
+                    onPress={() => handleEditReply(nodeToDelete)}
                     accessible={true}
                     accessibilityLabel={"Edit"}
-                    accessibilityHint={"Navigates to the edit forum reply screen. Double tap to edit this reply."}>
-                    <View style={{ flexDirection: "row" }}>
-                      <EvilIcons name="pencil" size={35} color={"black"} />
-                      <Text style={{ color: "black", fontSize: 20 }}>
+                    accessibilityHint={
+                      "Navigates to the edit forum reply screen. Double tap to edit this reply."
+                    }
+                  >
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
+                      <EvilIcons
+                        name="pencil"
+                        size={size.iconSize + 10}
+                        color={colors.text}
+                      />
+                      <Text style={[styles.menuText, { color: colors.text }]}>
                         {" "}
                         Edit{" "}
                       </Text>
@@ -1603,17 +1766,21 @@ export default function ForumPostDetail() {
                       width: "90%",
                     }}
                   />
-                  <Pressable onPress={() => handleDeleteReply(nodeToDelete)}
+                  <Pressable
+                    onPress={() => handleDeleteReply(nodeToDelete)}
                     accessible={true}
                     accessibilityLabel={"Delete"}
-                    accessibilityHint={"Double tap to delete this reply."}>
-                    <View style={{ flexDirection: "row" }}>
+                    accessibilityHint={"Double tap to delete this reply."}
+                  >
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
                       <Ionicons
                         name="trash-outline"
-                        size={24}
-                        color={"black"}
+                        size={size.iconSize + 2}
+                        color={colors.text}
                       />
-                      <Text style={{ color: "black", fontSize: 20 }}>
+                      <Text style={[styles.menuText, { color: colors.text }]}>
                         {" "}
                         Delete{" "}
                       </Text>
@@ -1627,7 +1794,9 @@ export default function ForumPostDetail() {
                     accessibilityHint="Double tap to exit forum reply menu"
                     style={styles.cancelBtn}
                   >
-                    <Text style={{ color: colors.text, fontSize: 20}}>Close</Text>
+                    <Text style={[styles.menuText, { color: colors.cancel }]}>
+                      Close
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>

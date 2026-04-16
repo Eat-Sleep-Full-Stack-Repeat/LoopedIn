@@ -22,6 +22,7 @@ import { Storage } from "../utils/storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ExploreCommentsModal from "@/components/exploreComments";
+import { useAppSize } from "@/Hooks/useSize";
 
 type SearchType = "user" | "tag";
 
@@ -100,6 +101,8 @@ export default function ExploreSearch() {
 
   const likingIds = useRef<Set<string>>(new Set());
   const savingIds = useRef<Set<string>>(new Set());
+
+  const size = useAppSize();
 
   const resetPaging = () => {
     lastUserName.current = null;
@@ -361,7 +364,7 @@ export default function ExploreSearch() {
 
   const renderUser = ({ item }: { item: UserResult }) => (
     <Pressable
-      style={styles(colors, isTablet).userRow}
+      style={styles(colors, isTablet, size).userRow}
       onPress={() =>
         router.push({
           pathname: "/userProfile/[id]",
@@ -373,23 +376,25 @@ export default function ExploreSearch() {
       accessibilityRole={"button"}
     >
       <Image
-        style={styles(colors, isTablet).userAvatar}
+        style={styles(colors, isTablet, size).userAvatar}
         source={
           item.profilePic
             ? { uri: item.profilePic }
             : require("@/assets/images/icons8-cat-profile-100.png")
         }
       />
-      <Text style={styles(colors, isTablet).userName}>{item.username}</Text>
+      <Text style={styles(colors, isTablet, size).userName}>
+        {item.username}
+      </Text>
     </Pressable>
   );
 
   const renderPost = ({ item }: { item: Post }) => {
     const tags = tagsByPost?.[item.id] ?? [];
     return (
-      <View style={styles(colors, isTablet).postCard}>
+      <View style={styles(colors, isTablet, size).postCard}>
         <Pressable
-          style={styles(colors, isTablet).profileRow}
+          style={styles(colors, isTablet, size).profileRow}
           onPress={() =>
             router.push({
               pathname: "/userProfile/[id]",
@@ -401,14 +406,16 @@ export default function ExploreSearch() {
           accessibilityRole={"button"}
         >
           <Image
-            style={styles(colors, isTablet).profilePic}
+            style={styles(colors, isTablet, size).profilePic}
             source={
               item.profilePic
                 ? { uri: item.profilePic }
                 : require("@/assets/images/icons8-cat-profile-100.png")
             }
           />
-          <Text style={styles(colors, isTablet).username}>{item.username}</Text>
+          <Text style={styles(colors, isTablet, size).username}>
+            {item.username}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -422,31 +429,34 @@ export default function ExploreSearch() {
           accessibilityHint={"Double tap to read more about this explore post."}
         >
           <Image
-            style={styles(colors, isTablet).postImage}
+            style={styles(colors, isTablet, size).postImage}
             source={{ uri: item.postImage }}
           />
-          <Text style={styles(colors, isTablet).caption} numberOfLines={4}>
+          <Text
+            style={styles(colors, isTablet, size).caption}
+            numberOfLines={4}
+          >
             {item.caption}
           </Text>
 
           {!!tags.length && (
-            <View style={styles(colors, isTablet).tagRow}>
+            <View style={styles(colors, isTablet, size).tagRow}>
               {tags.slice(0, 18).map((t) => (
                 <View
                   key={`${item.id}-${t.id}`}
                   style={[
-                    styles(colors, isTablet).tagChip,
+                    styles(colors, isTablet, size).tagChip,
                     { borderColor: t.color },
                   ]}
                 >
                   {t.name === "Knit" ||
                   t.name === "Crochet" ||
                   t.name === "Misc" ? (
-                    <Text style={styles(colors, isTablet).tagText}>
-                      🌟{t.name} 
+                    <Text style={styles(colors, isTablet, size).tagText}>
+                      🌟{t.name}
                     </Text>
                   ) : (
-                    <Text style={styles(colors, isTablet).tagText}>
+                    <Text style={styles(colors, isTablet, size).tagText}>
                       #{t.name}
                     </Text>
                   )}
@@ -457,78 +467,76 @@ export default function ExploreSearch() {
         </Pressable>
 
         {/* ✅ ACTION ROW ADDED (Like / Comment / Tags / Save) */}
-        <View style={styles(colors, isTablet).postActions}>
+        <View style={styles(colors, isTablet, size).postActions}>
           <Pressable
-            style={styles(colors, isTablet).postAction}
+            style={styles(colors, isTablet, size).postAction}
             onPress={() => handleLikePress(item)}
             accessible={true}
             accessibilityLabel={"Like"}
-            accessibilityHint={item.isLiked? "double tap to unlike the post" : "double tap to like this post"}
-            accessibilityState={item.isLiked? {checked: true} : {checked: false}}
+            accessibilityHint={
+              item.isLiked
+                ? "double tap to unlike the post"
+                : "double tap to like this post"
+            }
+            accessibilityState={
+              item.isLiked ? { checked: true } : { checked: false }
+            }
             accessibilityRole={"button"}
           >
             <Image
               style={[
-                styles(colors, isTablet).actionIcon,
+                styles(colors, isTablet, size).actionIcon,
                 { tintColor: item.isLiked ? "#E57373" : colors.text },
               ]}
               source={require("../assets/images/heart.png")}
             />
-            <Text style={styles(colors, isTablet).postActionText}>
+            <Text style={styles(colors, isTablet, size).postActionText}>
               {item.isLiked ? "Liked" : "Like"}
             </Text>
           </Pressable>
 
-          <View style={styles(colors, isTablet).postAction}>
+          <View style={styles(colors, isTablet, size).postAction}>
             <Pressable
               onPress={() => showComments(item)}
               style={{ alignItems: "center" }}
               accessible={true}
               accessibilityLabel={"Comment feed"}
-              accessibilityHint={"Double tap to open comment section on this post"}
+              accessibilityHint={
+                "Double tap to open comment section on this post"
+              }
               accessibilityRole={"button"}
             >
               <Image
                 style={[
-                  styles(colors, isTablet).actionIcon,
+                  styles(colors, isTablet, size).actionIcon,
                   { tintColor: colors.text },
                 ]}
                 source={require("../assets/images/comment.png")}
               />
-              <Text style={styles(colors, isTablet).postActionText}>
+              <Text style={styles(colors, isTablet, size).postActionText}>
                 Comment
               </Text>
             </Pressable>
           </View>
 
           <Pressable
-            style={styles(colors, isTablet).postAction}
-            onPress={() => {
-              console.log("Tags pressed for post", item.id);
-            }}
-          >
-            <Image
-              style={[
-                styles(colors, isTablet).actionIcon,
-                { tintColor: colors.text },
-              ]}
-              source={require("../assets/images/tags.png")}
-            />
-            <Text style={styles(colors, isTablet).postActionText}>Tags</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles(colors, isTablet).postAction}
+            style={styles(colors, isTablet, size).postAction}
             onPress={() => handleSavePress(item)}
             accessible={true}
             accessibilityLabel={"Save"}
-            accessibilityHint={item.isSaved? "double tap to unsave this post" : "double tap to save this post"}
-            accessibilityState={item.isSaved? {checked: true} : {checked: false}}
+            accessibilityHint={
+              item.isSaved
+                ? "double tap to unsave this post"
+                : "double tap to save this post"
+            }
+            accessibilityState={
+              item.isSaved ? { checked: true } : { checked: false }
+            }
             accessibilityRole={"button"}
           >
             <Image
               style={[
-                styles(colors, isTablet).actionIcon,
+                styles(colors, isTablet, size).actionIcon,
                 {
                   tintColor: item.isSaved
                     ? colors.exploreFilterSelected
@@ -537,7 +545,7 @@ export default function ExploreSearch() {
               ]}
               source={require("../assets/images/saved.png")}
             />
-            <Text style={styles(colors, isTablet).postActionText}>
+            <Text style={styles(colors, isTablet, size).postActionText}>
               {item.isSaved ? "Saved" : "Save"}
             </Text>
           </Pressable>
@@ -569,45 +577,47 @@ export default function ExploreSearch() {
         >
           <View
             style={[
-              styles(colors, isTablet).container,
-              { paddingTop: insets.top + 18 },
+              styles(colors, isTablet, size).container,
+              { paddingTop: insets.top },
             ]}
           >
-            <View style={styles(colors, isTablet).header}>
+            <View style={styles(colors, isTablet, size).header}>
               <Pressable
                 onPress={goBack}
-                style={styles(colors, isTablet).backBtn}
+                style={styles(colors, isTablet, size).backBtn}
                 hitSlop={10}
                 accessible={true}
                 accessibilityLabel={"Go Back"}
                 accessibilityHint={"Navigates back to the previous page."}
                 accessibilityRole={"button"}
               >
-                <Feather name="arrow-left" size={26} color={colors.text} />
+                <Text style={styles(colors, isTablet, size).backArrow}>←</Text>
               </Pressable>
-              <Text style={styles(colors, isTablet).headerText}
+              <Text
+                style={styles(colors, isTablet, size).headerText}
                 accessible={true}
-                accessibilityRole={"header"}>
+                accessibilityRole={"header"}
+              >
                 Search
               </Text>
             </View>
 
-            <View style={styles(colors, isTablet).searchRow}>
+            <View style={styles(colors, isTablet, size).searchRow}>
               <TextInput
                 value={query}
                 onChangeText={setQuery}
                 placeholder={
                   isUserMode ? "Search username..." : "Search tag..."
                 }
-                placeholderTextColor={colors.text + "99"}
-                style={styles(colors, isTablet).searchInput}
+                placeholderTextColor={colors.inputContainerPlaceholderText}
+                style={styles(colors, isTablet, size).searchInput}
                 returnKeyType="search"
                 onSubmitEditing={() => runSearch(true)}
                 autoFocus
               />
               <Pressable
                 onPress={() => runSearch(true)}
-                style={styles(colors, isTablet).iconBtn}
+                style={styles(colors, isTablet, size).iconBtn}
                 hitSlop={10}
                 accessible={true}
                 accessibilityLabel={"Search"}
@@ -616,13 +626,18 @@ export default function ExploreSearch() {
               >
                 <Feather
                   name="search"
-                  size={22}
-                  color={colors.decorativeText}
+                  size={size.iconSize + 2}
+                  color={colors.decorativeBackground}
+                  style={{
+                    backgroundColor: colors.secondaryButton,
+                    padding: 10,
+                    borderRadius: 50,
+                  }}
                 />
               </Pressable>
             </View>
 
-            <View style={styles(colors, isTablet).filters}>
+            <View style={styles(colors, isTablet, size).filters}>
               {(["user", "tag"] as const).map((t) => {
                 const active = searchType === t;
                 return (
@@ -630,22 +645,24 @@ export default function ExploreSearch() {
                     key={t}
                     onPress={() => setSearchType(t)}
                     style={[
-                      styles(colors, isTablet).filterBtn,
+                      styles(colors, isTablet, size).filterBtn,
                       {
                         backgroundColor: active
                           ? colors.decorativeBackground
-                          : colors.boxBackground,
+                          : colors.secondaryButton,
                       },
                     ]}
                     accessible={true}
                     accessibilityHint={"Searches forum posts by " + t}
                     accessibilityRole={"tab"}
-                    accessibilityState={active ? {selected: true} : {selected: false}}
+                    accessibilityState={
+                      active ? { selected: true } : { selected: false }
+                    }
                   >
                     <Text
                       style={{
-                        color: active ? colors.decorativeText : colors.text,
-                        fontWeight: "700",
+                        color: active ? colors.antiText : colors.secondaryText,
+                        fontWeight: size.weight.largeTitle,
                       }}
                     >
                       {t === "user" ? "User Name" : "Tag"}
@@ -663,7 +680,7 @@ export default function ExploreSearch() {
                   marginTop: 18,
                 }}
               >
-                Enter a search term and select a filter.
+                Enter a search term and select a filter
               </Text>
             ) : (
               <FlatList
@@ -706,7 +723,7 @@ export default function ExploreSearch() {
                           paddingBottom: 40,
                         }}
                       >
-                        No more users.
+                        No more users
                       </Text>
                     );
                   }
@@ -725,7 +742,7 @@ export default function ExploreSearch() {
                           paddingTop: 20,
                         }}
                       >
-                        No more posts.
+                        No more posts
                       </Text>
                     );
                   }
@@ -755,27 +772,33 @@ export default function ExploreSearch() {
   );
 }
 
-const styles = (colors: any, isTablet: boolean) =>
+const styles = (colors: any, isTablet: boolean, size: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      paddingHorizontal: isTablet ? 20 : 12,
+      paddingHorizontal: 20,
       backgroundColor: colors.topBackground,
     },
-
     header: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      marginBottom: 12,
+      marginBottom: 13,
+      marginTop: 10,
+      position: "relative",
+      justifyContent: "center",
     },
     backBtn: {
-      padding: 8,
-      borderRadius: 12,
+      position: "absolute",
+      left: 0,
+    },
+    backArrow: {
+      fontSize: size.font.largeTitleText,
+      color: colors.text,
     },
     headerText: {
-      fontSize: 22,
-      fontWeight: "700",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
       color: colors.text,
     },
 
@@ -786,20 +809,19 @@ const styles = (colors: any, isTablet: boolean) =>
     },
     searchInput: {
       flex: 1,
-      height: 48,
-      borderRadius: 12,
+      height: 45,
+      borderRadius: 25,
       borderWidth: 1,
       borderColor: colors.decorativeBackground,
-      backgroundColor: colors.background,
+      backgroundColor: colors.topBackground,
       color: colors.text,
       paddingHorizontal: 12,
+      fontSize: size.font.bodyText,
     },
     iconBtn: {
       padding: 10,
-      marginLeft: 10,
       borderRadius: 10,
     },
-
     filters: {
       flexDirection: "row",
       gap: 10,
@@ -808,7 +830,7 @@ const styles = (colors: any, isTablet: boolean) =>
     filterBtn: {
       paddingVertical: 10,
       paddingHorizontal: 14,
-      borderRadius: 12,
+      borderRadius: 50,
     },
 
     // USERS
@@ -818,25 +840,25 @@ const styles = (colors: any, isTablet: boolean) =>
       gap: 12,
       paddingVertical: 10,
       borderBottomWidth: 1,
-      borderBottomColor: colors.exploreBorder,
+      borderBottomColor: colors.background,
     },
     userAvatar: {
-      width: 42,
-      height: 42,
+      width: size.iconSize + 22,
+      height: size.iconSize + 22,
       borderRadius: 100,
     },
     userName: {
       color: colors.text,
-      fontWeight: "800",
-      fontSize: 16,
+      fontWeight: size.weight.largeTitle,
+      fontSize: size.font.button,
     },
 
     // POSTS
     postCard: {
       backgroundColor: colors.exploreCardBackground,
-      borderRadius: 12,
+      borderRadius: 20,
       borderWidth: 1,
-      borderColor: colors.exploreBorder,
+      borderColor: colors.background,
       padding: 12,
       marginTop: 10,
     },
@@ -847,26 +869,26 @@ const styles = (colors: any, isTablet: boolean) =>
       gap: 10,
     },
     profilePic: {
-      width: 36,
-      height: 36,
+      width: size.iconSize + 16,
+      height: size.iconSize + 16,
       borderRadius: 100,
     },
     username: {
       color: colors.text,
-      fontWeight: "800",
-      fontSize: 16,
+      fontWeight: size.weight.largeTitle,
+      fontSize: size.font.button,
     },
     postImage: {
       width: "100%",
       height: isTablet ? 520 : 320,
-      borderRadius: 10,
-      backgroundColor: "#EAEAEA",
+      borderRadius: 20,
+      backgroundColor: colors.background,
     },
     caption: {
       marginTop: 10,
       color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
+      fontSize: size.font.caption,
+      fontWeight: size.weight.headline,
     },
     tagRow: {
       flexDirection: "row",
@@ -883,8 +905,8 @@ const styles = (colors: any, isTablet: boolean) =>
     },
     tagText: {
       color: colors.text,
-      fontWeight: "700",
-      fontSize: 12,
+      fontWeight: size.weight.title,
+      fontSize: size.font.detailText,
     },
 
     postActions: {
@@ -898,12 +920,12 @@ const styles = (colors: any, isTablet: boolean) =>
       gap: 4,
     },
     actionIcon: {
-      width: 20,
-      height: 20,
+      width: size.iconSize,
+      height: size.iconSize,
       resizeMode: "contain",
     },
     postActionText: {
       color: colors.text,
-      fontSize: 12,
+      fontSize: size.font.detailText,
     },
   });

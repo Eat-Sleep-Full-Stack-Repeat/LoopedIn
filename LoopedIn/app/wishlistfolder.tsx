@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Storage } from "../utils/storage";
+import { useAppSize } from "@/Hooks/useSize";
+import BottomFab from "@/components/bottomFab";
 
 type WishlistItem = {
   id: string;
@@ -81,6 +83,8 @@ export default function WishlistFolderScreen() {
   const [loading, setLoading] = useState(false);
   const [folderLoading, setFolderLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const size = useAppSize();
 
   //check token before doing anything
   const checkTokenOkay = async () => {
@@ -680,11 +684,11 @@ export default function WishlistFolderScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background, paddingTop: insets.top + 8 },
+        { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
       <View style={styles.headerRow}>
-        <View style={styles.headerSide}>
+        <View style={[styles.headerSide, { width: size.iconSize + 27 }]}>
           <Pressable
             style={styles.backButton}
             onPress={() => router.back()}
@@ -693,21 +697,41 @@ export default function WishlistFolderScreen() {
             accessibilityHint={"Navigates back to the previous page."}
             accessibilityRole={"button"}
           >
-            <Feather name="arrow-left" size={22} color={colors.text} />
+            <Text
+              style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+            >
+              ←
+            </Text>
           </Pressable>
         </View>
         <View style={styles.headerCenter}>
           <Text
-            style={[styles.title, { color: colors.text }]}
+            style={{
+              color: colors.text,
+              fontSize: size.font.largeTitleText,
+              fontWeight: size.weight.title,
+            }}
             accessible={true}
             accessibilityRole={"header"}
           >
             Wishlist
           </Text>
         </View>
-        <View style={styles.headerSide}>
+        <View style={[styles.headerSide, { width: size.iconSize + 27 }]}>
           <Pressable
-            style={styles.headerActionButton}
+            style={[
+              styles.headerActionButton,
+              {
+                backgroundColor: colors.secondaryButton,
+                height: size.iconSize + 26,
+                width: size.iconSize + 26,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: colors.decorativeBackground,
+                borderRadius: 50,
+              },
+            ]}
             onPress={() => {
               if (isCategoryEditMode && editingCategory) {
                 handleRenameCategory(editingCategory);
@@ -740,8 +764,8 @@ export default function WishlistFolderScreen() {
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
-              size={18}
-              color={colors.text}
+              size={size.iconSize + 4}
+              color={colors.decorativeBackground}
             />
           </Pressable>
         </View>
@@ -760,8 +784,8 @@ export default function WishlistFolderScreen() {
                 backgroundColor:
                   selectedCategory === "All"
                     ? colors.decorativeBackground
-                    : colors.boxBackground,
-                borderColor: colors.topBackground,
+                    : colors.secondaryButton,
+                borderColor: colors.decorativeBackground,
               },
             ]}
             onPress={() => setSelectedCategory("All")}
@@ -784,8 +808,10 @@ export default function WishlistFolderScreen() {
                 {
                   color:
                     selectedCategory === "All"
-                      ? colors.decorativeText
-                      : colors.text,
+                      ? colors.antiText
+                      : colors.secondaryText,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.title,
                 },
               ]}
             >
@@ -806,7 +832,10 @@ export default function WishlistFolderScreen() {
                   placeholderTextColor={colors.settingsText}
                   style={[
                     styles.renameCategoryInput,
-                    { borderColor: colors.topBackground, color: colors.text },
+                    {
+                      borderColor: colors.decorativeBackground,
+                      color: colors.text,
+                    },
                   ]}
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -827,8 +856,8 @@ export default function WishlistFolderScreen() {
                   {
                     backgroundColor: isSelected
                       ? colors.decorativeBackground
-                      : colors.boxBackground,
-                    borderColor: colors.topBackground,
+                      : colors.secondaryButton,
+                    borderColor: colors.decorativeBackground,
                   },
                 ]}
               >
@@ -847,10 +876,13 @@ export default function WishlistFolderScreen() {
                     accessibilityHint={
                       selectedCategory === category.name && !isCategoryEditMode
                         ? "Shows wishlist items within the " +
-                          category.name + " category" : !isCategoryEditMode ?
-                         "Double tap to show wishlist items within the " +
-                          category.name + " category" :
-                          "Double tap to edit " + category.name + " category"
+                          category.name +
+                          " category"
+                        : !isCategoryEditMode
+                        ? "Double tap to show wishlist items within the " +
+                          category.name +
+                          " category"
+                        : "Double tap to edit " + category.name + " category"
                     }
                     accessibilityRole={"tab"}
                     accessibilityState={
@@ -864,7 +896,9 @@ export default function WishlistFolderScreen() {
                         styles.editableCategoryBox,
                         {
                           borderWidth: isCategoryEditMode ? 1 : 0,
-                          borderColor: colors.text,
+                          borderColor: isSelected
+                            ? colors.antiText
+                            : colors.secondaryText,
                         },
                       ]}
                     >
@@ -873,8 +907,10 @@ export default function WishlistFolderScreen() {
                           styles.categoryTabText,
                           {
                             color: isSelected
-                              ? colors.decorativeText
-                              : colors.text,
+                              ? colors.antiText
+                              : colors.secondaryText,
+                            fontSize: size.font.button,
+                            fontWeight: size.weight.title,
                           },
                         ]}
                       >
@@ -901,8 +937,10 @@ export default function WishlistFolderScreen() {
                     >
                       <Feather
                         name="x"
-                        size={22}
-                        color={isSelected ? colors.decorativeText : colors.text}
+                        size={size.iconSize + 2}
+                        color={
+                          isSelected ? colors.antiText : colors.secondaryText
+                        }
                       />
                     </Pressable>
                   )}
@@ -919,7 +957,10 @@ export default function WishlistFolderScreen() {
               placeholderTextColor={colors.settingsText}
               style={[
                 styles.newCategoryInput,
-                { borderColor: colors.topBackground, color: colors.text },
+                {
+                  borderColor: colors.decorativeBackground,
+                  color: colors.text,
+                },
               ]}
               autoCapitalize="words"
               autoCorrect={false}
@@ -939,8 +980,8 @@ export default function WishlistFolderScreen() {
             style={[
               styles.categoryTab,
               {
-                backgroundColor: colors.boxBackground,
-                borderColor: colors.topBackground,
+                backgroundColor: colors.secondaryButton,
+                borderColor: colors.decorativeBackground,
               },
             ]}
             onPress={() => {
@@ -951,17 +992,30 @@ export default function WishlistFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={"Add category"}
-            accessibilityHint={isCategoryEditMode ? "Disable editing to add a category." : "Add a craft category to hold wishlist items"}
+            accessibilityHint={
+              isCategoryEditMode
+                ? "Disable editing to add a category."
+                : "Add a craft category to hold wishlist items"
+            }
             accessibilityRole={"button"}
           >
-            <Feather name="plus" size={14} color={colors.text} />
+            <Feather
+              name="plus"
+              size={size.iconSize - 4}
+              color={colors.secondaryText}
+            />
           </Pressable>
         </ScrollView>
 
-        <View style={[styles.searchBar, { borderColor: colors.topBackground }]}>
+        <View
+          style={[
+            styles.searchBar,
+            { borderColor: colors.decorativeBackground },
+          ]}
+        >
           <Feather
             name="search"
-            size={16}
+            size={size.iconSize - 4}
             color={colors.settingsText}
             accessible={false}
           />
@@ -984,7 +1038,11 @@ export default function WishlistFolderScreen() {
               accessibilityHint={"Cancels and exits search"}
               accessibilityRole={"button"}
             >
-              <Feather name="x" size={22} color={colors.settingsText} />
+              <Feather
+                name="x"
+                size={size.iconSize + 2}
+                color={colors.settingsText}
+              />
             </Pressable>
           )}
         </View>
@@ -1002,7 +1060,10 @@ export default function WishlistFolderScreen() {
               placeholderTextColor={colors.settingsText}
               style={[
                 styles.addItemInput,
-                { borderColor: colors.topBackground, color: colors.text },
+                {
+                  borderColor: colors.decorativeBackground,
+                  color: colors.text,
+                },
               ]}
               autoCorrect={false}
               autoCapitalize="words"
@@ -1064,7 +1125,7 @@ export default function WishlistFolderScreen() {
                       style={[
                         styles.renameItemInput,
                         {
-                          borderColor: colors.exploreBorder,
+                          borderColor: colors.decorativeBackground,
                           backgroundColor:
                             index % 2 === 0
                               ? colors.boxBackground
@@ -1089,7 +1150,7 @@ export default function WishlistFolderScreen() {
                       style={[
                         styles.renameItemInput,
                         {
-                          borderColor: colors.exploreBorder,
+                          borderColor: colors.decorativeBackground,
                           backgroundColor:
                             index % 2 === 0
                               ? colors.boxBackground
@@ -1107,13 +1168,23 @@ export default function WishlistFolderScreen() {
                 ) : (
                   <View>
                     <Text
-                      style={[styles.itemName, { color: colors.text }]}
+                      style={{
+                        color: colors.text,
+                        fontSize: size.font.caption,
+                        fontWeight: size.weight.title,
+                      }}
                       numberOfLines={1}
                     >
                       {item.name}
                     </Text>
                     <Text
-                      style={[styles.itemMeta, { color: colors.settingsText }]}
+                      style={[
+                        styles.itemMeta,
+                        {
+                          color: colors.settingsText,
+                          fontSize: size.font.detailText,
+                        },
+                      ]}
                     >
                       {item.itemCount} items
                     </Text>
@@ -1132,18 +1203,14 @@ export default function WishlistFolderScreen() {
                   }
                   accessibilityRole={"button"}
                 >
-                  <Feather name="x" size={22} color={colors.text} />
+                  <Feather
+                    name="x"
+                    size={size.iconSize + 2}
+                    color={colors.text}
+                  />
                 </Pressable>
               ) : (
-                <Feather
-                  name="more-vertical"
-                  size={18}
-                  color={colors.settingsText}
-                  style={styles.cardMenuIcon}
-                  accessible={true}
-                  accessibilityLabel={"Item Menu"}
-                  accessiblilityHint={"Double tap to see more."}
-                />
+                <></>
               )}
             </View>
           </View>
@@ -1152,13 +1219,7 @@ export default function WishlistFolderScreen() {
 
       {!isCategoryEditMode && selectedCategory !== "All" && (
         <Pressable
-          style={[
-            styles.fab,
-            {
-              backgroundColor: colors.decorativeBackground,
-              bottom: insets.bottom + 24,
-            },
-          ]}
+          style={{ bottom: 20, right: -10 }}
           onPress={() => setIsAddingItem(true)}
           accessible={true}
           accessibilityLabel={"Add Wishlist Item"}
@@ -1169,7 +1230,7 @@ export default function WishlistFolderScreen() {
           }
           accessibilityRole={"button"}
         >
-          <Feather name="plus" size={24} color={colors.decorativeText} />
+          <BottomFab />
         </Pressable>
       )}
     </View>
@@ -1185,29 +1246,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 24,
+    marginTop: 10,
+    marginBottom: 20,
   },
   headerSide: {
-    width: 32,
     alignItems: "center",
     justifyContent: "center",
   },
   backButton: {
-    paddingRight: 8,
     paddingVertical: 2,
   },
   headerActionButton: {
     paddingVertical: 2,
-    paddingLeft: 8,
   },
   headerCenter: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
   },
   filterSection: {
     gap: 20,
@@ -1257,15 +1312,13 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   categoryTabText: {
-    fontSize: 16,
-    fontWeight: "600",
     lineHeight: 22,
     textAlign: "center",
     textAlignVertical: "center",
     includeFontPadding: true,
   },
   searchBar: {
-    borderRadius: 14,
+    borderRadius: 50,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1308,12 +1361,7 @@ const styles = StyleSheet.create({
   itemTextBlock: {
     flex: 1,
   },
-  itemName: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
   itemMeta: {
-    fontSize: 12,
     marginTop: 8,
   },
   renameItemInput: {
@@ -1330,20 +1378,6 @@ const styles = StyleSheet.create({
   cardMenuIcon: {
     width: 18,
     textAlign: "center",
-  },
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
   },
   emptyState: {
     paddingTop: 40,

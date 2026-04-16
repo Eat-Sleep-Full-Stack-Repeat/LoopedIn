@@ -15,6 +15,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import API_URL from "@/utils/config";
 import { Storage } from "../utils/storage";
+import { useAppSize } from "@/Hooks/useSize";
+import BottomFab from "@/components/bottomFab";
 
 type InventoryItem = {
   id: string;
@@ -26,7 +28,7 @@ type InventoryItem = {
 type Folder = {
   id: string;
   name: string;
-}
+};
 
 export default function SingleFolderScreen() {
   const { currentTheme } = useTheme();
@@ -73,6 +75,8 @@ export default function SingleFolderScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const secondTextInput = useRef<TextInput>(null);
+
+  const size = useAppSize();
 
   const isEditing = useRef(false);
 
@@ -661,27 +665,56 @@ export default function SingleFolderScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background, paddingTop: insets.top + 8 },
+        { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
       <View style={styles.headerRow}>
-        <View style={styles.headerSide}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}
+        <View style={[styles.headerSide, { minWidth: size.iconSize + 27 }]}>
+          <Pressable
+            onPress={() => router.back()}
             accessible={true}
             accessibilityLabel={"Go Back"}
             accessibilityHint={"Navigates back to the previous page."}
-            accessibilityRole={"button"}>
-            <Feather name="arrow-left" size={22} color={colors.text} />
+            accessibilityRole={"button"}
+          >
+            <Text
+              style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+            >
+              ←
+            </Text>
           </Pressable>
         </View>
-        <View style={styles.headerCenter}
-            accessible={true}
-            accessibilityRole={"header"}>
-          <Text style={[styles.title, { color: colors.text }]}>Inventory</Text>
+        <View
+          style={styles.headerCenter}
+          accessible={true}
+          accessibilityRole={"header"}
+        >
+          <Text
+            style={{
+              color: colors.text,
+              fontSize: size.font.largeTitleText,
+              fontWeight: size.weight.title,
+              alignSelf: "center",
+            }}
+          >
+            Inventory
+          </Text>
         </View>
-        <View style={styles.headerSide}>
+        <View style={[styles.headerSide, { minWidth: size.iconSize + 27 }]}>
           <Pressable
-            style={styles.headerActionButton}
+            style={[
+              styles.headerActionButton,
+              {
+                backgroundColor: colors.secondaryButton,
+                height: size.iconSize + 26,
+                width: size.iconSize + 26,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: colors.decorativeBackground,
+                borderRadius: 50,
+              },
+            ]}
             onPress={() => {
               // if currently editing a category, save it first
               if (isCategoryEditMode && editingCategory) {
@@ -703,14 +736,20 @@ export default function SingleFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={isCategoryEditMode ? "Stop editing" : "Edit"}
-            accessibilityHint={isCategoryEditMode ? "Double tap to disable editing mode." : "Double tap to delete, and edit inventory categories and items."}
+            accessibilityHint={
+              isCategoryEditMode
+                ? "Double tap to disable editing mode."
+                : "Double tap to delete, and edit inventory categories and items."
+            }
             accessibilityRole={"button"}
-            accessibilityState={isCategoryEditMode ? {checked:true} : {checked:false}}
+            accessibilityState={
+              isCategoryEditMode ? { checked: true } : { checked: false }
+            }
           >
             <Feather
               name={isCategoryEditMode ? "check" : "grid"}
-              size={18}
-              color={colors.text}
+              size={size.iconSize + 4}
+              color={colors.decorativeBackground}
             />
           </Pressable>
         </View>
@@ -729,15 +768,23 @@ export default function SingleFolderScreen() {
                 backgroundColor:
                   selectedCategory === "All"
                     ? colors.decorativeBackground
-                    : colors.boxBackground,
-                borderColor: colors.topBackground,
+                    : colors.secondaryButton,
+                borderColor: colors.decorativeBackground,
               },
             ]}
             onPress={() => setSelectedCategory("All")}
             accessible={true}
-            accessibilityHint={selectedCategory === "All" ? "Shows all inventory items." : "Double tap to show all inventory items."}
+            accessibilityHint={
+              selectedCategory === "All"
+                ? "Shows all inventory items."
+                : "Double tap to show all inventory items."
+            }
             accessibilityRole={"tab"}
-            accessibilityState={selectedCategory === "All" ? {checked:true} : {checked:false}}
+            accessibilityState={
+              selectedCategory === "All"
+                ? { checked: true }
+                : { checked: false }
+            }
           >
             <Text
               style={[
@@ -745,8 +792,10 @@ export default function SingleFolderScreen() {
                 {
                   color:
                     selectedCategory === "All"
-                      ? colors.decorativeText
-                      : colors.text,
+                      ? colors.antiText
+                      : colors.secondaryText,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.title,
                 },
               ]}
             >
@@ -767,7 +816,10 @@ export default function SingleFolderScreen() {
                   placeholderTextColor={colors.settingsText}
                   style={[
                     styles.renameCategoryInput,
-                    { borderColor: colors.topBackground, color: colors.text },
+                    {
+                      borderColor: colors.decorativeBackground,
+                      color: colors.text,
+                    },
                   ]}
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -785,12 +837,13 @@ export default function SingleFolderScreen() {
                 style={[
                   styles.categoryTab,
                   {
-                      backgroundColor: isSelected
+                    backgroundColor: isSelected
                       ? colors.decorativeBackground
-                      : colors.boxBackground,
-                    borderColor: colors.topBackground,
+                      : colors.secondaryButton,
+                    borderColor: colors.decorativeBackground,
                   },
-                ]}>
+                ]}
+              >
                 <View style={styles.categoryTabContent}>
                   <Pressable
                     key={category.name}
@@ -803,33 +856,50 @@ export default function SingleFolderScreen() {
                       setSelectedCategory(category.name);
                     }}
                     accessible={true}
-                    accessibilityHint={selectedCategory === category.name && !isCategoryEditMode ? "Shows inventory items within the " + category.name + " category" : 
-                      !isCategoryEditMode ? "Double tap to show inventory items within the " + category.name + " category" : "Double tap to edit " + category.name + " category"
+                    accessibilityHint={
+                      selectedCategory === category.name && !isCategoryEditMode
+                        ? "Shows inventory items within the " +
+                          category.name +
+                          " category"
+                        : !isCategoryEditMode
+                        ? "Double tap to show inventory items within the " +
+                          category.name +
+                          " category"
+                        : "Double tap to edit " + category.name + " category"
                     }
                     accessibilityRole={"tab"}
-                    accessibilityState={selectedCategory === category.name ? {checked:true} : {checked:false}}>
-                  <View
-                    style={[
-                      styles.editableCategoryBox,
-                      {
-                        borderWidth: isCategoryEditMode ? 1 : 0,
-                        borderColor: colors.text,
-                      },
-                    ]}
+                    accessibilityState={
+                      selectedCategory === category.name
+                        ? { checked: true }
+                        : { checked: false }
+                    }
                   >
-                    <Text
+                    <View
                       style={[
-                        styles.categoryTabText,
+                        styles.editableCategoryBox,
                         {
-                          color: isSelected
-                            ? colors.decorativeText
-                            : colors.text,
+                          borderWidth: isCategoryEditMode ? 1 : 0,
+                          borderColor: isSelected
+                            ? colors.antiText
+                            : colors.secondaryText,
                         },
                       ]}
                     >
-                      {category.name}
-                    </Text>
-                  </View>
+                      <Text
+                        style={[
+                          styles.categoryTabText,
+                          {
+                            color: isSelected
+                              ? colors.antiText
+                              : colors.secondaryText,
+                            fontSize: size.font.button,
+                            fontWeight: size.weight.title,
+                          },
+                        ]}
+                      >
+                        {category.name}
+                      </Text>
+                    </View>
                   </Pressable>
                   {isCategoryEditMode && (
                     <Pressable
@@ -841,13 +911,19 @@ export default function SingleFolderScreen() {
                       style={styles.categoryDeleteButton}
                       accessible={true}
                       accessibilityLabel={"Delete"}
-                      accessibilityHint={"Delete " + category.name + " category and its inventory items"}
+                      accessibilityHint={
+                        "Delete " +
+                        category.name +
+                        " category and its inventory items"
+                      }
                       accessibilityRole={"button"}
                     >
                       <Feather
                         name="x"
-                        size={22}
-                        color={isSelected ? colors.decorativeText : colors.text}
+                        size={size.iconSize + 2}
+                        color={
+                          isSelected ? colors.antiText : colors.secondaryText
+                        }
                       />
                     </Pressable>
                   )}
@@ -864,7 +940,10 @@ export default function SingleFolderScreen() {
               placeholderTextColor={colors.settingsText}
               style={[
                 styles.newCategoryInput,
-                { borderColor: colors.topBackground, color: colors.text },
+                {
+                  borderColor: colors.decorativeBackground,
+                  color: colors.text,
+                },
               ]}
               autoCapitalize="words"
               autoCorrect={false}
@@ -883,8 +962,8 @@ export default function SingleFolderScreen() {
             style={[
               styles.categoryTab,
               {
-                backgroundColor: colors.boxBackground,
-                borderColor: colors.topBackground,
+                backgroundColor: colors.secondaryButton,
+                borderColor: colors.decorativeBackground,
               },
             ]}
             onPress={() => {
@@ -895,15 +974,33 @@ export default function SingleFolderScreen() {
             }}
             accessible={true}
             accessibilityLabel={"Add category"}
-            accessibilityHint={isCategoryEditMode? "Disable editing to add a category." : "Add a craft category to hold inventory items"}
+            accessibilityHint={
+              isCategoryEditMode
+                ? "Disable editing to add a category."
+                : "Add a craft category to hold inventory items"
+            }
             accessibilityRole={"button"}
           >
-            <Feather name="plus" size={14} color={colors.text} />
+            <Feather
+              name="plus"
+              size={size.iconSize - 4}
+              color={colors.secondaryText}
+            />
           </Pressable>
         </ScrollView>
 
-        <View style={[styles.searchBar, { borderColor: colors.topBackground }]}>
-          <Feather name="search" size={16} color={colors.settingsText} accessible={false}/>
+        <View
+          style={[
+            styles.searchBar,
+            { borderColor: colors.decorativeBackground },
+          ]}
+        >
+          <Feather
+            name="search"
+            size={size.iconSize - 4}
+            color={colors.settingsText}
+            accessible={false}
+          />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -915,12 +1012,19 @@ export default function SingleFolderScreen() {
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}
+            <Pressable
+              onPress={() => setSearchQuery("")}
+              hitSlop={10}
               accessible={true}
               accessibilityLabel={"Exit"}
               accessibilityHint={"Cancels and exits search"}
-              accessibilityRole={"button"}>
-              <Feather name="x" size={22} color={colors.settingsText} />
+              accessibilityRole={"button"}
+            >
+              <Feather
+                name="x"
+                size={size.iconSize + 2}
+                color={colors.settingsText}
+              />
             </Pressable>
           )}
         </View>
@@ -939,7 +1043,10 @@ export default function SingleFolderScreen() {
               maxLength={40}
               style={[
                 styles.addItemInput,
-                { borderColor: colors.topBackground, color: colors.text },
+                {
+                  borderColor: colors.decorativeBackground,
+                  color: colors.text,
+                },
               ]}
               autoCorrect={false}
               autoCapitalize="words"
@@ -989,7 +1096,7 @@ export default function SingleFolderScreen() {
                   setEditedItemName(item.name);
                   setEditedItemCount(String(item.itemCount));
                 }}
-                  accessible={true}
+                accessible={true}
               >
                 {editingItemId === item.id ? (
                   <View>
@@ -1002,7 +1109,7 @@ export default function SingleFolderScreen() {
                       style={[
                         styles.renameItemInput,
                         {
-                          borderColor: colors.exploreBorder,
+                          borderColor: colors.decorativeBackground,
                           backgroundColor:
                             index % 2 === 0
                               ? colors.boxBackground
@@ -1027,7 +1134,7 @@ export default function SingleFolderScreen() {
                       style={[
                         styles.renameItemInput,
                         {
-                          borderColor: colors.exploreBorder,
+                          borderColor: colors.decorativeBackground,
                           backgroundColor:
                             index % 2 === 0
                               ? colors.boxBackground
@@ -1045,13 +1152,23 @@ export default function SingleFolderScreen() {
                 ) : (
                   <View>
                     <Text
-                      style={[styles.itemName, { color: colors.text }]}
+                      style={{
+                        color: colors.text,
+                        fontSize: size.font.bodyText,
+                        fontWeight: size.weight.title,
+                      }}
                       numberOfLines={1}
                     >
                       {item.name}
                     </Text>
                     <Text
-                      style={[styles.itemMeta, { color: colors.settingsText }]}
+                      style={[
+                        styles.itemMeta,
+                        {
+                          color: colors.settingsText,
+                          fontSize: size.font.detailText,
+                        },
+                      ]}
                     >
                       {item.itemCount} items
                     </Text>
@@ -1065,21 +1182,19 @@ export default function SingleFolderScreen() {
                   style={styles.itemDeleteButton}
                   accessible={true}
                   accessibilityLabel={"Delete"}
-                  accessibilityHint={"Delete " + item.name + " category and its inventory items"}
+                  accessibilityHint={
+                    "Delete " + item.name + " category and its inventory items"
+                  }
                   accessibilityRole={"button"}
                 >
-                  <Feather name="x" size={22} color={colors.text} />
+                  <Feather
+                    name="x"
+                    size={size.iconSize + 2}
+                    color={colors.text}
+                  />
                 </Pressable>
               ) : (
                 <></>
-                // <Pressable onPress={handleEditItem}>
-                //   <Feather
-                //     name="edit-2"
-                //     size={18}
-                //     color={colors.settingsText}
-                //     style={styles.cardMenuIcon}
-                //   />
-                // </Pressable>
               )}
             </View>
           </View>
@@ -1088,20 +1203,18 @@ export default function SingleFolderScreen() {
 
       {!isCategoryEditMode && selectedCategory !== "All" && (
         <Pressable
-          style={[
-            styles.fab,
-            {
-              backgroundColor: colors.decorativeBackground,
-              bottom: insets.bottom + 24,
-            },
-          ]}
+          style={{ bottom: 20, right: -10 }}
           onPress={() => setIsAddingItem(true)}
           accessible={true}
           accessibilityLabel={"Add Inventory Item"}
-          accessibilityHint={"Double tap to add an inventory item under " + selectedCategory + " category."}
+          accessibilityHint={
+            "Double tap to add an inventory item under " +
+            selectedCategory +
+            " category."
+          }
           accessibilityRole={"button"}
         >
-          <Feather name="plus" size={24} color={colors.decorativeText} />
+          <BottomFab />
         </Pressable>
       )}
     </View>
@@ -1117,29 +1230,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 24,
+    marginTop: 10,
+    marginBottom: 20,
   },
   headerSide: {
-    width: 32,
+    flexShrink: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  backButton: {
-    paddingRight: 8,
-    paddingVertical: 2,
-  },
   headerActionButton: {
     paddingVertical: 2,
-    paddingLeft: 8,
   },
   headerCenter: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
   },
   filterSection: {
     gap: 20,
@@ -1190,15 +1295,13 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   categoryTabText: {
-    fontSize: 16,
-    fontWeight: "600",
     lineHeight: 22,
     textAlign: "center",
     textAlignVertical: "center",
     includeFontPadding: true,
   },
   searchBar: {
-    borderRadius: 14,
+    borderRadius: 50,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1241,12 +1344,7 @@ const styles = StyleSheet.create({
   itemTextBlock: {
     flex: 1,
   },
-  itemName: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
   itemMeta: {
-    fontSize: 12,
     marginTop: 8,
   },
   renameItemInput: {
@@ -1263,20 +1361,6 @@ const styles = StyleSheet.create({
   cardMenuIcon: {
     width: 18,
     textAlign: "center",
-  },
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
   },
   emptyMessage: {
     textAlign: "center",

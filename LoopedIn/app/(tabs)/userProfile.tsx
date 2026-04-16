@@ -26,6 +26,8 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { Feather } from "@expo/vector-icons";
+import BottomFab from "@/components/bottomFab";
+import { useAppSize } from "@/Hooks/useSize";
 
 /* ----------------------------- Types ----------------------------- */
 type User = {
@@ -95,6 +97,7 @@ function getThumbnailSource(item: any): any | null {
 const ProfileHeader = React.memo(function ProfileHeader(props: {
   insetsTop: number;
   colors: ReturnType<typeof getColors>;
+  sizes: ReturnType<typeof getSizes>;
   editing: boolean;
   draftBio: string;
   setDraftBio: (s: string) => void;
@@ -111,11 +114,11 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
   chooseAvatar: () => void;
   router: any;
   avatarSize: number;
-  onLogout: () => void;
 }) {
   const {
     insetsTop,
     colors,
+    sizes,
     editing,
     draftBio,
     setDraftBio,
@@ -132,10 +135,9 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
     chooseAvatar,
     router,
     avatarSize,
-    onLogout,
   } = props;
 
-  const s = themedStyles(colors);
+  const s = themedStyles(colors, sizes);
 
   const placeholderBio =
     !editing && (!originalUser?.userBio || originalUser?.userBio.trim() === "")
@@ -147,13 +149,19 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
       <View style={s.headerBg} />
       <View style={s.headerInner}>
         <View style={s.topAccountManagement}>
-          <Pressable style={s.iconCol} onPress={() => setSettingsOpen(true)}
+          <Pressable
+            style={s.iconCol}
+            onPress={() => setSettingsOpen(true)}
             accessible={true}
             accessibilityLabel={"Settings"}
             accessibilityHint={"Click to view account settings"}
-            accessibilityRole={"button"}>
-            <Feather name="settings" size={24} color={colors.text} />
-            <Text style={[s.iconLabel, { color: colors.text }]}>Settings</Text>
+            accessibilityRole={"button"}
+          >
+            <Feather
+              name="settings"
+              size={sizes.iconSize + 4}
+              color={colors.decorativeBackground}
+            />
           </Pressable>
         </View>
 
@@ -167,7 +175,11 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                 { opacity: editing && pressed ? 0.8 : 1 },
               ]}
               accessible={true}
-              accessibilityHint={editing ? "Double tap to change your profile picture" : "Your profile picture."}
+              accessibilityHint={
+                editing
+                  ? "Double tap to change your profile picture"
+                  : "Your profile picture."
+              }
               accessibilityRole={"imagebutton"}
             >
               <Image
@@ -190,16 +202,16 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                 accessibilityHint={"Double tap to change your profile picture"}
                 accessibilityRole={"button"}
               >
-                <Feather name="edit-2" size={14} color={colors.badgeIcon} />
+                <Feather
+                  name="edit-2"
+                  size={sizes.iconSize - 6}
+                  color={colors.badgeIcon}
+                />
               </Pressable>
             )}
           </View>
 
           <View>
-            <Text style={[s.userName, { color: colors.text }]}>
-              {originalUser?.userName ?? "User"}
-            </Text>
-
             <View style={{ flexDirection: "row", gap: 20 }}>
               <Pressable
                 style={s.countCol}
@@ -210,14 +222,16 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                   })
                 }
                 accessible={true}
-                accessibilityHint={"Double tap to view all accounts that are following you."}
+                accessibilityHint={
+                  "Double tap to view all accounts that are following you."
+                }
               >
-                <View style={s.countCircles}>
+                <View>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>
                     {originalUser?.followers}
                   </Text>
                 </View>
-                <Text style={[s.countLabel, { color: colors.text }]}>
+                <Text style={[s.countLabel, { color: colors.settingsText }]}>
                   Followers
                 </Text>
               </Pressable>
@@ -231,14 +245,16 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                   })
                 }
                 accessible={true}
-                accessibilityHint={"Double tap to view all accounts you are following."}
+                accessibilityHint={
+                  "Double tap to view all accounts you are following."
+                }
               >
-                <View style={s.countCircles}>
+                <View>
                   <Text style={[s.countNum, { color: colors.decorativeText }]}>
                     {originalUser?.following}
                   </Text>
                 </View>
-                <Text style={[s.countLabel, { color: colors.text }]}>
+                <Text style={[s.countLabel, { color: colors.settingsText }]}>
                   Following
                 </Text>
               </Pressable>
@@ -247,11 +263,13 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         </View>
 
         {/* bio */}
-        <View style={s.bioContainer}
+        <View
+          style={s.bioContainer}
           accessible={true}
-          accessibilityHint={editing ? "Double tap to edit your bio" : ""}>
-          <Text style={[s.bioTitle, { color: colors.text }]}>
-            Bio
+          accessibilityHint={editing ? "Double tap to edit your bio" : ""}
+        >
+          <Text style={[s.userName, { color: colors.text }]}>
+            {originalUser?.userName ?? "User"}
           </Text>
           {editing ? (
             <TextInput
@@ -274,6 +292,15 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
         {editing ? (
           <View style={s.editRow}>
             <Pressable
+              onPress={saving ? undefined : discardChanges}
+              style={[s.secondaryBtn, saving && { opacity: 0.6 }]}
+              accessible={true}
+              accessibilityHint={"Double tap to cancel profile changes"}
+              accessibilityRole={"button"}
+            >
+              <Text style={s.secondaryBtnText}>Discard</Text>
+            </Pressable>
+            <Pressable
               accessible={true}
               accessibilityHint={"Double tap to save profile changes."}
               accessibilityRole={"button"}
@@ -293,67 +320,86 @@ const ProfileHeader = React.memo(function ProfileHeader(props: {
                 <Text style={s.primaryBtnText}>Save changes</Text>
               )}
             </Pressable>
-            <Pressable
-              onPress={saving ? undefined : discardChanges}
-              style={[s.secondaryBtn, saving && { opacity: 0.6 }]}
-              accessible={true}
-              accessibilityHint={"Double tap to cancel profile changes"}
-              accessibilityRole={"button"}
-            >
-              <Text style={s.secondaryBtnText}>Discard</Text>
-            </Pressable>
           </View>
         ) : (
-          <View style={s.actionsColumn}>
-            <Pressable style={s.editProfileButton}
-              accessible={true}
-              accessibilityHint={"Double tap to edit your profile picture or bio."} 
-              accessibilityRole={"button"}
-              onPress={startEditing}>
-              <Text style={s.editProfileButtonText}>Edit Profile</Text>
-            </Pressable>
-
-            <TouchableOpacity style={s.logoutButton} 
-              accessible={true}
-              accessibilityHint={"Double tap to log out of your LoopedIn account."}
-              accessibilityRole={"button"}
-              onPress={onLogout}>
-              <Text style={s.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
+          <></>
         )}
 
         {/* Post tab navigation */}
         {activeTab === "posts" ? (
           <View style={s.postTabs}>
-            <View style={s.postTabText}
+            <View
+              style={s.postTabText}
               accessible={true}
               accessibilityHint={"Displays all created explore posts."}
-              accessibilityState={{selected:true}}>
-              <Text style={{ color: colors.decorativeText }}>My Posts</Text>
+              accessibilityState={{ selected: true }}
+            >
+              <Text
+                style={{
+                  color: colors.antiText,
+                  fontWeight: sizes.weight.title,
+                  fontSize: sizes.font.button,
+                }}
+              >
+                My Posts
+              </Text>
             </View>
-            <Pressable onPress={handleSavedPress} style={{ padding: 10 }}
+            <Pressable
+              onPress={handleSavedPress}
+              style={s.antiPostTabText}
               accessible={true}
               accessibilityHint={"Double tap to view all of your saved posts."}
-              accessibilityState={{selected:false}}
-              accessibilityRole={"button"}>
-              <Text style={{ color: colors.text }}>Saved Posts</Text>
+              accessibilityState={{ selected: false }}
+              accessibilityRole={"button"}
+            >
+              <Text
+                style={{
+                  color: colors.secondaryText,
+                  fontWeight: sizes.weight.headline,
+                  fontSize: sizes.font.button,
+                }}
+              >
+                Saved Posts
+              </Text>
             </Pressable>
           </View>
         ) : (
           <View style={s.postTabs}>
-            <Pressable onPress={handlePostPress} style={{ padding: 10 }}
+            <Pressable
+              onPress={handlePostPress}
+              style={s.antiPostTabText}
               accessible={true}
-              accessibilityHint={"Double tap to view all of your explore posts."}
-              accessibilityState={{selected:false}}
-              accessibilityRole={"button"}>
-              <Text style={{ color: colors.text }}>My Posts</Text>
+              accessibilityHint={
+                "Double tap to view all of your explore posts."
+              }
+              accessibilityState={{ selected: false }}
+              accessibilityRole={"button"}
+            >
+              <Text
+                style={{
+                  color: colors.secondaryText,
+                  fontWeight: sizes.weight.headline,
+                  fontSize: sizes.font.button,
+                }}
+              >
+                My Posts
+              </Text>
             </Pressable>
-            <View style={s.postTabText}
+            <View
+              style={s.postTabText}
               accessible={true}
               accessibilityHint={"Displays all saved explore posts."}
-              accessibilityState={{selected:true}}>
-              <Text style={{ color: colors.decorativeText }}>Saved Posts</Text>
+              accessibilityState={{ selected: true }}
+            >
+              <Text
+                style={{
+                  color: colors.antiText,
+                  fontWeight: sizes.weight.headline,
+                  fontSize: sizes.font.button,
+                }}
+              >
+                Saved Posts
+              </Text>
             </View>
           </View>
         )}
@@ -367,17 +413,22 @@ export default function UserProfile() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  let { width } = useWindowDimensions();
   const { tab } = useLocalSearchParams();
 
   // THEME
   const { currentTheme } = useTheme();
   const colors = getColors(currentTheme);
-  const s = themedStyles(colors);
+  const sizes = getSizes();
+  const s = themedStyles(colors, sizes);
 
   // Responsive bits
   const isTablet = width >= 768;
-  const CONTENT_MAX = isTablet ? 720 : width;
+  if (isTablet) {
+    width -= 260;
+  }
+  // const CONTENT_MAX = isTablet ? 720 : width;
+  const CONTENT_MAX = width;
   const NUM_COLUMNS =
     width >= 1024 ? 6 : width >= 820 ? 5 : width >= 600 ? 4 : 3;
   const AVATAR = isTablet ? 120 : 100;
@@ -728,7 +779,15 @@ export default function UserProfile() {
       <View style={s.container}>
         <View style={s.centerFill}>
           <ActivityIndicator />
-          <Text style={{ marginTop: 8, color: colors.text }}>Preparing…</Text>
+          <Text
+            style={{
+              marginTop: 8,
+              color: colors.text,
+              fontSize: sizes.font.bodyText,
+            }}
+          >
+            Preparing…
+          </Text>
         </View>
       </View>
     );
@@ -741,7 +800,7 @@ export default function UserProfile() {
           <Text
             style={{
               color: colors.text,
-              fontSize: 18,
+              fontSize: sizes.font.bodyText,
               textAlign: "center",
               marginBottom: 12,
             }}
@@ -765,7 +824,15 @@ export default function UserProfile() {
       <View style={s.container}>
         <View style={s.centerFill}>
           <ActivityIndicator />
-          <Text style={{ marginTop: 8, color: colors.text }}>Loading…</Text>
+          <Text
+            style={{
+              marginTop: 8,
+              color: colors.text,
+              fontSize: sizes.font.bodyText,
+            }}
+          >
+            Loading…
+          </Text>
         </View>
       </View>
     );
@@ -775,11 +842,19 @@ export default function UserProfile() {
     return (
       <View style={s.container}>
         <View style={s.centerFill}>
-          <Text style={{ color: colors.text }}>
+          <Text style={{ color: colors.text, fontSize: sizes.font.bodyText }}>
             {loadError ? `Error: ${loadError}` : "No user loaded"}
           </Text>
           <Pressable onPress={() => router.replace("/")}>
-            <Text style={{ color: colors.link, marginTop: 8 }}>Go Home</Text>
+            <Text
+              style={{
+                color: colors.link,
+                marginTop: 8,
+                fontSize: sizes.font.bodyText,
+              }}
+            >
+              Go Home
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -787,7 +862,8 @@ export default function UserProfile() {
   }
 
   /* --------------------------- Render --------------------------- */
-  const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS - 10;
+  // const cardW = Math.min(CONTENT_MAX, width) / NUM_COLUMNS;
+  const cardW = (width - (NUM_COLUMNS + 1) * 10) / NUM_COLUMNS;
 
   return (
     <View style={s.container}>
@@ -800,6 +876,7 @@ export default function UserProfile() {
           <ProfileHeader
             insetsTop={insets.top}
             colors={colors}
+            sizes={sizes}
             editing={editing}
             draftBio={draftBio}
             setDraftBio={setDraftBio}
@@ -816,7 +893,6 @@ export default function UserProfile() {
             chooseAvatar={chooseAvatar}
             router={router}
             avatarSize={AVATAR}
-            onLogout={handleLogout}
           />
         }
         renderItem={({ item }) => {
@@ -851,15 +927,14 @@ export default function UserProfile() {
         }}
         columnWrapperStyle={{
           justifyContent: "flex-start",
-          paddingHorizontal: 10,
           columnGap: 10,
+          paddingHorizontal: 10,
         }}
         contentContainerStyle={{
           alignSelf: "center",
           width: "100%",
           maxWidth: CONTENT_MAX,
           paddingBottom: insets.bottom,
-          paddingTop: 10,
           backgroundColor: colors.background,
         }}
         keyboardShouldPersistTaps="always"
@@ -867,20 +942,25 @@ export default function UserProfile() {
       />
 
       <Pressable
-        style={[s.floatingButton, { bottom: insets.bottom }]}
         accessible={true}
         accessibilityLabel={"Create Explore Post"}
-        accessibilityHint={"Navigates to the create explore post screen. Double Tap to create an explore post."}
+        accessibilityHint={
+          "Navigates to the create explore post screen. Double Tap to create an explore post."
+        }
         accessibilityRole={"button"}
         onPress={handleCreatePost}
       >
-        <Feather name="plus" size={28} color={colors.decorativeText} />
+        <BottomFab />
       </Pressable>
 
       <SettingsOverlay
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onLogout={handleLogout}
+        onEditProfile={() => {
+          setSettingsOpen(false);
+          startEditing();
+        }}
       />
     </View>
   );
@@ -899,12 +979,23 @@ function getColors(themeKey: string) {
   };
 }
 
+function getSizes() {
+  const original = useAppSize();
+  return {
+    ...original,
+  };
+}
+
 /* ---------------------------- Styles ---------------------------- */
-const themedStyles = (colors: ReturnType<typeof getColors>) =>
+const themedStyles = (
+  colors: ReturnType<typeof getColors>,
+  sizes: ReturnType<typeof getSizes>
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      margin: 0,
     },
     centerFill: {
       flex: 1,
@@ -915,8 +1006,8 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
     headerOuter: {
       position: "relative",
       backgroundColor: "transparent",
-      borderBottomLeftRadius: 30,
-      borderBottomRightRadius: 30,
+      borderBottomLeftRadius: 40,
+      borderBottomRightRadius: 40,
       paddingBottom: 16,
       marginBottom: 12,
       overflow: "hidden",
@@ -932,18 +1023,22 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
     headerInner: {
       alignSelf: "center",
       width: "100%",
-      maxWidth: 720,
+      // maxWidth: 720,
       paddingHorizontal: 16,
     },
     topAccountManagement: {
       flexDirection: "row",
       justifyContent: "flex-end",
       gap: 20,
-      marginTop: 20,
       marginBottom: 20,
       marginRight: 4,
     },
-    iconCol: { alignItems: "center" },
+    iconCol: {
+      alignItems: "center",
+      padding: 15,
+      backgroundColor: colors.secondaryButton,
+      borderRadius: 50,
+    },
     iconLabel: { fontSize: 12, marginTop: 4 },
     userInfoContainer: {
       flexDirection: "row",
@@ -951,7 +1046,11 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       justifyContent: "center",
       gap: 16,
     },
-    userName: { fontSize: 20, fontWeight: "600" },
+    userName: {
+      fontSize: sizes.font.headline,
+      fontWeight: sizes.weight.headline,
+      paddingBottom: 5,
+    },
     avatar: { backgroundColor: colors.boxBackground },
     pencilBadge: {
       position: "absolute",
@@ -976,8 +1075,8 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       borderRadius: 25,
       flexDirection: "row",
     },
-    countNum: { fontSize: 24 },
-    countLabel: { fontSize: 14, marginTop: 4 },
+    countNum: { fontSize: sizes.font.titleText },
+    countLabel: { fontSize: sizes.font.caption, marginTop: 4 },
     bioContainer: {
       flexDirection: "column",
       marginHorizontal: 30,
@@ -987,10 +1086,9 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
     bioTitle: { fontSize: 14, marginBottom: 6 },
     bioContentContainer: {
       backgroundColor: colors.boxBackground,
-      padding: 10,
       borderRadius: 15,
     },
-    bioText: { fontSize: 14 },
+    bioText: { fontSize: sizes.font.bodyText },
     bioInput: {
       backgroundColor: colors.boxBackground,
       color: colors.text,
@@ -998,6 +1096,7 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       borderRadius: 15,
       minHeight: 80,
       textAlignVertical: "top",
+      fontSize: sizes.font.bodyText,
     },
     postTabs: {
       flexDirection: "row",
@@ -1009,8 +1108,9 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
     },
     postTabText: {
       backgroundColor: colors.decorativeBackground,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+      paddingVertical: 15,
+      width: 150,
+      alignItems: "center",
       borderRadius: 15,
     },
     actionsColumn: {
@@ -1025,7 +1125,7 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       borderRadius: 15,
     },
     editProfileButtonText: {
-      fontSize: 14,
+      fontSize: sizes.font.bodyText,
       color: colors.text,
     },
     logoutButton: {
@@ -1035,7 +1135,7 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       borderRadius: 15,
     },
     logoutButtonText: {
-      fontSize: 14,
+      fontSize: sizes.font.bodyText,
       color: colors.text,
     },
     editRow: {
@@ -1054,9 +1154,9 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       alignItems: "center",
     },
     primaryBtnText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: colors.decorativeText,
+      fontSize: sizes.font.button,
+      fontWeight: sizes.weight.headline,
+      color: colors.antiText,
     },
     secondaryBtn: {
       backgroundColor: colors.boxBackground,
@@ -1065,8 +1165,14 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       borderRadius: 12,
       minWidth: 110,
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.warning,
     },
-    secondaryBtnText: { fontSize: 14, fontWeight: "600", color: colors.text },
+    secondaryBtnText: {
+      fontSize: sizes.font.button,
+      fontWeight: sizes.weight.headline,
+      color: colors.warning,
+    },
     floatingButton: {
       position: "absolute",
       right: 20,
@@ -1081,5 +1187,12 @@ const themedStyles = (colors: ReturnType<typeof getColors>) =>
       shadowOpacity: 0.25,
       shadowRadius: 6,
       elevation: 5,
+    },
+    antiPostTabText: {
+      backgroundColor: colors.secondaryButton,
+      paddingVertical: 15,
+      width: 150,
+      alignItems: "center",
+      borderRadius: 15,
     },
   });

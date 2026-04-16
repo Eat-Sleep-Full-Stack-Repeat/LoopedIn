@@ -13,12 +13,13 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import ForumPostView from "@/components/forumPost";
 import { Storage } from "../utils/storage";
 import API_URL from "@/utils/config";
+import { useAppSize } from "@/Hooks/useSize";
 
 type ForumPost = {
   id: number;
@@ -27,25 +28,30 @@ type ForumPost = {
   content: string;
   filterTags: string[];
   datePosted: string;
-  userID: string,
+  userID: string;
 };
 
 type ForumSearchOverlayProps = {
   visible: boolean;
   onClose: () => void;
-  forumData: ForumPost[]; 
+  forumData: ForumPost[];
 };
 
-export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOverlayProps) {
+export default function ForumSearchOverlay({
+  visible,
+  onClose,
+}: ForumSearchOverlayProps) {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
 
-  const [searchType, setSearchType] = useState<"user" | "tag" | "title">("user");
+  const [searchType, setSearchType] = useState<"user" | "tag" | "title">(
+    "user"
+  );
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ForumPost[]>([]);
 
-  const fade = useRef(new Animated.Value(0)).current;   //backdrop opacity
-  const slide = useRef(new Animated.Value(0)).current;  //0 hidden 1 shown
+  const fade = useRef(new Animated.Value(0)).current; //backdrop opacity
+  const slide = useRef(new Animated.Value(0)).current; //0 hidden 1 shown
   const screenH = Dimensions.get("window").height;
   const isTablet = Dimensions.get("window").width >= 768;
 
@@ -55,6 +61,8 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
   const lastPostID = useRef<number | null>(null);
   const loadingMore = useRef<true | false>(false);
   const hasMore = useRef(true);
+
+  const size = useAppSize();
 
   //change search results if new searchType filter selected
   useEffect(() => {
@@ -66,11 +74,11 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
     if (query.trim()) {
       handleSearch(true);
     }
-}, [searchType]);
+  }, [searchType]);
 
   //refresh if query changes (don't put new stuff on top of old stuff)
   useEffect(() => {
-  if (query.trim() === "") {
+    if (query.trim() === "") {
       //reset infinite scroll vars
       //console.log("------------SETTING ALL INFINITE SCROLL VARS TO NULL-------------")
       lastTimeStamp.current = null;
@@ -80,19 +88,36 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
 
       //clear everything
       setResults([]);
-  }
-}, [query]);
+    }
+  }, [query]);
 
   useEffect(() => {
     if (visible) {
       Animated.parallel([
-        Animated.timing(fade, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.spring(slide, { toValue: 1, useNativeDriver: true, friction: 9, tension: 60 }),
+        Animated.timing(fade, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slide, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 9,
+          tension: 60,
+        }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(fade, { toValue: 0, duration: 180, useNativeDriver: true }),
-        Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(fade, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slide, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
+        }),
       ]).start();
     }
   }, [visible, fade, slide]);
@@ -102,10 +127,10 @@ export default function ForumSearchOverlay({ visible, onClose }: ForumSearchOver
     outputRange: [screenH, 0],
   });
 
-const handleSearch = async (fresh = false) => {
-  if (!visible) return; //end a query if search overlay is closed
+  const handleSearch = async (fresh = false) => {
+    if (!visible) return; //end a query if search overlay is closed
 
-  //console.log("handling search", fresh? "(fresh)":"");
+    //console.log("handling search", fresh? "(fresh)":"");
 
     if (fresh) {
       //reset infinite scroll vars
@@ -135,67 +160,68 @@ const handleSearch = async (fresh = false) => {
 
     //timestamps for infinite scroll
     const includeBefore = lastTimeStamp.current
-    ? `&before=${lastTimeStamp.current}`
-    : "";
+      ? `&before=${lastTimeStamp.current}`
+      : "";
 
-  const includePostID = lastPostID.current
-    ? `&postID=${lastPostID.current}`
-    : "";
-
+    const includePostID = lastPostID.current
+      ? `&postID=${lastPostID.current}`
+      : "";
 
     //api call
     try {
-    const response = await fetch(`${API_URL}/api/forum/search?limit=${limit}${includeBefore}${includePostID}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        query: q,
-        type: searchType,
-      }),
-    });
+      const response = await fetch(
+        `${API_URL}/api/forum/search?limit=${limit}${includeBefore}${includePostID}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            query: q,
+            type: searchType,
+          }),
+        }
+      );
 
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
 
-    const data = await response.json();
+      const data = await response.json();
 
-    let tempArray: ForumPost[] = data.newFeed.map((row: any) => ({
-      id: row.fld_post_pk,
-      profilePic: row.fld_profile_pic,
-      title: row.fld_header,
-      username: row.fld_username,
-      content: row.fld_body,
-      datePosted: row.fld_timestamp,
-      userID: row.fld_user_pk,
-    }));
+      let tempArray: ForumPost[] = data.newFeed.map((row: any) => ({
+        id: row.fld_post_pk,
+        profilePic: row.fld_profile_pic,
+        title: row.fld_header,
+        username: row.fld_username,
+        content: row.fld_body,
+        datePosted: row.fld_timestamp,
+        userID: row.fld_user_pk,
+      }));
 
-    //console.log("temp array populated");
+      //console.log("temp array populated");
 
-
-     //filter to prevent duplicates
-      setResults(prev => {
+      //filter to prevent duplicates
+      setResults((prev) => {
         const combined = [...prev, ...tempArray];
-        return Array.from(new Map(combined.map(item => [item.id, item])).values());
+        return Array.from(
+          new Map(combined.map((item) => [item.id, item])).values()
+        );
       });
 
       //obligatory updates
-      hasMore.current = (data.hasMore);
+      hasMore.current = data.hasMore;
       if (tempArray.length > 0) {
         lastTimeStamp.current = tempArray[tempArray.length - 1].datePosted;
         lastPostID.current = Number(tempArray[tempArray.length - 1].id);
-      };
-
+      }
     } catch (err: any) {
       console.error(err);
     } finally {
       //even if fetching data fails, we will update loading more
       loadingMore.current = false;
     }
-  
   };
 
   return (
@@ -205,8 +231,7 @@ const handleSearch = async (fresh = false) => {
       pointerEvents={visible ? "auto" : "none"}
     >
       {/* Backdrop */}
-      <TouchableWithoutFeedback onPress={onClose}
-        accessible={false}>
+      <TouchableWithoutFeedback onPress={onClose} accessible={false}>
         <Animated.View
           style={[
             styles.backdrop,
@@ -217,34 +242,45 @@ const handleSearch = async (fresh = false) => {
 
       {/* Sliding card */}
       <Animated.View
-        style={[
-          styles.cardWrap,
-          { transform: [{ translateY }] },
-        ]}
+        style={[styles.cardWrap, { transform: [{ translateY }] }]}
         pointerEvents="auto"
       >
-        <View style={[styles.card,     {
-      width: isTablet ? "100%" : "95%",
-      maxWidth: isTablet ? 900 : undefined,
-    }, { backgroundColor: colors.topBackground }]}>
+        <View
+          style={[
+            styles.card,
+            {
+              width: isTablet ? "100%" : "95%",
+              maxWidth: isTablet ? 900 : undefined,
+            },
+            { backgroundColor: colors.topBackground, paddingHorizontal: 20 },
+          ]}
+        >
           {/* Header */}
           <View style={styles.header}>
-            <Pressable   onPress={onClose}
-                accessible={true}
-                accessibilityLabel={"Exit"}
-                accessibilityHint={"double tap to exit out of comment section"}
-                accessibilityRole={"button"}
-                style={{ padding: 6 }}>
-              <Feather name="x" size={26} color={colors.text} />
-            </Pressable>
-            <Text style={[styles.headerText, { color: colors.text }]}
+            <View style={styles.sideView} />
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.largeTitleText,
+                fontWeight: size.weight.title,
+              }}
               accessible={true}
               accessibilityLabel={"Search"}
-              accessibilityRole={"header"}>
+              accessibilityRole={"header"}
+            >
               Search
             </Text>
+            <Pressable
+              onPress={onClose}
+              accessible={true}
+              accessibilityLabel={"Exit"}
+              accessibilityHint={"double tap to exit out of comment section"}
+              accessibilityRole={"button"}
+              style={styles.sideView}
+            >
+              <AntDesign name="close" size={size.iconSize + 4} />
+            </Pressable>
           </View>
-
           {/* Input row */}
           <View style={styles.searchRow}>
             <TextInput
@@ -255,7 +291,7 @@ const handleSearch = async (fresh = false) => {
                 {
                   color: colors.text,
                   borderColor: colors.decorativeBackground,
-                  backgroundColor: colors.background,
+                  backgroundColor: colors.topBackground,
                 },
               ]}
               value={query}
@@ -263,20 +299,33 @@ const handleSearch = async (fresh = false) => {
               onSubmitEditing={() => handleSearch(true)}
               returnKeyType="search"
             />
-            <Pressable onPress={() => handleSearch(true)} style={styles.iconButton}
+            <Pressable
+              onPress={() => handleSearch(true)}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor: colors.secondaryButton,
+                  height: size.iconSize + 24,
+                  width: size.iconSize + 24,
+                },
+              ]}
               accessible={true}
               accessibilityLabel={"Search"}
               accessibilityHint={"double tap to enter search query"}
-              accessibilityRole={"button"}>
-              <Feather name="search" size={22} color={colors.decorativeText} />
+              accessibilityRole={"button"}
+            >
+              <Feather
+                name="search"
+                size={size.iconSize + 2}
+                color={colors.decorativeBackground}
+              />
             </Pressable>
           </View>
-
           {/* Filter buttons (default: User) */}
           <View style={styles.filters}>
             {(["user", "tag", "title"] as const).map((type) => {
               const active = searchType === type;
-             return (
+              return (
                 <Pressable
                   key={type}
                   onPress={() => {
@@ -288,44 +337,67 @@ const handleSearch = async (fresh = false) => {
                     {
                       backgroundColor: active
                         ? colors.decorativeBackground
-                        : colors.boxBackground,
+                        : colors.secondaryButton,
                     },
                   ]}
                   accessible={true}
                   accessibilityHint={"Searches forum posts by " + type}
                   accessibilityRole={"tab"}
-                  accessibilityState={active ? {selected: true} : {selected: false}}
-
+                  accessibilityState={
+                    active ? { selected: true } : { selected: false }
+                  }
                 >
                   <Text
                     style={{
-                      color: active ? colors.decorativeText : colors.text,
+                      color: active ? colors.antiText : colors.secondaryText,
                       fontWeight: "600",
                     }}
                   >
-                    {type === "user" ? "User Name" : type === "tag" ? "Tag" : "Title"}
-                 </Text>
-               </Pressable>
-               );
-           })}
+                    {type === "user"
+                      ? "User Name"
+                      : type === "tag"
+                      ? "Tag"
+                      : "Title"}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-
-          {/* Results */}
           <FlatList
             data={results}
             keyExtractor={(item, index) => `${item.id}_${index}`}
             renderItem={({ item }) => (
-              <View style={{ alignItems: "center", marginVertical: 8 }}>
-                <ForumPostView postInfo={item} />
+              <View
+                style={{
+                  alignItems: "center",
+                  marginVertical: 8,
+                }}
+              >
+                <ForumPostView postInfo={item} hasSideBar={true} />
               </View>
             )}
             ListEmptyComponent={
-              <Text style={{ color: colors.text, textAlign: "center", marginTop: 20 }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  textAlign: "center",
+                  marginTop: 20,
+                }}
+              >
                 {query
-                  ? "No results found."
-                  : "Enter a search term and select a filter to begin."}
+                  ? "No results found"
+                  : "Enter a search term and select a filter to begin"}
               </Text>
             }
+            ItemSeparatorComponent={() => (
+              <View
+                style={{
+                  height: 1,
+                  width: "100%",
+                  backgroundColor: colors.background,
+                }}
+              />
+            )}
             onEndReached={() => {
               if (!loadingMore.current && hasMore.current) {
                 handleSearch(false);
@@ -335,20 +407,28 @@ const handleSearch = async (fresh = false) => {
             ListFooterComponent={() => {
               if (results.length > 0) {
                 if (!hasMore.current) {
-                  return <Text style={{ color: colors.text }}> No More Data To Load </Text>;
-                } else {
                   return (
-                    <ActivityIndicator size="small" color={colors.text} />
+                    <Text
+                      style={{
+                        color: colors.inputContainerPlaceholderText,
+                        fontSize: size.font.caption,
+                      }}
+                    >
+                      No More Data To Load
+                    </Text>
                   );
+                } else {
+                  return <ActivityIndicator size="small" color={colors.text} />;
                 }
               }
             }}
-              contentContainerStyle={{
+            contentContainerStyle={{
               paddingBottom: 120,
               backgroundColor: colors.topBackground,
               paddingHorizontal: 10,
+              alignItems: "center",
             }}
-              style={{
+            style={{
               width: "100%",
               alignSelf: "center",
               paddingRight: 12,
@@ -377,18 +457,16 @@ const styles = StyleSheet.create({
     width: "95%",
     height: "88%",
     borderRadius: 25,
-    padding: 16,
+    padding: 5,
     overflow: "hidden",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 10,
     marginBottom: 10,
-  },
-  headerText: {
-    fontSize: 22,
-    fontWeight: "bold",
+    marginTop: 20,
   },
   searchRow: {
     flexDirection: "row",
@@ -398,14 +476,16 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 45,
-    borderRadius: 12,
+    borderRadius: 50,
     borderWidth: 1,
     paddingHorizontal: 12,
     marginRight: 10,
   },
   iconButton: {
-    borderRadius: 10,
+    borderRadius: 50,
     padding: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   filters: {
     flexDirection: "row",
@@ -413,8 +493,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   filterButton: {
-    borderRadius: 12,
+    borderRadius: 50,
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 5,
+    width: 90,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sideView: {
+    width: 30,
   },
 });

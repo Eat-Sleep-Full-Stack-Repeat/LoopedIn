@@ -1,4 +1,6 @@
+import { useAppSize } from "@/Hooks/useSize";
 import { Colors } from "@/Styles/colors";
+import { useSize } from "@/context/SizeContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter, useRootNavigationState } from "expo-router";
 import { useEffect, useState } from "react";
@@ -15,6 +17,7 @@ export default function Index() {
   const rootNavigationState = useRootNavigationState();
   const [isEnabled, setIsEnabled] = useState(currentTheme === "dark");
 
+  const size = useAppSize();
   const toggleSwitch = () => {
     setIsEnabled((previousState) => !previousState);
     toggleTheme();
@@ -72,7 +75,13 @@ export default function Index() {
     >
       <ActivityIndicator size="large" color={colors.text} />
 
-      <Text style={{ color: colors.text, marginTop: 10 }}>
+      <Text
+        style={{
+          color: colors.text,
+          marginTop: 10,
+          fontSize: size.font.bodyText,
+        }}
+      >
         Checking login...
       </Text>
 
@@ -84,7 +93,10 @@ export default function Index() {
           marginTop: 20,
         }}
       >
-        <Text style={{ color: colors.text }}> Dark Mode? </Text>
+        <Text style={{ color: colors.text, fontSize: size.font.bodyText }}>
+          {" "}
+          Dark Mode?{" "}
+        </Text>
         <Switch
           onValueChange={toggleSwitch}
           trackColor={{ false: "#767577", true: "#E0D5DD" }}

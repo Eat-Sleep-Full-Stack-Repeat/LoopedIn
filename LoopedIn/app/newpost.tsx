@@ -22,7 +22,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import API_URL from "@/utils/config";
-
+import { useAppSize } from "@/Hooks/useSize";
 
 type CraftOption = {
   id: string;
@@ -52,7 +52,7 @@ const craftOptions: CraftOption[] = [
   {
     id: "Misc",
     label: "Misc",
-    icon: require("../assets/images/paw-icon.png")
+    icon: require("../assets/images/paw-icon.png"),
   },
 ];
 
@@ -60,6 +60,7 @@ export default function NewPost() {
   const { currentTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const colors = Colors[currentTheme];
+  const size = useAppSize();
   const router = useRouter();
   const [selectedCraft, setSelectedCraft] = useState<string>("Crochet");
   const CAPTION_LIMIT = 1000;
@@ -255,9 +256,7 @@ export default function NewPost() {
     if (submitting) return;
 
     try {
-      const hasAnyPhoto = photoCards.some(
-        (c) => c.hasImage && c.localUri
-      );
+      const hasAnyPhoto = photoCards.some((c) => c.hasImage && c.localUri);
       if (!hasAnyPhoto) {
         setShowMissingPhotoOverlay(true);
         return;
@@ -298,14 +297,11 @@ export default function NewPost() {
         const type =
           ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
 
-        formData.append(
-          "photos",
-          {
-            uri,
-            name,
-            type,
-          } as any
-        );
+        formData.append("photos", {
+          uri,
+          name,
+          type,
+        } as any);
       });
 
       const response = await fetch(`${API_URL}/api/post`, {
@@ -366,11 +362,11 @@ export default function NewPost() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: insets.top + 24,
+      paddingTop: insets.top,
       paddingHorizontal: 24,
     },
     scrollContent: {
-      paddingBottom: insets.bottom + 48,
+      // paddingBottom: insets.bottom,
     },
     header: {
       position: "relative",
@@ -378,21 +374,20 @@ export default function NewPost() {
       alignItems: "center",
       justifyContent: "center",
       marginTop: 10,
-      marginBottom: 32,
+      marginBottom: 20,
     },
     backButton: {
       position: "absolute",
       left: 0,
     },
     backArrow: {
-      fontSize: 30,
+      fontSize: size.font.largeTitleText,
       color: colors.text,
     },
     title: {
       color: colors.text,
-      fontSize: 32,
-      fontWeight: "bold",
-      textAlign: "center",
+      fontSize: size.font.largeTitleText,
+      fontWeight: size.weight.title,
     },
     uploadContainer: {
       width: "100%",
@@ -424,24 +419,22 @@ export default function NewPost() {
     },
     cardTitle: {
       color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
+      fontSize: size.font.headline,
+      fontWeight: size.weight.headline,
     },
     removePhotoButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.decorativeText,
+      width: 44,
+      height: 44,
+      borderRadius: 50,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: `${colors.decorativeBackground}33`,
+      backgroundColor: colors.secondaryButton,
     },
     uploadArea: {
       height: 200,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: colors.decorativeText,
+      borderColor: colors.secondaryText,
       borderStyle: "dashed",
       justifyContent: "center",
       alignItems: "center",
@@ -457,13 +450,13 @@ export default function NewPost() {
     },
     uploadTitle: {
       color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
+      fontSize: size.font.headline,
+      fontWeight: size.weight.headline,
       textAlign: "center",
     },
     uploadSubtitle: {
-      color: `${colors.text}aa`,
-      fontSize: 14,
+      color: colors.settingsText,
+      fontSize: size.font.caption,
       textAlign: "center",
     },
     cardAltWrapper: {
@@ -477,18 +470,18 @@ export default function NewPost() {
     cardAltInput: {
       minHeight: 50,
       color: colors.text,
-      fontSize: 14,
+      fontSize: size.font.bodyText,
     },
     cardCounterText: {
-      color: `${colors.text}99`,
-      fontSize: 12,
+      color: colors.settingsText,
+      fontSize: size.font.detailText,
       marginTop: 8,
       textAlign: "left",
     },
     photoHelperText: {
       marginTop: 16,
-      color: `${colors.text}aa`,
-      fontSize: 14,
+      color: colors.settingsText,
+      fontSize: size.font.bodyText,
     },
     addCardRow: {
       marginTop: 12,
@@ -499,17 +492,17 @@ export default function NewPost() {
     },
     photoCountText: {
       color: colors.text,
-      fontWeight: "600",
+      fontWeight: size.weight.headline,
     },
     addPhotoFab: {
       width: 44,
       height: 44,
       borderRadius: 22,
-      borderWidth: 1.5,
-      borderColor: colors.decorativeText,
+      borderWidth: 0.5,
+      borderColor: colors.decorativeBackground,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.background,
+      backgroundColor: colors.secondaryButton,
     },
     addPhotoFabDisabled: {
       opacity: 0.4,
@@ -519,8 +512,8 @@ export default function NewPost() {
     },
     sectionLabel: {
       color: colors.text,
-      fontWeight: "600",
-      fontSize: 16,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.headline,
       marginBottom: 10,
       textAlign: "left",
     },
@@ -540,24 +533,25 @@ export default function NewPost() {
       borderRadius: 22,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.topBackground,
-      borderWidth: 2,
-      borderColor: "transparent",
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 0.5,
+      borderColor: colors.secondaryText,
       overflow: "hidden",
     },
     craftIconWrapperSelected: {
       backgroundColor: colors.decorativeBackground,
       borderColor: colors.decorativeText,
+      borderWidth: 0,
     },
     craftIconImage: {
-      width: 30,
-      height: 30,
-      tintColor: colors.decorativeText,
+      width: size.iconSize + 10,
+      height: size.iconSize + 10,
+      tintColor: colors.antiText,
     },
     craftIconLabel: {
       color: colors.text,
-      fontSize: 14,
-      fontWeight: "500",
+      fontSize: size.font.caption,
+      fontWeight: size.weight.headline,
     },
     craftIconLabelSelected: {
       color: colors.decorativeText,
@@ -576,12 +570,12 @@ export default function NewPost() {
     },
     inputLabel: {
       color: colors.text,
-      fontWeight: "600",
-      fontSize: 16,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.bodyText,
     },
     counterText: {
       color: colors.text,
-      fontSize: 12,
+      fontSize: size.font.detailText,
       opacity: 0.7,
     },
     input: {
@@ -592,7 +586,7 @@ export default function NewPost() {
       borderWidth: 1,
       borderColor: colors.topBackground,
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
     },
     captionInput: {
       minHeight: 90,
@@ -608,8 +602,10 @@ export default function NewPost() {
       marginBottom: 16,
     },
     tagChip: {
-      backgroundColor: colors.topBackground,
-      borderRadius: 16,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
+      borderRadius: 50,
       paddingHorizontal: 14,
       paddingVertical: 8,
       marginRight: 12,
@@ -617,7 +613,7 @@ export default function NewPost() {
     },
     tagChipText: {
       color: colors.text,
-      fontWeight: "600",
+      fontWeight: size.weight.headline,
     },
     tagInputRow: {
       flexDirection: "row",
@@ -632,22 +628,27 @@ export default function NewPost() {
       borderWidth: 1,
       borderColor: colors.topBackground,
       color: colors.text,
-      fontSize: 16,
+      fontSize: size.font.bodyText,
     },
     addTagButton: {
-      width: 52,
-      height: 52,
+      width: 44,
+      height: 44,
       borderRadius: 26,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.decorativeBackground,
+      backgroundColor: colors.secondaryButton,
       marginLeft: 12,
+      borderWidth: 0.5,
+      borderColor: colors.decorativeBackground,
     },
     addTagButtonDisabled: {
-      backgroundColor: `${colors.topBackground}88`,
+      opacity: 0.4,
+      backgroundColor: colors.secondaryButton,
+      borderWidth: 0.5,
+      borderColor: colors.decorativeBackground,
     },
     addTagIcon: {
-      color: colors.decorativeText,
+      color: colors.decorativeBackground,
     },
     postOptionsRow: {
       flexDirection: "row",
@@ -663,26 +664,26 @@ export default function NewPost() {
       paddingVertical: 14,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: colors.topBackground,
-      backgroundColor: colors.boxBackground,
+      borderColor: colors.decorativeBackground,
+      backgroundColor: colors.secondaryButton,
     },
     postOptionButtonSelected: {
       backgroundColor: colors.decorativeBackground,
       borderColor: colors.decorativeBackground,
     },
     postOptionIcon: {
-      color: colors.text,
+      color: colors.secondaryText,
     },
     postOptionIconSelected: {
-      color: colors.decorativeText,
+      color: colors.antiText,
     },
     postOptionText: {
-      color: colors.text,
-      fontWeight: "600",
-      fontSize: 16,
+      color: colors.secondaryText,
+      fontWeight: size.weight.headline,
+      fontSize: size.font.button,
     },
     postOptionTextSelected: {
-      color: colors.decorativeText,
+      color: colors.antiText,
     },
     submitButton: {
       marginTop: 32,
@@ -693,9 +694,9 @@ export default function NewPost() {
       justifyContent: "center",
     },
     submitButtonText: {
-      color: colors.decorativeText,
-      fontSize: 18,
-      fontWeight: "700",
+      color: colors.antiText,
+      fontSize: size.font.button,
+      fontWeight: size.weight.largeTitle,
     },
     successBackdrop: {
       alignItems: "center",
@@ -717,13 +718,13 @@ export default function NewPost() {
       width: "100%",
     },
     successTitle: {
-      fontSize: 24,
-      fontWeight: "700",
+      fontSize: size.font.titleText,
+      fontWeight: size.weight.largeTitle,
       marginBottom: 12,
       textAlign: "center",
     },
     successDescription: {
-      fontSize: 16,
+      fontSize: size.font.button,
       lineHeight: 24,
       marginBottom: 20,
       textAlign: "center",
@@ -742,8 +743,8 @@ export default function NewPost() {
       paddingVertical: 14,
     },
     successButtonText: {
-      fontSize: 16,
-      fontWeight: "700",
+      fontSize: size.font.button,
+      fontWeight: size.weight.largeTitle,
       lineHeight: 20,
     },
     singleOverlayButton: {
@@ -771,16 +772,21 @@ export default function NewPost() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}
-              accessible={true}
-              accessibilityLabel={"Go Back"}
-              accessibilityHint={"Navigates back to the previous page."}
-              accessibilityRole={"button"}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessible={true}
+            accessibilityLabel={"Go Back"}
+            accessibilityHint={"Navigates back to the previous page."}
+            accessibilityRole={"button"}
+          >
             <Text style={styles.backArrow}>←</Text>
           </Pressable>
-          <Text style={styles.title}
+          <Text
+            style={styles.title}
             accessible={true}
-            accessibilityRole={"header"}>
+            accessibilityRole={"header"}
+          >
             New Post
           </Text>
         </View>
@@ -803,26 +809,25 @@ export default function NewPost() {
                   key={card.id}
                   style={[
                     styles.photoCard,
-                    index !== photoCards.length - 1 &&
-                      styles.photoCardSpacing,
+                    index !== photoCards.length - 1 && styles.photoCardSpacing,
                   ]}
                 >
                   <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>
-                      Photo {index + 1}
-                    </Text>
+                    <Text style={styles.cardTitle}>Photo {index + 1}</Text>
                     <Pressable
                       style={styles.removePhotoButton}
                       onPress={() => handleRemovePhotoCard(card.id)}
                       accessible={true}
                       accessibilityLabel={"Delete photo."}
-                      accessibilityHint={`Removes photo ${index + 1} from selection.`}
+                      accessibilityHint={`Removes photo ${
+                        index + 1
+                      } from selection.`}
                       accessibilityRole={"button"}
                     >
                       <Feather
                         name="trash-2"
-                        size={16}
-                        color={colors.decorativeText}
+                        size={size.iconSize}
+                        color={colors.decorativeBackground}
                       />
                     </Pressable>
                   </View>
@@ -834,8 +839,14 @@ export default function NewPost() {
                         : () => handleUploadPress(card.id)
                     }
                     accessible={true}
-                    accessibilityLabel={card.hasImage ? "Uploaded Photo" : "Upload a photo"}
-                    accessibilityHint={card.hasImage ? "" : "Double tap to choose from your library or camera."}
+                    accessibilityLabel={
+                      card.hasImage ? "Uploaded Photo" : "Upload a photo"
+                    }
+                    accessibilityHint={
+                      card.hasImage
+                        ? ""
+                        : "Double tap to choose from your library or camera."
+                    }
                     accessibilityRole={card.hasImage ? "image" : "button"}
                     disabled={card.hasImage}
                   >
@@ -871,9 +882,11 @@ export default function NewPost() {
                       multiline
                       maxLength={CARD_ALT_TEXT_LIMIT}
                     />
-                    <Text style={styles.cardCounterText}
+                    <Text
+                      style={styles.cardCounterText}
                       accessible={true}
-                      accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}>
+                      accessibilityLabel={`${card.altText.length} out of ${CARD_ALT_TEXT_LIMIT} characters are used.`}
+                    >
                       {card.altText.length}/{CARD_ALT_TEXT_LIMIT}
                     </Text>
                   </View>
@@ -885,31 +898,35 @@ export default function NewPost() {
             Add up to 5 cards. Each card holds one photo with its own alt text.
           </Text>
           <View style={styles.addCardRow}>
-            <Text style={styles.photoCountText}
+            <Text
+              style={styles.photoCountText}
               accessible={true}
-              accessibilityLabel={`${photoCards.length} out of ${PHOTO_LIMIT} cards are taken.`}>
+              accessibilityLabel={`${photoCards.length} out of ${PHOTO_LIMIT} cards are taken.`}
+            >
               {photoCards.length}/{PHOTO_LIMIT}
             </Text>
             <Pressable
               style={[
                 styles.addPhotoFab,
-                photoCards.length >= PHOTO_LIMIT &&
-                  styles.addPhotoFabDisabled,
+                photoCards.length >= PHOTO_LIMIT && styles.addPhotoFabDisabled,
               ]}
               onPress={handleAddPhotoCard}
               accessible={true}
               accessibilityLabel={"Add Card"}
-              accessibilityHint={photoCards.length >= PHOTO_LIMIT ? "Cannot add more cards. Reached 5 card maximum." 
-                : "Double tap to add another card"}
+              accessibilityHint={
+                photoCards.length >= PHOTO_LIMIT
+                  ? "Cannot add more cards. Reached 5 card maximum."
+                  : "Double tap to add another card"
+              }
               disabled={photoCards.length >= PHOTO_LIMIT}
             >
               <Feather
                 name="plus"
-                size={20}
+                size={size.iconSize}
                 color={
                   photoCards.length >= PHOTO_LIMIT
-                    ? colors.text
-                    : colors.decorativeText
+                    ? colors.secondaryText
+                    : colors.decorativeBackground
                 }
               />
             </Pressable>
@@ -927,9 +944,15 @@ export default function NewPost() {
                   onPress={() => setSelectedCraft(option.id)}
                   style={styles.craftOption}
                   accessible={true}
-                  accessibilityHint={"Selects " + option.label + " as explore post craft type."}
+                  accessibilityHint={
+                    "Selects " + option.label + " as explore post craft type."
+                  }
                   accessibilityRole={"button"}
-                  accessibilityState={selectedCraft === option.id ? {selected: true} : {selected: false}}
+                  accessibilityState={
+                    selectedCraft === option.id
+                      ? { selected: true }
+                      : { selected: false }
+                  }
                 >
                   <View
                     style={[
@@ -962,13 +985,12 @@ export default function NewPost() {
 
         <View
           style={styles.formSection}
-          onLayout={(event) =>
-            setCaptionSectionY(event.nativeEvent.layout.y)
-          }
+          onLayout={(event) => setCaptionSectionY(event.nativeEvent.layout.y)}
         >
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>Caption</Text>
-            <Text style={styles.counterText}
+            <Text
+              style={styles.counterText}
               accessible={true}
               accessibilityLabel={`${caption.length} out of ${CAPTION_LIMIT} characters are used.`}
             >
@@ -977,9 +999,7 @@ export default function NewPost() {
           </View>
           <TextInput
             value={caption}
-            onChangeText={(text) =>
-              setCaption(text.slice(0, CAPTION_LIMIT))
-            }
+            onChangeText={(text) => setCaption(text.slice(0, CAPTION_LIMIT))}
             placeholder="Add a caption"
             placeholderTextColor={`${colors.text}99`}
             style={[styles.input, styles.captionInput]}
@@ -1025,9 +1045,12 @@ export default function NewPost() {
               disabled={tags.length >= 5 || !newTag.trim()}
               accessible={true}
               accessibilityLabel={"Add Tag"}
-              accessibilityHint={tags.length >= 5 || !newTag.trim() ? "Cannot add more tags. Ensure tag text field is filled out, and number of tags is under 5." 
-                : "Double tap to add tag"}
-              style={[ 
+              accessibilityHint={
+                tags.length >= 5 || !newTag.trim()
+                  ? "Cannot add more tags. Ensure tag text field is filled out, and number of tags is under 5."
+                  : "Double tap to add tag"
+              }
+              style={[
                 styles.addTagButton,
                 (tags.length >= 5 || !newTag.trim()) &&
                   styles.addTagButtonDisabled,
@@ -1035,11 +1058,11 @@ export default function NewPost() {
             >
               <Feather
                 name="plus"
-                size={28}
+                size={size.iconSize}
                 style={[
                   styles.addTagIcon,
                   (tags.length >= 5 || !newTag.trim()) && {
-                    color: colors.text,
+                    color: colors.secondaryText,
                   },
                 ]}
               />
@@ -1051,30 +1074,31 @@ export default function NewPost() {
           <Pressable
             style={[
               styles.postOptionButton,
-              postVisibility === "public" &&
-                styles.postOptionButtonSelected,
+              postVisibility === "public" && styles.postOptionButtonSelected,
             ]}
             onPress={() => setPostVisibility("public")}
             accessible={true}
             accessibilityLabel={"Public Post"}
             accessibilityHint={"Make explore post viewable to everyone"}
-            accessibilityState={postVisibility === "public" ? {selected: true} : {selected: false}}
+            accessibilityState={
+              postVisibility === "public"
+                ? { selected: true }
+                : { selected: false }
+            }
             accessibilityRole={"button"}
           >
             <Feather
               name="globe"
-              size={20}
+              size={size.iconSize}
               style={[
                 styles.postOptionIcon,
-                postVisibility === "public" &&
-                  styles.postOptionIconSelected,
+                postVisibility === "public" && styles.postOptionIconSelected,
               ]}
             />
             <Text
               style={[
                 styles.postOptionText,
-                postVisibility === "public" &&
-                  styles.postOptionTextSelected,
+                postVisibility === "public" && styles.postOptionTextSelected,
               ]}
             >
               Public Post
@@ -1084,30 +1108,31 @@ export default function NewPost() {
           <Pressable
             style={[
               styles.postOptionButton,
-              postVisibility === "private" &&
-                styles.postOptionButtonSelected,
+              postVisibility === "private" && styles.postOptionButtonSelected,
             ]}
             onPress={() => setPostVisibility("private")}
             accessible={true}
             accessibilityLabel={"Private Post"}
             accessibilityHint={"Make explore post viewable to only yourself"}
-            accessibilityState={postVisibility === "private" ? {selected: true} : {selected: false}}
+            accessibilityState={
+              postVisibility === "private"
+                ? { selected: true }
+                : { selected: false }
+            }
             accessibilityRole={"button"}
           >
             <Feather
               name="lock"
-              size={20}
+              size={size.iconSize}
               style={[
                 styles.postOptionIcon,
-                postVisibility === "private" &&
-                  styles.postOptionIconSelected,
+                postVisibility === "private" && styles.postOptionIconSelected,
               ]}
             />
             <Text
               style={[
                 styles.postOptionText,
-                postVisibility === "private" &&
-                  styles.postOptionTextSelected,
+                postVisibility === "private" && styles.postOptionTextSelected,
               ]}
             >
               Private Post

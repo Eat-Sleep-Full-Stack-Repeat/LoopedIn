@@ -1,17 +1,26 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Text, TextInput, TouchableOpacity, View, Pressable} from "react-native";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Pressable,
+} from "react-native";
 import { useState } from "react";
 import { Storage } from "../utils/storage";
 import API_URL from "@/utils/config";
-import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
+import Ionicons from "@expo/vector-icons/Ionicons"; //for password visibility
+import { useAppSize } from "@/Hooks/useSize";
 
 export default function Login() {
   const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(true);
+
+  const size = useAppSize();
 
   //---------------------------------------------------------------------------------
 
@@ -138,18 +147,17 @@ export default function Login() {
     <View
       style={{
         flex: 1,
-        justifyContent: "flex-start",
+        justifyContent: "center",
         alignItems: "center",
-        paddingTop: "30%",
         backgroundColor: colors.background,
       }}
     >
       <Text
         style={{
-          fontSize: 32,
-          fontWeight: "500",
+          fontSize: size.font.welcomeText,
+          fontWeight: size.weight.largeTitle,
           marginBottom: 40,
-          color: colors.welcomeText,
+          color: colors.decorativeBackground,
         }}
         accessible={true}
         accessibilityRole={"header"}
@@ -168,7 +176,7 @@ export default function Login() {
           style={{
             marginLeft: 10,
             marginBottom: 5,
-            fontSize: 18,
+            fontSize: size.font.headline,
             color: colors.text,
           }}
         >
@@ -177,7 +185,7 @@ export default function Login() {
         </Text>
         <TextInput
           placeholder="User name"
-          placeholderTextColor={colors.text}
+          placeholderTextColor={colors.inputContainerPlaceholderText}
           style={{
             width: "100%",
             height: 50,
@@ -187,7 +195,8 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
-            color: colors.text
+            color: colors.text,
+            fontSize: size.font.bodyText,
           }}
           onChangeText={onChangeUser}
           autoCorrect={false}
@@ -206,7 +215,7 @@ export default function Login() {
           style={{
             marginLeft: 10,
             marginBottom: 5,
-            fontSize: 18,
+            fontSize: size.font.headline,
             color: colors.text,
           }}
         >
@@ -215,7 +224,7 @@ export default function Login() {
         </Text>
         <TextInput
           placeholder="example@email.com"
-          placeholderTextColor={colors.text}
+          placeholderTextColor={colors.inputContainerPlaceholderText}
           style={{
             width: "100%",
             height: 50,
@@ -225,7 +234,8 @@ export default function Login() {
             borderRadius: 25,
             marginBottom: 10,
             paddingHorizontal: 10,
-            color: colors.text
+            color: colors.text,
+            fontSize: size.font.bodyText,
           }}
           onChangeText={onChangeText}
           autoCorrect={false}
@@ -244,43 +254,55 @@ export default function Login() {
           style={{
             marginLeft: 10,
             marginBottom: 5,
-            fontSize: 18,
+            fontSize: size.font.headline,
             color: colors.text,
           }}
         >
           Password
         </Text>
-        <View style={{ flexDirection: "row",
-              alignItems: "center",
-              width: "100%",
-              height: 50,
-              borderColor: colors.decorativeBackground,
-              backgroundColor: colors.background,
-              borderWidth: 1,
-              borderRadius: 25,
-              paddingHorizontal: 10,}}>
-          <TextInput
-          placeholder="Password"
-          placeholderTextColor={colors.text}
-          secureTextEntry={passwordVisible}
+        <View
           style={{
-              flex: 1,
-              color: colors.text
+            flexDirection: "row",
+            alignItems: "center",
+            width: "100%",
+            height: 50,
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.background,
+            borderWidth: 1,
+            borderRadius: 25,
+            paddingHorizontal: 10,
           }}
-          onChangeText={onChangePassword}
-          autoCorrect={false}
-          autoCapitalize="none"
+        >
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={colors.inputContainerPlaceholderText}
+            secureTextEntry={passwordVisible}
+            style={{
+              flex: 1,
+              color: colors.text,
+              fontSize: size.font.bodyText,
+            }}
+            onChangeText={onChangePassword}
+            autoCorrect={false}
+            autoCapitalize="none"
           />
-          <Pressable onPress={() => setPasswordVisible(!passwordVisible)}
+          <Pressable
+            onPress={() => setPasswordVisible(!passwordVisible)}
             accessible={true}
-            accessibilityLabel={passwordVisible ? "Stop viewing password" : "View password"}
-            accessibilityRole={"button"}>
-            <Text><Ionicons 
-            name={passwordVisible ? "eye-off" : "eye"}
-            size={22}
-            color={colors.text}
-            style={{marginHorizontal: 10,}}
-            /> {/* The eye emoji in the password section */} </Text>
+            accessibilityLabel={
+              passwordVisible ? "View password" : "Stop viewing password"
+            }
+            accessibilityRole={"button"}
+          >
+            <Text>
+              <Ionicons
+                name={passwordVisible ? "eye-off" : "eye"}
+                size={size.iconSize + 2}
+                color={colors.text}
+                style={{ marginHorizontal: 10 }}
+              />{" "}
+              {/* The eye emoji in the password section */}{" "}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -294,6 +316,7 @@ export default function Login() {
           backgroundColor: colors.decorativeBackground,
           borderWidth: 1,
           marginTop: 40,
+          marginBottom: 5,
           borderRadius: 25,
           paddingHorizontal: 10,
           alignItems: "center",
@@ -305,9 +328,9 @@ export default function Login() {
       >
         <Text
           style={{
-            fontSize: 25,
-            fontWeight: "600",
-            color: colors.text,
+            fontSize: size.font.titleText,
+            fontWeight: size.weight.title,
+            color: colors.antiText,
           }}
         >
           Sign Up
@@ -323,18 +346,22 @@ export default function Login() {
         }}
       >
         {/*Login*/}
-        <Text style={{ color: colors.text }}> Already have an account? </Text>
-        <TouchableOpacity onPress={() => router.replace("/login")}
+        <Text style={{ color: colors.text, fontSize: size.font.button }}>
+          Already have an account?
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.replace("/login")}
           accessible={true}
           accessibilityHint={"Double tap to navigate to the log in page."}
-          accessibilityRole={"button"}>
+          accessibilityRole={"button"}
+        >
           <Text
             style={{
               color: colors.linkText,
-              marginRight: 5,
+              marginLeft: 5,
+              fontSize: size.font.button,
             }}
           >
-            {" "}
             Login
           </Text>
         </TouchableOpacity>

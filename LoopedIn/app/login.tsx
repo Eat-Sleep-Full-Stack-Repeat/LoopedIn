@@ -1,26 +1,35 @@
 import { Colors } from "@/Styles/colors";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
-import { Text, TextInput, TouchableOpacity, View, Pressable } from "react-native";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Pressable,
+} from "react-native";
 import { useEffect, useState } from "react";
 import { Storage } from "../utils/storage";
-import API_URL from '../utils/config';
-import Ionicons from '@expo/vector-icons/Ionicons'; //for password visibility
+import API_URL from "../utils/config";
+import Ionicons from "@expo/vector-icons/Ionicons"; //for password visibility
+import { useAppSize } from "@/Hooks/useSize";
 
 const REMEMBERED_EMAIL_KEY = "rememberedEmail";
 
 export default function Login() {
-  const {currentTheme} = useTheme();
+  const { currentTheme } = useTheme();
   const colors = Colors[currentTheme];
   const router = useRouter();
   const [passwordVisible, setPasswordVisible] = useState(true);
-  const [text, onChangeText] = useState('');
-  const [password, onChangePassword] = useState('');
+  const [text, onChangeText] = useState("");
+  const [password, onChangePassword] = useState("");
   const [rememberEmail, setRememberEmail] = useState(false);
   const [loginErrorOverlay, setLoginErrorOverlay] = useState<{
     title: string;
     message: string;
   } | null>(null);
+
+  const size = useAppSize();
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -55,16 +64,21 @@ export default function Login() {
   //MAIN NATIVE LOGIN FUNCTION
   const onPressSignIn = async () => {
     console.log("Sign in pressed");
-    console.log("Entered email:", text.trim(), "Entered password:", password.trim());
+    console.log(
+      "Entered email:",
+      text.trim(),
+      "Entered password:",
+      password.trim()
+    );
 
     //check if both fields entered
     if (!text.trim() || !password.trim()) {
-        alert("Please enter both email and password.");
-        return;
-    }  
+      alert("Please enter both email and password.");
+      return;
+    }
 
     //check if user has a valid email
-    if(!isValidEmail(text)){
+    if (!isValidEmail(text)) {
       alert("Invalid email format.");
       return;
     }
@@ -76,82 +90,80 @@ export default function Login() {
     // }
 
     //check if password is alphanumeric
-    if(!isAlphanumeric(password)){
-      alert("Password contains at least one invalid character. Passwords must be 8-30 characters long and alphanumeric.");
+    if (!isAlphanumeric(password)) {
+      alert(
+        "Password contains at least one invalid character. Passwords must be 8-30 characters long and alphanumeric."
+      );
       return;
     }
 
     //check is password is between 8 and 30 characters long
-    if(password.length < 8){
+    if (password.length < 8) {
       setLoginErrorOverlay({
         title: "Invalid Password",
-        message: "Use at least 8 characters and include a number in your password.",
+        message:
+          "Use at least 8 characters and include a number in your password.",
       });
       return;
-    } 
-    else if (password.length > 30){
-      alert("Password contains more than 30 characters. Passwords must be 8-30 characters long and alphanumeric.")
+    } else if (password.length > 30) {
+      alert(
+        "Password contains more than 30 characters. Passwords must be 8-30 characters long and alphanumeric."
+      );
       return;
     }
-    
-    if(text.length > 321){
-      alert("Email too long. Please ensure that email is at most 321 characters.")
+
+    if (text.length > 321) {
+      alert(
+        "Email too long. Please ensure that email is at most 321 characters."
+      );
       return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/login/login`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Ensure cookies/sessions are sent
-          body: JSON.stringify({
-            email: text.trim(),
-            password: password.trim(),
-          }),
-        });
-  
-        console.log("Response status:", response.status);
-        const data = await response.json();
-        
-        if (data.token) {
-          if (rememberEmail) {
-            await Storage.setItem(REMEMBERED_EMAIL_KEY, text.trim());
-          } else {
-            await Storage.removeItem(REMEMBERED_EMAIL_KEY);
-          }
+      const response = await fetch(`${API_URL}/api/login/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Ensure cookies/sessions are sent
+        body: JSON.stringify({
+          email: text.trim(),
+          password: password.trim(),
+        }),
+      });
 
-          await Storage.setItem('token', data.token); //store jwt info
-          router.replace("/userProfile"); // Redirect on success
+      console.log("Response status:", response.status);
+      const data = await response.json();
+
+      if (data.token) {
+        if (rememberEmail) {
+          await Storage.setItem(REMEMBERED_EMAIL_KEY, text.trim());
         } else {
-          console.log("Login failed:", data.message);
-          if (data.message === "Incorrect password.") {
-            setLoginErrorOverlay({
-              title: "Wrong Password!",
-              message: "Oops! Wrong password. Give it another try.",
-            });
-            return;
-          }
-
-          alert(data.message);
+          await Storage.removeItem(REMEMBERED_EMAIL_KEY);
         }
-        
-    } catch (error) {
-        console.log("Error during sign in:", error);
-    }
+        await Storage.setItem("token", data.token); //store jwt info
+        router.replace("/userProfile"); // Redirect on success
+      } else {
+        console.log("Login failed:", data.message);
+        if (data.message === "Incorrect password.") {
+          setLoginErrorOverlay({
+            title: "Wrong Password!",
+            message: "Oops! Wrong password. Give it another try.",
+          });
+          return;
+        }
 
+        alert(data.message);
+      }
+    } catch (error) {
+      console.log("Error during sign in:", error);
+    }
   };
 
   const handleLoginErrorConfirm = () => {
     setLoginErrorOverlay(null);
   };
 
-
-
-
-//---------------------------------------------------------------------------------
-    
   return (
     <View
       style={{
@@ -162,35 +174,45 @@ export default function Login() {
       <View
         style={{
           flex: 1,
-          justifyContent: "flex-start",
+          justifyContent: "center",
           alignItems: "center",
-          paddingTop: "30%",
         }}
       >
-        <Text style={{
-          fontSize: 32,
-          fontWeight: "500",
-          marginBottom: 40,
-          color: colors.welcomeText}}
-          accessible={true}
-          accessibilityRole={"header"}>
-          Welcome Back!
-          </Text>
-          
-          {/* Email*/}
-          <View style={{
-              width: "80%",
-              alignItems: "flex-start"
-          }}>
-          <Text style={{
-              marginLeft: 10,
-              marginBottom:5,
-              fontSize: 18,
-              color: colors.text}}> Email </Text>
-          <TextInput
-          placeholder="example@email.com"
-          placeholderTextColor={colors.text}
+        <Text
           style={{
+            fontSize: size.font.welcomeText,
+            fontWeight: size.weight.largeTitle,
+            marginBottom: 40,
+            color: colors.decorativeBackground,
+          }}
+          accessible={true}
+          accessibilityRole={"header"}
+        >
+          Welcome Back!
+        </Text>
+
+        {/* Email*/}
+        <View
+          style={{
+            width: "80%",
+            alignItems: "flex-start",
+          }}
+        >
+          <Text
+            style={{
+              marginLeft: 10,
+              marginBottom: 5,
+              fontSize: size.font.headline,
+              color: colors.text,
+            }}
+          >
+            {" "}
+            Email{" "}
+          </Text>
+          <TextInput
+            placeholder="example@email.com"
+            placeholderTextColor={colors.inputContainerPlaceholderText}
+            style={{
               width: "100%",
               height: 50,
               backgroundColor: colors.background,
@@ -199,59 +221,77 @@ export default function Login() {
               borderRadius: 25,
               marginBottom: 10,
               paddingHorizontal: 10,
-              color: colors.text
-          }}
-          onChangeText={onChangeText}
-          value={text}
-          autoCorrect={false}
-          autoCapitalize="none"
-          />
-          </View>
-
-        {/* Password*/}
-        <View style={{
-            width: "80%",
-            alignItems: "flex-start"
-        }}>
-        <Text style={{
-            marginLeft: 10,
-            marginBottom:5,
-            fontSize: 18,
-            color: colors.text}}>
-        Password
-        </Text>
-        <View style={{ flexDirection: "row",
-                alignItems: "center",
-                width: "100%",
-                height: 50,
-                borderColor: colors.decorativeBackground,
-                backgroundColor: colors.background,
-                borderWidth: 1,
-                borderRadius: 25,
-                paddingHorizontal: 10,}}>
-            <TextInput
-            placeholder="Password"
-            placeholderTextColor={colors.text}
-            secureTextEntry={passwordVisible}
-            style={{
-                flex: 1,
-                color: colors.text
+              color: colors.text,
+              fontSize: size.font.bodyText,
             }}
-            onChangeText={onChangePassword}
-            value={password}
+            onChangeText={onChangeText}
+            value={text}
             autoCorrect={false}
             autoCapitalize="none"
+          />
+        </View>
+
+        {/* Password*/}
+        <View
+          style={{
+            width: "80%",
+            alignItems: "flex-start",
+          }}
+        >
+          <Text
+            style={{
+              marginLeft: 10,
+              marginBottom: 5,
+              fontSize: size.font.headline,
+              color: colors.text,
+            }}
+          >
+            Password
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              width: "100%",
+              height: 50,
+              borderColor: colors.decorativeBackground,
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderRadius: 25,
+              paddingHorizontal: 10,
+            }}
+          >
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={colors.inputContainerPlaceholderText}
+              secureTextEntry={passwordVisible}
+              style={{
+                flex: 1,
+                color: colors.text,
+                fontSize: size.font.bodyText,
+              }}
+              onChangeText={onChangePassword}
+              value={password}
+              autoCorrect={false}
+              autoCapitalize="none"
             />
-            <Pressable onPress={() => setPasswordVisible(!passwordVisible)}
+            <Pressable
+              onPress={() => setPasswordVisible(!passwordVisible)}
               accessible={true}
-              accessibilityLabel={passwordVisible ? "Stop viewing password" : "View password"}
-              accessibilityRole={"button"}>
-              <Text><Ionicons 
-              name={passwordVisible ? "eye-off" : "eye"}
-              size={22}
-              color={colors.text}
-              style={{marginHorizontal: 10,}}
-              /> {/* The eye emoji in the password section */} </Text>
+              accessibilityLabel={
+                passwordVisible ? "View password" : "Stop viewing password"
+              }
+              accessibilityRole={"button"}
+            >
+              <Text>
+                <Ionicons
+                  name={passwordVisible ? "eye-off" : "eye"}
+                  size={size.iconSize + 2}
+                  color={colors.text}
+                  style={{ marginHorizontal: 10 }}
+                />{" "}
+                {/* The eye emoji in the password section */}{" "}
+              </Text>
             </Pressable>
           </View>
           <View
@@ -275,70 +315,93 @@ export default function Login() {
             >
               <Ionicons
                 name={rememberEmail ? "checkbox" : "square-outline"}
-                size={22}
+                size={size.iconSize + 2}
                 color={colors.text}
                 style={{ marginRight: 8 }}
               />
-              <Text style={{ color: colors.text, fontSize: 16 }}>Remember email</Text>
+              <Text style={{ color: colors.text, fontSize: size.font.button }}>
+                Remember email
+              </Text>
             </Pressable>
 
             {/* Forgot Password*/}
-            <TouchableOpacity onPress ={() => console.log("Forgot Password tapped")}
+            <TouchableOpacity
+              onPress={() => console.log("Forgot Password tapped")}
               accessible={true}
               accessibilityHint={"Double tap if password is forgotten."}
-              accessibilityRole={"button"}>
-                <Text style=
-                {{ 
-                    color: colors.linkText,
-                    marginRight: 5,
-                    }}> Forgot Password?</Text>
+              accessibilityRole={"button"}
+            >
+              <Text
+                style={{
+                  color: colors.linkText,
+                  marginRight: 5,
+                  fontSize: size.font.button,
+                }}
+              >
+                Forgot Password?
+              </Text>
             </TouchableOpacity>
           </View>
-
         </View>
         {/* Login button*/}
-        <TouchableOpacity onPress={onPressSignIn}
+        <TouchableOpacity
+          onPress={onPressSignIn}
           accessible={true}
           accessibilityHint={"Double tap to log into your LoopedIn account."}
           accessibilityRole={"button"}
           style={{
-              width: "80%",
-              height: 55,
-              borderColor: colors.decorativeBackground,
-              backgroundColor: colors.decorativeBackground,
-              borderWidth: 1,
-              marginTop: 40,
-              borderRadius: 25,
-              paddingHorizontal: 10,
-              alignItems: "center",
-              justifyContent: "center",
-              
-              }}>
-                <Text style={{
-                    fontSize: 25,
-                    fontWeight: "600",
-                    color: colors.decorativeText
-                }}>Login</Text>
-            </TouchableOpacity>
+            width: "80%",
+            height: 55,
+            borderColor: colors.decorativeBackground,
+            backgroundColor: colors.decorativeBackground,
+            borderWidth: 1,
+            marginTop: 40,
+            marginBottom: 5,
+            borderRadius: 25,
+            paddingHorizontal: 10,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: size.font.titleText,
+              fontWeight: size.weight.title,
+              color: colors.antiText,
+            }}
+          >
+            Login
+          </Text>
+        </TouchableOpacity>
 
-            <View style={{
+        <View
+          style={{
             width: "80%",
             alignItems: "flex-start",
             flexDirection: "row",
             marginTop: 5,
-        }}>
-            {/* Sign-up*/}
-            <Text style={{ color: colors.text}}> Don't have an account? </Text>
-            <TouchableOpacity onPress ={() => router.replace("/signup")}
-              accessible={true}
-              accessibilityHint={"Double tap to sign up for a LoopedIn account."}
-              accessibilityRole={"button"}> 
-                <Text style=
-                {{ 
-                    color: colors.linkText,
-                    marginRight: 5,
-                    }}> Sign Up</Text>
-            </TouchableOpacity>
+          }}
+        >
+          {/* Sign-up*/}
+          <Text style={{ color: colors.text, fontSize: size.font.button }}>
+            Don't have an account?
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/signup")}
+            accessible={true}
+            accessibilityHint={"Double tap to sign up for a LoopedIn account."}
+            accessibilityRole={"button"}
+          >
+            <Text
+              style={{
+                color: colors.linkText,
+                marginLeft: 5,
+                fontSize: size.font.button,
+              }}
+            >
+              Sign Up
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       {loginErrorOverlay ? (
@@ -371,8 +434,8 @@ export default function Login() {
             <Text
               style={{
                 color: colors.text,
-                fontSize: 24,
-                fontWeight: "700",
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
                 marginBottom: 12,
                 textAlign: "center",
               }}
@@ -382,7 +445,7 @@ export default function Login() {
             <Text
               style={{
                 color: colors.settingsText,
-                fontSize: 16,
+                fontSize: size.font.button,
                 lineHeight: 24,
                 marginBottom: 20,
                 textAlign: "center",
@@ -405,8 +468,8 @@ export default function Login() {
               <Text
                 style={{
                   color: colors.background,
-                  fontSize: 16,
-                  fontWeight: "700",
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
                   lineHeight: 20,
                 }}
               >
