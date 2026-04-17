@@ -401,11 +401,23 @@ router.get("/project/:id", authenticateToken, async (req, res) => {
 });
 
 // edit project fields (title, note, start date only)
-router.patch("/project/:id", authenticateToken, async (req, res) => {
+router.patch("/project/:id", authenticateToken, upload.array("photos", 5), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+    console.log("starting...");
+
     const { id } = req.params;
     const curr_user = req.userID.trim();
-    const { title, note, dateStarted } = req.body;
+    const title = req.body.title;
+    const note = req.body.note;
+    // const dateStarted = req.body.dateStarted;
+    const startDate = req.body.startDate;
+    const finishDate = req.body.finishDate;
+    const status = req.body.status;
+    //const altArray = req.body.altTexts ? JSON.parse(req.body.altTexts) : [];
+    const existingImages = JSON.parse(req.body.existingImages || "[]");
+    const newImagesMeta = JSON.parse(req.body.newImagesMeta || "[]");
 
     if (typeof title !== "string" || title.trim().length === 0) {
       return res.status(400).json({ message: "Invalid title" });
@@ -423,37 +435,113 @@ router.patch("/project/:id", authenticateToken, async (req, res) => {
       return res.status(400).json({ message: "Note too long" });
     }
 
-    let parsedDate = null;
-    if (dateStarted !== null && dateStarted !== undefined && dateStarted !== "") {
-      const dateObj = new Date(dateStarted);
-      if (Number.isNaN(dateObj.getTime())) {
-        return res.status(400).json({ message: "Invalid date" });
-      }
-      parsedDate = dateObj.toISOString();
+
+    //define valid statuses
+    const allowedStatuses = ["Not Started", "In Progress", "Completed"];
+
+    if (!status || !allowedStatuses.includes(status)) {
+
+      return res.status(400).json({ error: "Invalid or missing status" });
     }
+
+    //grab dates
+    const parsedStartDate = startDate ? new Date(startDate) : null;
+    const parsedFinishDate = finishDate ? new Date(finishDate) : null;
 
     const query = `
       UPDATE tracker.tbl_project
       SET
         fld_p_name = $1,
         fld_notes = $2,
-        fld_date_started = $3
+        fld_date_started = $3,
+        fld_date_completed = $6,
+        fld_status = $7
       WHERE fld_project_pk = $4
         AND fld_creator = $5
       RETURNING fld_project_pk;
     `;
 
-    const result = await pool.query(query, [
+    const result = await client.query(query, [
       title.trim(),
       note,
-      parsedDate,
+      parsedStartDate,
       id,
       curr_user,
+      parsedFinishDate,
+      status,
     ]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Project not found." });
     }
+
+    //handle images - delete all old, add all new (including non-changers and new images)
+    console.log("BEGIN image work");
+    try{
+
+      console.log("making addQuery")
+      //fix alt text 
+      const addQuery =
+          `UPDATE tracker.tbl_project_pic
+          SET fld_alt_text = $1 
+          WHERE fld_project_fk = $2 AND fld_project_pic = $3`;
+      
+      console.log("beginning loop with existingImages. will loop x", existingImages.length)
+      
+      for (const img of existingImages) {
+        const rawKey = img.uri.includes("amazonaws.com")
+          ? img.uri.split(".com/")[1]
+          : img.uri;
+
+        const key = rawKey.split("?")[0];
+
+          console.log("alt text: ", img.altText)
+          console.log("key: ", key);
+          console.log("id: ", id)
+
+        await client.query(addQuery, [img.altText || "", id, key]);
+      }
+
+    //add all new pics
+    console.log("ADD NEW PICS NOW; files:", req.files);
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+
+        const order = parseInt(file.fieldname.split("_")[1]);
+        const meta = newImagesMeta.find(m => m.order === order) || {};
+
+        const originalExt = path.extname(file.originalname) || ".jpg";
+        const randomName = crypto.randomBytes(16).toString("hex");
+        const fileName = `${id}_${randomName}_${i}${originalExt}`;
+        const folderName = "project-tracker";
+
+        //await uploadFile(file.buffer, fileName, folderName, file.mimetype);
+        await uploadFile(file.buffer, fileName, folderName, file.mimetype);
+
+
+        console.log("photo uploaded!");
+        const s3Key = `${folderName}/${fileName}`;
+        // const altText = Array.isArray(altArray) && altArray[i] ? altArray[i] : "";
+        console.log("a")
+        const altText = meta.altText || "";
+        console.log("b: id, s3key, altText", id, s3Key, altText)
+        const insertPicSql = `
+          INSERT INTO tracker.tbl_project_pic
+            (fld_project_fk, fld_project_pic, fld_alt_text)
+          VALUES
+            ($1, $2, $3)
+        `;
+        console.log("c")
+        await client.query(insertPicSql, [id, s3Key, altText]);
+        console.log("\tadded to db");
+      }
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    console.log("[tracker]: Error saving new images. Please try again.");
+    return res.status(500).json(error);
+  }
 
     return res.status(200).json({ message: "Project updated successfully." });
   } catch (error) {
@@ -635,7 +723,21 @@ router.post("/create-project", authenticateToken, upload.array("photos", 5), asy
   const client = await pool.connect();
   try {
     const userPk = req.userID?.trim?.() || req.userID;
-    const { title = "", startDate, notes = "", folderID, altTexts } = req.body || {};
+    const {
+      title = "",
+      startDate,
+      finishDate,
+      status,
+      notes = "",
+      folderID,
+      altTexts,
+    } = req.body || {};
+
+    //define valid statuses
+    const allowedStatuses = ["Not Started", "In Progress", "Completed"];
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid or missing status" });
+    }
 
     if (!userPk) {
       return res.status(401).json({ error: "Missing user id from auth token" });
@@ -649,7 +751,9 @@ router.post("/create-project", authenticateToken, upload.array("photos", 5), asy
     //   return res.status(400).json({ error: "At least one photo is required" });
     // }
 
-    const parsedDate = startDate ? new Date(startDate) : new Date();
+    //grab dates
+    const parsedStartDate = startDate ? new Date(startDate) : null;
+    const parsedFinishDate = finishDate ? new Date(finishDate) : null;
 
    let altArray = [];
 
@@ -667,17 +771,19 @@ router.post("/create-project", authenticateToken, upload.array("photos", 5), asy
     // 1) Insert Project
     const insertProjectSql = `
       INSERT INTO tracker.tbl_project
-        (fld_folder_fk, fld_creator, fld_p_name, fld_date_started, fld_notes, fld_status)
+        (fld_folder_fk, fld_creator, fld_p_name, fld_date_started, fld_notes, fld_status, fld_date_completed)
       VALUES
-        ($1, $2, $3, $4, $5, 'In Progress')
+        ($1, $2, $3, $4, $5, $6, $7)
       RETURNING fld_project_pk AS "projectId"
     `;
     const projResult = await client.query(insertProjectSql, [
       folderID,
       userPk,
       title || "",
-      startDate,
+      parsedStartDate,
       notes || "",
+      status,
+      parsedFinishDate,
     ]);
     const projId = projResult.rows[0].projectId;
 
