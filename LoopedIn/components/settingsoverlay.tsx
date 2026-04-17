@@ -39,6 +39,7 @@ type SettingsOverlayProps = {
   onAccessibility?: () => void;
   onAppearance?: () => void;
   onLogout?: () => void;
+  onDeleteAccount?: () => void;
   onEditProfile: () => void;
   title?: string;
 };
@@ -49,6 +50,7 @@ export default function SettingsOverlay({
   onAccessibility,
   onAppearance,
   onLogout,
+  onDeleteAccount,
   onEditProfile,
   title = "Settings",
 }: SettingsOverlayProps) {
@@ -141,12 +143,14 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
     label,
     onPress,
     destructive,
+    deleteButton,
     regButton,
     showChevron,
   }: {
     label: string;
     onPress?: () => void;
     destructive?: boolean;
+    deleteButton?: boolean;
     regButton?: boolean;
     showChevron?: boolean;
   }) {
@@ -159,6 +163,7 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
           pressed && onPress ? styles.menuItemPressed : null,
           destructive && styles.logOutButton,
           regButton && styles.regButton,
+          deleteButton && styles.deleteAccountButton,
           !onPress && styles.menuItemDisabled,
         ]}
         accessible={true}
@@ -169,6 +174,7 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
           style={[
             styles.menuItemText,
             destructive && styles.menuItemTextDestructive,
+            deleteButton && styles.deleteAccountButton,
             regButton && styles.regButtonText,
           ]}
         >
@@ -414,11 +420,19 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
 
         {/* Scrollable content */}
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator
+            contentContainerStyle={[styles.scrollContent, { flexGrow: 1 }]}
+            showsVerticalScrollIndicator
         >
-          <MenuItem label="Edit Profile" regButton onPress={onEditProfile} />
-          <MenuItem label="Log Out" destructive onPress={onLogout} />
+          <View style={{ flex: 1, justifyContent: "space-between" }}>
+            <View>
+              <MenuItem label="Edit Profile" regButton onPress={onEditProfile} />
+              <MenuItem label="Log Out" destructive onPress={onLogout} />
+            </View>
+
+            <View>
+              <MenuItem label="Delete Account" deleteButton onPress={onDeleteAccount} />
+            </View>
+          </View>
         </ScrollView>
       </>
     );
@@ -538,6 +552,14 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
       alignItems: "center",
       justifyContent: "center",
     },
+    deleteAccountButton: {
+      //borderWidth: 1,
+      //borderColor: colors.secondaryButton,
+      marginHorizontal: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      color: colors.cancel,
+    },
     regButton: {
       marginHorizontal: 30,
       alignItems: "center",
@@ -547,6 +569,9 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
     },
     regButtonText: {
       color: colors.secondaryText,
+    },
+    spaced: {
+      justifyContent: "space-evenly",
     },
   });
 
