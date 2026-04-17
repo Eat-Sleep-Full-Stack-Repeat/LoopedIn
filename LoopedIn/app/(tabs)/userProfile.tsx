@@ -773,6 +773,13 @@ export default function UserProfile() {
     console.log("Logged out!");
   };
 
+    const handleDeleteAccount = () => {
+    setTimeout(() => {
+      router.push("/deleteAccount");
+      setSettingsOpen(false);
+    }, 0);
+  }
+
   /* ----------------------- Login Gate Screens ----------------------- */
   if (!tokenChecked) {
     return (
@@ -957,6 +964,7 @@ export default function UserProfile() {
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
         onEditProfile={() => {
           setSettingsOpen(false);
           startEditing();
