@@ -92,6 +92,11 @@ export default function RootLayout() {
               name="wishlistfolder"
               options={{ headerShown: false, animation: "none" }}
             />
+             <Stack.Screen
+              name="forgotpassword"
+              options={{ headerShown: false, animation: "none" }}
+            />
+
           </Stack>
           <ServerDisconnectedOverlay />
         </ServerStatusProvider>
