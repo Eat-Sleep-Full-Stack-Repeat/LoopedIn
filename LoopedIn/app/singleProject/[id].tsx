@@ -322,6 +322,9 @@ export default function SingleProject() {
   const startedLabel = project?.info?.fld_date_started
     ? `Started: ${formatDate(project.info.fld_date_started)}`
     : "";
+  const completedLabel = project?.info?.fld_date_completed
+    ? `Completed: ${formatDate(project.info.fld_date_completed)}`
+    : "";
   const notesText = project?.info?.fld_notes ?? "";
 
   const gallery = project?.imageUrls ?? [];
@@ -386,6 +389,10 @@ export default function SingleProject() {
 
         {startedLabel ? (
           <Text style={styles.startDateText}>{startedLabel}</Text>
+        ) : null}
+
+        {completedLabel ? (
+          <Text style={styles.startDateText}>{completedLabel}</Text>
         ) : null}
 
         <View style={styles.mainPhotoPlaceholder}>

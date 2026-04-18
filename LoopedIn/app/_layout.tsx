@@ -92,6 +92,10 @@ export default function RootLayout() {
               name="wishlistfolder"
               options={{ headerShown: false, animation: "none" }}
             />
+            <Stack.Screen
+              name="deleteAccount"
+              options={{ headerShown: false, animation: "none" }}
+            />
           </Stack>
           <ServerDisconnectedOverlay />
         </ServerStatusProvider>
