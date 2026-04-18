@@ -113,8 +113,11 @@ export default function FolderScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchTimer = useRef<number | null>(null);
 
+  const [errorOverlay, setErrorOverlay] = useState<{ title: string; message: string } | null>(null);
+
   const size = useAppSize();
-  const inset = useSafeAreaInsets();
+
+  const handleErrorConfirm = () => setErrorOverlay(null);
 
   /* ---------------- functionalities ---------------- */
   //check token before doing anything
@@ -130,7 +133,7 @@ export default function FolderScreen() {
       if (!alreadyAlerted.current) {
         console.log(e);
         alreadyAlerted.current = true;
-        alert("Access denied, please log in and try again.");
+        setErrorOverlay({ title: "Access Denied", message: "Oops! You need to be logged in to do that. Please log in and try again." });
         router.replace("/");
       }
     }
@@ -215,7 +218,7 @@ export default function FolderScreen() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({ title: "Access Denied", message: "Oops! You need to be logged in to do that. Please log in and try again." });
         }
         router.replace("/");
         return;
@@ -225,7 +228,7 @@ export default function FolderScreen() {
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({ title: "Something Went Wrong", message: "Whoops! Something went wrong on our end. Please try again in a moment." });
         }
         router.replace("/");
         return;
@@ -289,14 +292,14 @@ export default function FolderScreen() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({ title: "Access Denied", message: "Oops! You need to be logged in to do that. Please log in and try again." });
         }
         router.replace("/");
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({ title: "Something Went Wrong", message: "Whoops! Something went wrong on our end. Please try again in a moment." });
         }
         router.replace("/");
         return;
@@ -357,7 +360,7 @@ export default function FolderScreen() {
     if (!editingFolder || !folderName.trim()) return;
 
     if (folderName.length > 20) {
-      alert("Folder name is too long (must be 20 characters or less)");
+      setErrorOverlay({ title: "Name Too Long", message: "Your folder name is too long! Please keep it to 20 characters or less." });
       return;
     }
 
@@ -379,7 +382,7 @@ export default function FolderScreen() {
     if (!editingFolder) return;
 
     if (editingFolder.count > 0) {
-      alert("You can only delete empty folders.");
+      setErrorOverlay({ title: "Can't Delete Yet", message: "This folder still has projects in it! Please remove them before deleting." });
       return;
     }
 
@@ -400,26 +403,26 @@ export default function FolderScreen() {
       });
 
       if (response.status === 403) {
-        alert("Cannot delete: This folder has projects.");
+        setErrorOverlay({ title: "Can't Delete", message: "Hmm, we couldn't delete—this folder still has projects in it." });
         return;
       } else if (response.status === 404) {
-        alert("Cannot delete: folder does not exist");
+        setErrorOverlay({ title: "Folder Not Found", message: "We couldn't find that folder—it may have already been deleted." });
         return;
       } else if (!response.ok) {
-        alert("Server error occured. Please try again later.");
+        setErrorOverlay({ title: "Server Error", message: "Whoops! A server error occurred. Please try again in a moment." });
         router.back();
         return;
       }
     } catch (error) {
       console.log("Front-end error log when deleting a folder:", error);
-      alert("Could not delete folder");
+      setErrorOverlay({ title: "Delete Failed", message: "Something went wrong while deleting the folder. Please try again!" });
       return;
     }
 
     setFolders((prev) => prev.filter((f) => f.id !== editingFolder.id));
     setEditingFolder(null);
 
-    alert("Empty folder successfully deleted!");
+    setErrorOverlay({ title: "Folder Deleted", message: "Your folder has been successfully deleted!" });
   };
 
   const renameFolder = async () => {
@@ -428,7 +431,7 @@ export default function FolderScreen() {
 
     //login check to reduce unnecessary fetches
     if (!token) {
-      alert("Hold on there... you need to login first!");
+      setErrorOverlay({ title: "Not Logged In", message: "Hold on there! You need to be logged in first. Please log in and try again." });
       router.replace("/login");
       return;
     }
@@ -457,17 +460,17 @@ export default function FolderScreen() {
       });
 
       if (response.status === 404) {
-        alert("Folder does not exist.");
+        setErrorOverlay({ title: "Folder Not Found", message: "Hmm, we couldn't find that folder. It may have been deleted." });
         return;
       } else if (!response.ok) {
-        alert("Server error occured. Please try again later.");
+        setErrorOverlay({ title: "Server Error", message: "Whoops! A server error occurred. Please try again in a moment." });
         router.back();
         return;
       }
 
-      alert("Folder successfully renamed!");
+      setErrorOverlay({ title: "Folder Renamed!", message: "Your folder has been successfully renamed!" });
     } catch (error) {
-      alert("Server error. Please try again later.");
+      setErrorOverlay({ title: "Server Error", message: "Whoops! A server error occurred. Please try again in a moment." });
       console.log("Error editing post:", error);
     }
   };
@@ -481,9 +484,7 @@ export default function FolderScreen() {
       if (trimmed.length === 0 || trimmed.toLowerCase() === "all") {
         return;
       } else if (trimmed.length > 20) {
-        alert(
-          "Name is too long! Please try again with a folder name of 20 characters or less."
-        );
+        setErrorOverlay({ title: "Name Too Long", message: "Whoa! That name is a bit too long. Please keep it to 20 characters or less." });
         return;
       }
 
@@ -492,7 +493,7 @@ export default function FolderScreen() {
         (folder) => folder.name.toLowerCase() === trimmed.toLowerCase()
       );
       if (alreadyExists) {
-        alert("Folder name taken. Please try again with a new name!");
+        setErrorOverlay({ title: "Name Taken", message: "That folder name is already taken! Try something a little different." });
         return;
       }
 
@@ -520,14 +521,14 @@ export default function FolderScreen() {
       if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(`Endpoint does not exist. Please try again later.`);
+          setErrorOverlay({ title: "Something Went Wrong", message: "Whoops! We hit a snag. Please try again later." });
         }
         router.back();
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({ title: "Something Went Wrong", message: "Whoops! Something went wrong on our end. Please try again in a moment." });
         }
         router.back();
         return;
@@ -851,7 +852,7 @@ export default function FolderScreen() {
                       lineHeight: 24,
                     }}
                   >
-                    No folders match “{searchQuery.trim()}”
+                    No folders match "{searchQuery.trim()}"
                   </Text>
                 </View>
               );
@@ -1073,6 +1074,82 @@ export default function FolderScreen() {
           </View>
         </View>
       )}
+
+      {errorOverlay ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: size.font.button,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.message}
+            </Text>
+            <Pressable
+              onPress={handleErrorConfirm}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
+                  lineHeight: 20,
+                }}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

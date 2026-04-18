@@ -3,7 +3,6 @@ import {
   ActionSheetIOS,
   KeyboardAvoidingView,
   Modal,
-  Alert,
   Dimensions,
   Platform,
   Pressable,
@@ -96,6 +95,22 @@ export default function SingleProject() {
 
   const size = useAppSize();
 
+  const [errorOverlay, setErrorOverlay] = useState<{ title: string; message: string } | null>(null);
+  const [photoPickerCardId, setPhotoPickerCardId] = useState<string | null>(null);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+
+  const handleErrorConfirm = () => setErrorOverlay(null);
+
+  const handleViewNewProject = () => {
+    setCreatedProjectId(null);
+    router.replace({ pathname: "/singleProject/[id]", params: { id: createdProjectId! } });
+  };
+
+  const handleGoBack = () => {
+    setCreatedProjectId(null);
+    router.back();
+  };
+
   useEffect(() => {
     if (photoCards.length > previousPhotoCountRef.current) {
       photoScrollRef.current?.scrollToEnd({ animated: true });
@@ -110,72 +125,59 @@ export default function SingleProject() {
     });
   };
 
-  const handleUploadPress = (cardId: string) => {
-    const pickImage = async (source: "camera" | "cameraRoll") => {
-      try {
-        if (source === "camera") {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== "granted") {
-            Alert.alert("Permission needed", "Camera access is required.");
-            return;
-          }
-          const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            quality: 0.9,
-          });
-          if (result.canceled) return;
-          const uri = result.assets?.[0]?.uri;
-          if (!uri) return;
-
-          setPhotoCards((prev) =>
-            prev.map((card) =>
-              card.id === cardId
-                ? {
-                    ...card,
-                    hasImage: true,
-                    source,
-                    localUri: uri,
-                  }
-                : card
-            )
-          );
-        } else {
-          const { status } =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== "granted") {
-            Alert.alert(
-              "Permission needed",
-              "Photo library access is required."
-            );
-            return;
-          }
-          const result = await ImagePicker.launchImageLibraryAsync({
-            allowsEditing: true,
-            quality: 0.9,
-          });
-          if (result.canceled) return;
-          const uri = result.assets?.[0]?.uri;
-          if (!uri) return;
-
-          setPhotoCards((prev) =>
-            prev.map((card) =>
-              card.id === cardId
-                ? {
-                    ...card,
-                    hasImage: true,
-                    source,
-                    localUri: uri,
-                  }
-                : card
-            )
-          );
+  const pickImage = async (cardId: string, source: "camera" | "cameraRoll") => {
+    try {
+      if (source === "camera") {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          setErrorOverlay({ title: "Permission Needed", message: "Camera access is required to take photos. Please enable it in your device settings." });
+          return;
         }
-      } catch (err) {
-        console.log("Image pick error:", err);
-        Alert.alert("Error", "Failed to pick image.");
-      }
-    };
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          quality: 0.9,
+        });
+        if (result.canceled) return;
+        const uri = result.assets?.[0]?.uri;
+        if (!uri) return;
 
+        setPhotoCards((prev) =>
+          prev.map((card) =>
+            card.id === cardId
+              ? { ...card, hasImage: true, source, localUri: uri }
+              : card
+          )
+        );
+      } else {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          setErrorOverlay({ title: "Permission Needed", message: "Photo library access is required to upload photos. Please enable it in your device settings." });
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          allowsEditing: true,
+          quality: 0.9,
+        });
+        if (result.canceled) return;
+        const uri = result.assets?.[0]?.uri;
+        if (!uri) return;
+
+        setPhotoCards((prev) =>
+          prev.map((card) =>
+            card.id === cardId
+              ? { ...card, hasImage: true, source, localUri: uri }
+              : card
+          )
+        );
+      }
+    } catch (err) {
+      console.log("Image pick error:", err);
+      setErrorOverlay({ title: "Upload Error", message: "Oops! Something went wrong while picking the image. Please try again." });
+    }
+  };
+
+  const handleUploadPress = (cardId: string) => {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -185,34 +187,15 @@ export default function SingleProject() {
         (buttonIndex) => {
           if (buttonIndex === 1) {
             console.log("Upload from camera roll selected");
-            pickImage("cameraRoll");
+            pickImage(cardId, "cameraRoll");
           } else if (buttonIndex === 2) {
             console.log("Camera selected");
-            pickImage("camera");
+            pickImage(cardId, "camera");
           }
         }
       );
     } else {
-      Alert.alert("Upload Image", undefined, [
-        {
-          text: "Upload From Camera Roll",
-          onPress: () => {
-            console.log("Upload from camera roll selected");
-            pickImage("cameraRoll");
-          },
-        },
-        {
-          text: "Camera",
-          onPress: () => {
-            console.log("Camera selected");
-            pickImage("camera");
-          },
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-      ]);
+      setPhotoPickerCardId(cardId);
     }
   };
 
@@ -248,8 +231,8 @@ export default function SingleProject() {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    if(titleText.trim().length === 0){
-      alert("Please give your project a title before saving.");
+    if (titleText.trim().length === 0) {
+      setErrorOverlay({ title: "Missing Title", message: "Don't forget to give your project a title!" });
       return;
     }
 
@@ -262,7 +245,7 @@ export default function SingleProject() {
       status = "In Progress";
 
       if (!startDate) {
-        Alert.alert("Missing start date", "Please add a start date.");
+        setErrorOverlay({ title: "Missing Start Date", message: "Don't forget to add a start date!" });
         return;
       }
 
@@ -270,31 +253,30 @@ export default function SingleProject() {
       status = "Completed";
 
       if (!startDate || !finishDate) {
-        Alert.alert("Missing dates", "Please add both start and finish dates.");
+        setErrorOverlay({ title: "Missing Dates", message: "Please add both a start and finish date." });
         return;
       }
 
       if (finishDate < startDate) {
-        Alert.alert(
-          "Invalid dates",
-          "Finish date must be on or after the start date."
-        );
+        setErrorOverlay({ title: "Invalid Dates", message: "The finish date needs to be on or after the start date." });
         return;
       }
     }
 
     const fid = await Storage.getItem("folderID");
-    
+
     try {
-      const hasAnyPhoto = photoCards.some(
-        (c) => c.hasImage && c.localUri
-      );
+      const hasAnyPhoto = photoCards.some((c) => c.hasImage && c.localUri);
+      if (!hasAnyPhoto) {
+        setErrorOverlay({ title: "Missing Photo", message: "Please add at least one photo to your project!" });
+        return;
+      }
 
       setSubmitting(true);
 
       const token = await Storage.getItem("token");
       if (!token) {
-        Alert.alert("Not signed in", "Please sign in again.");
+        setErrorOverlay({ title: "Not Signed In", message: "Hmm, it looks like you're not signed in. Please sign in and try again." });
         return;
       }
 
@@ -359,15 +341,15 @@ export default function SingleProject() {
       if (!response.ok) {
         const text = await response.text();
         console.log("Project create error:", text);
-        Alert.alert("Error creating project", text || "Unknown error");
+        setErrorOverlay({ title: "Couldn't Create Project", message: text || "Something went wrong. Please try again!" });
         return;
       }
 
-      Alert.alert("Success!", "Your project has been created.");
-      router.back();
+      const data = await response.json();
+      setCreatedProjectId(data.projectId?.toString() ?? null);
     } catch (err: any) {
       console.log("Submit error:", err);
-      Alert.alert("Error", err?.message || "Failed to create project.");
+      setErrorOverlay({ title: "Something Went Wrong", message: err?.message || "Whoops! We couldn't create the project. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -1145,6 +1127,301 @@ export default function SingleProject() {
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Android image source picker */}
+      {photoPickerCardId ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              Upload Image
+            </Text>
+            <Pressable
+              onPress={() => {
+                const id = photoPickerCardId;
+                setPhotoPickerCardId(null);
+                pickImage(id, "cameraRoll");
+              }}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
+                  lineHeight: 20,
+                }}
+              >
+                Upload From Camera Roll
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const id = photoPickerCardId;
+                setPhotoPickerCardId(null);
+                pickImage(id, "camera");
+              }}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
+                  lineHeight: 20,
+                }}
+              >
+                Camera
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setPhotoPickerCardId(null)}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                borderWidth: 1,
+                borderColor: colors.blockedBackground,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: size.font.button,
+                  lineHeight: 20,
+                }}
+              >
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {errorOverlay ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: size.font.button,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.message}
+            </Text>
+            <Pressable
+              onPress={handleErrorConfirm}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
+                  lineHeight: 20,
+                }}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {createdProjectId ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 1000,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              Your project is live!
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: size.font.button,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              Want to check it out?
+            </Text>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <Pressable
+                onPress={handleViewNewProject}
+                style={{
+                  alignItems: "center",
+                  borderRadius: 999,
+                  flex: 1,
+                  paddingHorizontal: 18,
+                  paddingVertical: 14,
+                  backgroundColor: colors.activeContainer,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.background,
+                    fontSize: size.font.button,
+                    fontWeight: size.weight.largeTitle,
+                  }}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleGoBack}
+                style={{
+                  alignItems: "center",
+                  borderRadius: 999,
+                  flex: 1,
+                  paddingHorizontal: 18,
+                  paddingVertical: 14,
+                  backgroundColor: colors.disabledButton,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.disabledButtonText,
+                    fontSize: size.font.button,
+                    fontWeight: size.weight.largeTitle,
+                  }}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

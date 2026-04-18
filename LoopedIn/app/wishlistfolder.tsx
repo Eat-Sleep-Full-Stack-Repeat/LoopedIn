@@ -54,6 +54,10 @@ export default function WishlistFolderScreen() {
   const [newItemName, setNewItemName] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [editedItemCount, setEditedItemCount] = useState("");
+  const [errorOverlay, setErrorOverlay] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
   const isEditing = useRef(false);
   const secondTextInput = useRef<TextInput>(null);
 
@@ -99,7 +103,10 @@ export default function WishlistFolderScreen() {
       if (!alreadyAlerted.current) {
         console.log(e);
         alreadyAlerted.current = true;
-        alert("Access denied, please log in and try again.");
+        setErrorOverlay({
+          title: "Access Denied",
+          message: "Whoa there! Looks like you're not logged in. Please log in and try again.",
+        });
         router.replace("/");
       }
     }
@@ -160,21 +167,30 @@ export default function WishlistFolderScreen() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({
+            title: "Access Denied",
+            message: "Whoa there! Looks like you're not logged in. Please log in and try again.",
+          });
         }
         router.replace("/");
         return;
       } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(`Folder does not exist. Please try again later.`);
+          setErrorOverlay({
+            title: "Folder Not Found",
+            message: "Hmm, we couldn't find that folder. It might have been moved or deleted.",
+          });
         }
         router.back();
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({
+            title: "Something Went Wrong",
+            message: "Oops! Something went wrong on our end. Please try again in a moment.",
+          });
         }
         router.back();
         return;
@@ -224,21 +240,30 @@ export default function WishlistFolderScreen() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({
+            title: "Access Denied",
+            message: "Whoa there! Looks like you're not logged in. Please log in and try again.",
+          });
         }
         router.replace("/");
         return;
       } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(`Folder does not exist. Please try again later.`);
+          setErrorOverlay({
+            title: "Folder Not Found",
+            message: "Hmm, we couldn't find that folder. It might have been moved or deleted.",
+          });
         }
         router.back();
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({
+            title: "Something Went Wrong",
+            message: "Oops! Something went wrong on our end. Please try again in a moment.",
+          });
         }
         router.back();
         return;
@@ -271,7 +296,10 @@ export default function WishlistFolderScreen() {
     }
 
     if (trimmed.length > 20) {
-      alert("Name is too long! Please use 20 characters or less.");
+      setErrorOverlay({
+        title: "Name Too Long",
+        message: "Folder names must be 20 characters or less. Try a shorter name!",
+      });
       return;
     }
 
@@ -280,7 +308,10 @@ export default function WishlistFolderScreen() {
     );
 
     if (duplicateCategory) {
-      alert("Folder name taken. Please try a different name.");
+      setErrorOverlay({
+        title: "Name Already Taken",
+        message: "That folder name is already taken. Try something a bit different!",
+      });
       return;
     }
 
@@ -300,14 +331,20 @@ export default function WishlistFolderScreen() {
     if (res.status == 404) {
       if (!alreadyAlerted.current) {
         alreadyAlerted.current = true;
-        alert(`Endpoint does not exist. Please try again later.`);
+        setErrorOverlay({
+          title: "Endpoint Not Found",
+          message: "Hmm, we couldn't reach that endpoint. Please try again later.",
+        });
       }
       router.back();
       return;
     } else if (!res.ok) {
       if (!alreadyAlerted.current) {
         alreadyAlerted.current = true;
-        alert("Whoops! Something went wrong... please try again later.");
+        setErrorOverlay({
+          title: "Something Went Wrong",
+          message: "Oops! Something went wrong on our end. Please try again in a moment.",
+        });
       }
       router.back();
       return;
@@ -334,7 +371,10 @@ export default function WishlistFolderScreen() {
     //check if the folder is empty:
     const checkEmpty = items.find((item) => item.category === categoryToDelete);
     if (checkEmpty !== undefined) {
-      alert("This category must be empty to delete");
+      setErrorOverlay({
+        title: "Folder Not Empty",
+        message: "This folder still has items in it! Please remove them before deleting.",
+      });
       return;
     }
 
@@ -358,20 +398,29 @@ export default function WishlistFolderScreen() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({
+            title: "Access Denied",
+            message: "Whoa there! Looks like you're not logged in. Please log in and try again.",
+          });
         }
         router.replace("/");
         return;
       } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(`Folder does not exist. Please try again later.`);
+          setErrorOverlay({
+            title: "Folder Not Found",
+            message: "Hmm, we couldn't find that folder. It might have already been deleted.",
+          });
         }
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({
+            title: "Something Went Wrong",
+            message: "Oops! Something went wrong on our end. Please try again in a moment.",
+          });
         }
         return;
       }
@@ -403,7 +452,10 @@ export default function WishlistFolderScreen() {
     }
 
     if (trimmed.length > 20) {
-      alert("Name is too long! Please use 20 characters or less.");
+      setErrorOverlay({
+        title: "Name Too Long",
+        message: "Folder names must be 20 characters or less. Try a shorter name!",
+      });
       return;
     }
 
@@ -443,20 +495,29 @@ export default function WishlistFolderScreen() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({
+            title: "Access Denied",
+            message: "Whoa there! Looks like you're not logged in. Please log in and try again.",
+          });
         }
         router.replace("/");
         return;
       } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(`Folder does not exist. Please try again later.`);
+          setErrorOverlay({
+            title: "Folder Not Found",
+            message: "Hmm, we couldn't find that folder. It might have been moved or deleted.",
+          });
         }
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({
+            title: "Something Went Wrong",
+            message: "Oops! Something went wrong on our end. Please try again in a moment.",
+          });
         }
         return;
       }
@@ -492,7 +553,10 @@ export default function WishlistFolderScreen() {
     }
 
     if (trimmed.length > 40) {
-      alert("The name of the item must be less than 40 characters");
+      setErrorOverlay({
+        title: "Name Too Long",
+        message: "Item names must be under 40 characters. Try something a bit shorter!",
+      });
       return;
     }
 
@@ -505,7 +569,10 @@ export default function WishlistFolderScreen() {
     }
 
     if (selectedCategory === "All") {
-      alert("Item has category 'All' -> cannot add this item");
+      setErrorOverlay({
+        title: "Select a Category",
+        message: "Items can't be added to 'All'—please select a specific category first!",
+      });
       return;
     }
     //Send item name and category to backend
@@ -531,7 +598,10 @@ export default function WishlistFolderScreen() {
 
       //Get success code
       if (!response.ok) {
-        alert("Could not add item. Try again later");
+        setErrorOverlay({
+          title: "Couldn't Add Item",
+          message: "Hmm, we couldn't add that item. Give it another shot in a moment!",
+        });
         return;
       }
 
@@ -548,7 +618,10 @@ export default function WishlistFolderScreen() {
       ]);
     } catch (error) {
       console.log("Error adding wishlist item: ", error);
-      alert("Could not add wishlist item. Please try again later.");
+      setErrorOverlay({
+        title: "Couldn't Add Item",
+        message: "Something went wrong while adding your item. Please try again later.",
+      });
     } finally {
       setNewItemName("");
       setIsAddingItem(false);
@@ -570,7 +643,10 @@ export default function WishlistFolderScreen() {
       });
 
       if (!response.ok) {
-        alert("Error while removing item. Try again later.");
+        setErrorOverlay({
+          title: "Couldn't Remove Item",
+          message: "We couldn't remove that item. Please try again in a moment.",
+        });
         return;
       }
 
@@ -605,7 +681,10 @@ export default function WishlistFolderScreen() {
       }
 
       if (trimmed.length > 40) {
-        alert("Title of item must be less than 40 characters");
+        setErrorOverlay({
+          title: "Name Too Long",
+          message: "Item names must be under 40 characters. Try something a bit shorter!",
+        });
         return;
       }
 
@@ -613,12 +692,18 @@ export default function WishlistFolderScreen() {
 
       if (!regex.test(newCount)) {
         //The entered quantity is not a digit
-        alert("Please enter a whole number for quantity");
+        setErrorOverlay({
+          title: "Invalid Quantity",
+          message: "Quantity must be a whole number—no decimals here!",
+        });
         return;
       }
 
       if (Number(newCount) > 999) {
-        alert("Quantity must not exceed 999");
+        setErrorOverlay({
+          title: "Quantity Too Large",
+          message: "Quantity can't exceed 999. Please enter a smaller number.",
+        });
         return;
       }
 
@@ -652,7 +737,10 @@ export default function WishlistFolderScreen() {
       });
 
       if (!response.ok) {
-        alert("Server error occured. Please try again later.");
+        setErrorOverlay({
+          title: "Server Error",
+          message: "Oops! A server error occurred. Please try again later.",
+        });
         return;
       }
 
@@ -670,7 +758,10 @@ export default function WishlistFolderScreen() {
         )
       );
     } catch (e) {
-      alert("Unable to update item. Please try again later");
+      setErrorOverlay({
+        title: "Couldn't Update Item",
+        message: "We couldn't update that item. Please try again later.",
+      });
       return;
     } finally {
       setEditingItemId(null);
@@ -678,6 +769,10 @@ export default function WishlistFolderScreen() {
       setEditedItemCount("");
       isEditing.current = false;
     }
+  };
+
+  const handleErrorConfirm = () => {
+    setErrorOverlay(null);
   };
 
   return (
@@ -1233,6 +1328,82 @@ export default function WishlistFolderScreen() {
           <BottomFab />
         </Pressable>
       )}
+
+      {errorOverlay ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: size.font.button,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.message}
+            </Text>
+            <Pressable
+              onPress={handleErrorConfirm}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
+                  lineHeight: 20,
+                }}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
