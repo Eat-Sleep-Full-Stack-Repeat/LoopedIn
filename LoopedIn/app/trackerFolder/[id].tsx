@@ -52,7 +52,26 @@ export default function TrackerFolderView() {
   //refresh
   const [refreshing, setRefreshing] = useState(false);
 
+  const [errorOverlay, setErrorOverlay] = useState<{ title: string; message: string } | null>(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
   const size = useAppSize();
+
+  const handleErrorConfirm = () => setErrorOverlay(null);
+
+  const handleDeleteSuccessYes = () => {
+    setShowDeleteSuccess(false);
+    router.push("/newproject");
+  };
+
+  const handleDeleteSuccessNo = () => {
+    setShowDeleteSuccess(false);
+    if (folder) {
+      router.replace({ pathname: "/trackerFolder/[id]", params: { id: folder.id } });
+    } else {
+      router.back();
+    }
+  };
 
   /* ---------------- functionalities ---------------- */
   //check token before doing anything
@@ -68,7 +87,7 @@ export default function TrackerFolderView() {
       if (!alreadyAlerted.current) {
         console.log(e);
         alreadyAlerted.current = true;
-        alert("Access denied, please log in and try again.");
+        setErrorOverlay({ title: "Access Denied", message: "Oops! You need to be logged in to do that. Please log in and try again." });
         router.replace("/");
       }
     }
@@ -166,21 +185,21 @@ export default function TrackerFolderView() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({ title: "Access Denied", message: "Oops! You need to be logged in to do that. Please log in and try again." });
         }
         router.replace("/");
         return;
       } else if (res.status == 404) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(`Folder does not exist. Please try again later.`);
+          setErrorOverlay({ title: "Folder Not Found", message: "Hmm, we couldn't find that folder. It may have been deleted." });
         }
         router.back();
         return;
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({ title: "Something Went Wrong", message: "Whoops! Something went wrong on our end. Please try again in a moment." });
         }
         router.back();
         return;
@@ -244,7 +263,7 @@ export default function TrackerFolderView() {
       if (res.status == 403) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Access denied, please log in and try again.");
+          setErrorOverlay({ title: "Access Denied", message: "Oops! You need to be logged in to do that. Please log in and try again." });
         }
         router.replace("/login");
         return;
@@ -254,9 +273,7 @@ export default function TrackerFolderView() {
       else if (res.status == 400) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert(
-            "Something went wrong when filtering... please try again later."
-          );
+          setErrorOverlay({ title: "Filter Error", message: "Something went sideways with the filter. Please try again!" });
         }
         router.back();
         return;
@@ -266,7 +283,7 @@ export default function TrackerFolderView() {
       } else if (!res.ok) {
         if (!alreadyAlerted.current) {
           alreadyAlerted.current = true;
-          alert("Whoops! Something went wrong... please try again later.");
+          setErrorOverlay({ title: "Something Went Wrong", message: "Whoops! Something went wrong on our end. Please try again in a moment." });
         }
         router.back();
         return;
@@ -319,7 +336,7 @@ export default function TrackerFolderView() {
 
       //login check to reduce unnecessary fetches
       if (!token) {
-        alert("Hold on there... you need to login first!");
+        setErrorOverlay({ title: "Not Logged In", message: "Hold on there! You need to be logged in first. Please log in and try again." });
         router.replace("/login");
         return;
       }
@@ -338,32 +355,26 @@ export default function TrackerFolderView() {
         );
 
         if (response.status === 403) {
-          alert("Forbidden: You do not have permission to edit this post.");
+          setErrorOverlay({ title: "Permission Denied", message: "You don't have permission to do that. If this seems wrong, please try again." });
           return;
         } else if (response.status === 404) {
-          alert("Cannot delete: project does not exist");
+          setErrorOverlay({ title: "Project Not Found", message: "We couldn't find that project—it may have already been deleted." });
         } else if (!response.ok) {
-          alert("Server error occured. Please try again later.");
+          setErrorOverlay({ title: "Server Error", message: "Whoops! A server error occurred. Please try again in a moment." });
           router.back();
           return;
         }
 
-        alert("Project successfully deleted!");
-
         console.log("moving...");
 
         if (folder === undefined) {
-          alert("The entire folder was deleted");
+          setErrorOverlay({ title: "Folder Not Found", message: "We couldn't find the folder for this project." });
           return;
         }
 
-        //for refreshing
-        router.replace({
-          pathname: "/trackerFolder/[id]",
-          params: { id: folder.id },
-        });
+        setShowDeleteSuccess(true);
       } catch (error) {
-        alert("Server error. Please try again later.");
+        setErrorOverlay({ title: "Server Error", message: "Whoops! A server error occurred. Please try again in a moment." });
         console.log("Error editing project:", error);
       }
     }
@@ -494,6 +505,52 @@ export default function TrackerFolderView() {
       borderRadius: 12,
       width: "100%",
       alignItems: "center",
+    },
+    successBackdrop: {
+      alignItems: "center",
+      bottom: 0,
+      justifyContent: "center",
+      left: 0,
+      padding: 24,
+      position: "absolute",
+      right: 0,
+      top: 0,
+      zIndex: 999,
+    },
+    successCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      maxWidth: 420,
+      paddingHorizontal: 24,
+      paddingVertical: 28,
+      width: "100%",
+    },
+    successTitle: {
+      fontSize: size.font.titleText,
+      fontWeight: size.weight.largeTitle,
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    successDescription: {
+      fontSize: size.font.button,
+      lineHeight: 24,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    successButtonRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    successButton: {
+      alignItems: "center",
+      borderRadius: 999,
+      flex: 1,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+    },
+    successButtonText: {
+      fontSize: size.font.button,
+      fontWeight: size.weight.largeTitle,
     },
   });
 
@@ -807,6 +864,141 @@ export default function TrackerFolderView() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {errorOverlay ? (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: `${colors.background}E6`,
+            zIndex: 999,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              paddingHorizontal: 24,
+              paddingVertical: 28,
+              borderRadius: 24,
+              borderWidth: 1,
+              backgroundColor: colors.boxBackground,
+              borderColor: colors.blockedBackground,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: size.font.titleText,
+                fontWeight: size.weight.largeTitle,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.title}
+            </Text>
+            <Text
+              style={{
+                color: colors.settingsText,
+                fontSize: size.font.button,
+                lineHeight: 24,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {errorOverlay.message}
+            </Text>
+            <Pressable
+              onPress={handleErrorConfirm}
+              style={{
+                alignItems: "center",
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 14,
+                backgroundColor: colors.activeContainer,
+                minHeight: 52,
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.background,
+                  fontSize: size.font.button,
+                  fontWeight: size.weight.largeTitle,
+                  lineHeight: 20,
+                }}
+              >
+                Ok
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {showDeleteSuccess ? (
+        <View
+          style={[
+            styles.successBackdrop,
+            { backgroundColor: `${colors.background}E6` },
+          ]}
+        >
+          <View
+            style={[
+              styles.successCard,
+              {
+                backgroundColor: colors.boxBackground,
+                borderColor: colors.blockedBackground,
+              },
+            ]}
+          >
+            <Text style={[styles.successTitle, { color: colors.text }]}>
+              Successfully Deleted!
+            </Text>
+            <Text
+              style={[styles.successDescription, { color: colors.settingsText }]}
+            >
+              Ready to start a new project?
+            </Text>
+            <View style={styles.successButtonRow}>
+              <Pressable
+                onPress={handleDeleteSuccessYes}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.activeContainer },
+                ]}
+              >
+                <Text
+                  style={[styles.successButtonText, { color: colors.background }]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteSuccessNo}
+                style={[
+                  styles.successButton,
+                  { backgroundColor: colors.disabledButton },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.successButtonText,
+                    { color: colors.disabledButtonText },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -73,13 +73,19 @@ export default function Login() {
 
     //check if both fields entered
     if (!text.trim() || !password.trim()) {
-      alert("Please enter both email and password.");
+      setLoginErrorOverlay({
+        title: "Missing Fields",
+        message: "Please enter both email and password.",
+      });
       return;
     }
 
     //check if user has a valid email
     if (!isValidEmail(text)) {
-      alert("Invalid email format.");
+      setLoginErrorOverlay({
+        title: "Invalid Email",
+        message: "Please enter a valid email address.",
+      });
       return;
     }
 
@@ -91,9 +97,11 @@ export default function Login() {
 
     //check if password is alphanumeric
     if (!isAlphanumeric(password)) {
-      alert(
-        "Password contains at least one invalid character. Passwords must be 8-30 characters long and alphanumeric."
-      );
+      setLoginErrorOverlay({
+        title: "Invalid Password",
+        message:
+          "Hmm, your password can only include letters and numbers—no special characters",
+      });
       return;
     }
 
@@ -102,20 +110,24 @@ export default function Login() {
       setLoginErrorOverlay({
         title: "Invalid Password",
         message:
-          "Use at least 8 characters and include a number in your password.",
+          "Almost there! Add at least 8 characters and include a number in your password.",
       });
       return;
     } else if (password.length > 30) {
-      alert(
-        "Password contains more than 30 characters. Passwords must be 8-30 characters long and alphanumeric."
-      );
+      setLoginErrorOverlay({
+        title: "Invalid Password",
+        message:
+          "Oops! Your password is too long—please use 8–30 alphanumeric characters.",
+      });
       return;
     }
 
     if (text.length > 321) {
-      alert(
-        "Email too long. Please ensure that email is at most 321 characters."
-      );
+      setLoginErrorOverlay({
+        title: "Invalid Email",
+        message:
+          "Oops! Email must be under 321 characters. Please shorten it and try again.",
+      });
       return;
     }
 
@@ -153,7 +165,10 @@ export default function Login() {
           return;
         }
 
-        alert(data.message);
+        setLoginErrorOverlay({
+          title: "Login Failed",
+          message: data.message,
+        });
       }
     } catch (error) {
       console.log("Error during sign in:", error);
