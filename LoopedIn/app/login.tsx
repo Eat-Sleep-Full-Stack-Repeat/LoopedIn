@@ -341,7 +341,7 @@ export default function Login() {
 
             {/* Forgot Password*/}
             <TouchableOpacity
-              onPress={() => console.log("Forgot Password tapped")}
+              onPress={() => router.push("/forgotpassword")}
               accessible={true}
               accessibilityHint={"Double tap if password is forgotten."}
               accessibilityRole={"button"}

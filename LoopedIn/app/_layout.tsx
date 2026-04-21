@@ -96,6 +96,10 @@ export default function RootLayout() {
               name="deleteAccount"
               options={{ headerShown: false, animation: "none" }}
             />
+            <Stack.Screen
+              name="forgotpassword"
+              options={{ headerShown: false, animation: "none" }}
+            />
           </Stack>
           <ServerDisconnectedOverlay />
         </ServerStatusProvider>
