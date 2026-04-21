@@ -82,7 +82,7 @@ export default function ForgotPassword() {
           style={[
             styles.buttonText,
             {
-              color:  "#FFFFFF",
+              color:  colors.antiText,
               fontSize: size.font.titleText,
               fontWeight: size.weight.title,
             },
