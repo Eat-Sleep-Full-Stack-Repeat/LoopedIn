@@ -750,6 +750,8 @@ export default function FolderScreen() {
               backgroundColor: colors.secondaryButton,
               padding: 8,
               borderRadius: 50,
+              borderWidth: 1,
+              borderColor: colors.decorativeBackground,
             }}
           />
         </Pressable>

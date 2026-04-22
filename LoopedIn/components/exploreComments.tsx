@@ -70,8 +70,8 @@ const ExploreCommentsModal = ({
   const [Comments, setComments] = useState<Comment[]>([]);
   const hasMore = useRef<true | false>(true);
   const loadingMore = useRef<true | false>(false);
-  const currentUser = useRef<string | null>(null);
-  const currentUserInfo = useRef<userInfo | null>(null);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUserInfo, setCurrentUserInfo] = useState<userInfo | null>(null);
   const commentIDToDelete = useRef<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const size = useAppSize();
@@ -95,7 +95,7 @@ const ExploreCommentsModal = ({
   }, [isVisible]);
 
   useEffect(() => {
-    if (currentUser.current === null && currentUserInfo.current === null) {
+    if (currentUser === null && currentUserInfo === null) {
       fetchUserInfo();
     }
   }, []);
@@ -149,8 +149,8 @@ const ExploreCommentsModal = ({
 
       const responseData = await res.json();
 
-      currentUserInfo.current = responseData.currentUserInfo[0];
-      currentUser.current = responseData.currentUserID;
+      setCurrentUserInfo(responseData.currentUserInfo[0]);
+      setCurrentUser(responseData.currentUserID);
     } catch (e) {
       console.log("Error when getting the current user");
     }
@@ -283,7 +283,7 @@ const ExploreCommentsModal = ({
 
     const tempDate = new Date();
 
-    if (!currentUser.current || !currentUserInfo.current) {
+    if (!currentUser || !currentUserInfo) {
       console.log("Could not find current user id to add comment");
       return;
     }
@@ -315,9 +315,9 @@ const ExploreCommentsModal = ({
 
       const tempAddComment: Comment = {
         id: responseData.message[0].fld_comment_pk,
-        commenterid: currentUser.current,
-        profilepic: currentUserInfo.current.profilepic,
-        username: currentUserInfo.current.username,
+        commenterid: currentUser,
+        profilepic: currentUserInfo.profilepic,
+        username: currentUserInfo.username,
         dateposted: String(tempDate),
         body: commentToPost,
       };
@@ -470,7 +470,7 @@ const ExploreCommentsModal = ({
                   (Creator)
                 </Text>
               )}
-              {currentUser.current === item.commenterid && (
+              {currentUser === item.commenterid && (
                 <Text
                   style={{ color: colors.text, fontSize: size.font.headline }}
                 >
@@ -493,7 +493,7 @@ const ExploreCommentsModal = ({
             </Text>
           </View>
         </View>
-        {currentUser.current === item.commenterid ? (
+        {currentUser === item.commenterid ? (
           <Pressable
             onPress={() => checkDeleteComment(item.id)}
             accessible={true}

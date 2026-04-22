@@ -278,7 +278,11 @@ export default function ForumSearchOverlay({
               accessibilityRole={"button"}
               style={styles.sideView}
             >
-              <AntDesign name="close" size={size.iconSize + 4} />
+              <AntDesign
+                name="close"
+                size={size.iconSize + 4}
+                color={colors.text}
+              />
             </Pressable>
           </View>
           {/* Input row */}

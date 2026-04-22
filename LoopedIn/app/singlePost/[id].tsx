@@ -415,7 +415,10 @@ export default function SinglePost() {
           style={styles.backButton}
         >
           <Text
-            style={{ color: colors.text, fontSize: size.font.largeTitleText }}
+            style={{
+              color: colors.text,
+              fontSize: size.font.largeTitleText,
+            }}
           >
             ←
           </Text>
@@ -425,6 +428,8 @@ export default function SinglePost() {
             color: colors.text,
             fontSize: size.font.largeTitleText,
             fontWeight: size.weight.title,
+            marginHorizontal: size.iconSize + 20,
+            textAlign: "center",
           }}
           accessible={true}
           accessibilityRole={"header"}
@@ -513,12 +518,14 @@ export default function SinglePost() {
               accessibilityRole={"button"}
               style={{
                 backgroundColor: colors.secondaryButton,
-                padding: 15,
+                padding: 14,
                 borderRadius: 99,
                 width: size.iconSize + 30,
                 height: size.iconSize + 30,
                 justifyContent: "center",
                 alignItems: "center",
+                borderWidth: 1,
+                borderColor: colors.decorativeBackground,
               }}
             >
               <Entypo
@@ -1084,6 +1091,8 @@ const styles = StyleSheet.create({
   backButton: {
     position: "absolute",
     left: 0,
+    top: 0,
+    zIndex: 10,
   },
   card: {
     borderRadius: 20,

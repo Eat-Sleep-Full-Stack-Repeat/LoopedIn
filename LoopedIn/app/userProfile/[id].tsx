@@ -548,6 +548,8 @@ const size = useAppSize();
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      // paddingTop: insets.top,
+      backgroundColor: colors.background,
     },
     backButton: {
       position: "absolute",
@@ -564,16 +566,16 @@ const size = useAppSize();
       top: 0,
       left: 0,
       right: 0,
-      zIndex: -1,
+      zIndex: 0,
     },
     bottomBackground: {
       backgroundColor: colors.background,
-      height: "80%",
+      height: "60%",
       position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
-      zIndex: -1,
+      zIndex: 0,
     },
     headerContainer: {
       flexDirection: "column",
@@ -584,6 +586,7 @@ const size = useAppSize();
       borderBottomRightRadius: 40,
       marginBottom: 10,
       width: "100%",
+      paddingTop: insets.top,
     },
     headerArrowDiv: {
       backgroundColor: colors.topBackground,
@@ -659,7 +662,7 @@ const size = useAppSize();
       backgroundColor: colors.blockedBackground,
     },
     isBlockedText: {
-      fontSize: size.font.caption,
+      fontSize: size.font.button,
       color: colors.blockedText,
     },
     modalOverlay: {
@@ -709,7 +712,7 @@ const size = useAppSize();
     reportHeaderText: {
       fontSize: 24,
       textAlign: "center",
-    }
+    },
   });
 
   const renderHeader = () => (
@@ -950,7 +953,7 @@ const size = useAppSize();
   const cardW = (width - (NUM_COLUMNS + 1) * 10) / NUM_COLUMNS;
 
   return (
-    <SafeAreaView style={[styles.container]}>
+    <View style={[styles.container]}>
       <View style={styles.topBackground} />
       <View style={styles.bottomBackground} />
       <FlatList
@@ -1072,7 +1075,9 @@ const size = useAppSize();
               style={styles.menuOption}
               accessible={true}
               accessibilityLabel={"Report"}
-              accessibilityHint={"Double tap to report this user to LoopedIn moderators."}
+              accessibilityHint={
+                "Double tap to report this user to LoopedIn moderators."
+              }
             >
               <Feather name="flag" size={18} color={colors.text} />
               <Text style={[styles.menuText, { color: colors.text }]}>
@@ -1113,13 +1118,21 @@ const size = useAppSize();
               { backgroundColor: colors.exploreCardBackground },
             ]}
           >
-            <View style={{paddingBottom: 20}}>
-              <Text style={[styles.reportHeaderText, {color: colors.text}]}>Report Reason</Text>
+            <View style={{ paddingBottom: 20 }}>
+              <Text style={[styles.reportHeaderText, { color: colors.text }]}>
+                Report Reason
+              </Text>
             </View>
 
-            <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+            <View
+              style={{
+                backgroundColor: colors.blockedBackground,
+                height: 1,
+                width: "100%",
+              }}
+            />
             {userReasons.map((reason) => (
-              <View style={{flexDirection: "column"}} key={reason}>
+              <View style={{ flexDirection: "column" }} key={reason}>
                 <TouchableOpacity
                   onPress={() => handleReport(reason)}
                   style={styles.menuOption}
@@ -1127,14 +1140,22 @@ const size = useAppSize();
                   disabled={reportSending}
                   accessible={true}
                   accessibilityLabel={`Reason option: ${reason}`}
-                  accessibilityHint={"Double tap to report post for this reason."}
+                  accessibilityHint={
+                    "Double tap to report post for this reason."
+                  }
                 >
                   <Text style={[styles.menuText, { color: colors.text }]}>
                     {reason}
                   </Text>
                 </TouchableOpacity>
                 {/*line separator guy */}
-                <View style={{backgroundColor: colors.blockedBackground, height: 1, width: "100%"}}/>
+                <View
+                  style={{
+                    backgroundColor: colors.blockedBackground,
+                    height: 1,
+                    width: "100%",
+                  }}
+                />
               </View>
             ))}
 
@@ -1144,15 +1165,24 @@ const size = useAppSize();
               accessibilityRole="button"
               accessibilityLabel="Close menu"
               accessibilityHint="Double tap to exit report menu"
-              style={{marginTop: 20, padding: 10, borderColor: colors.cancel, borderWidth: 1, borderRadius: 12, width: "100%",
-                      alignItems: "center"}}
+              style={{
+                marginTop: 20,
+                padding: 10,
+                borderColor: colors.cancel,
+                borderWidth: 1,
+                borderRadius: 12,
+                width: "100%",
+                alignItems: "center",
+              }}
             >
-              <Text style={[styles.menuText, { color: colors.cancel}]}>Cancel</Text>
+              <Text style={[styles.menuText, { color: colors.cancel }]}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
