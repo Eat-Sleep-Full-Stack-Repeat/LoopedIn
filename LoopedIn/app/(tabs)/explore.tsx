@@ -633,7 +633,7 @@ export default function ExplorePage() {
         <View style={styles.actionsRow}>
           <Pressable
             style={styles.actionButton}
-            onPress={() => handleLikePress}
+            onPress={() => handleLikePress(item)}
             accessible={true}
             accessibilityLabel={"Like"}
             accessibilityHint={
@@ -690,7 +690,7 @@ export default function ExplorePage() {
 
           <Pressable
             style={styles.actionButton}
-            onPress={() => handleSavePress}
+            onPress={() => handleSavePress(item)}
             accessible={true}
             accessibilityLabel={"Save"}
             accessibilityHint={

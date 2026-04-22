@@ -247,7 +247,6 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
               flexDirection: "row",
               gap: 10,
               flex: 1,
-              marginRight: 12,
               alignItems: "flex-start",
             }}
           >
@@ -265,10 +264,10 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
               style={[
                 styles.headerTitle,
                 {
-                  justifyContent: "center",
-                  alignItems: "center",
                   flexWrap: "wrap",
                   flexShrink: 1,
+                  textAlign: "center",
+                  flex: 1,
                 },
               ]}
               accessible={true}
@@ -276,18 +275,18 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
             >
               Accessibility Settings
             </Text>
+            <Pressable
+              onPress={animateClose}
+              hitSlop={12}
+              style={styles.closeBtn}
+              accessible={true}
+              accessibilityLabel={"Close"}
+              accessibilityHint={"Double tap to close settings."}
+              accessibilityRole={"button"}
+            >
+              <Text style={styles.closeBtnText}>✕</Text>
+            </Pressable>
           </View>
-          <Pressable
-            onPress={animateClose}
-            hitSlop={12}
-            style={styles.closeBtn}
-            accessible={true}
-            accessibilityLabel={"Close"}
-            accessibilityHint={"Double tap to close settings."}
-            accessibilityRole={"button"}
-          >
-            <Text style={styles.closeBtnText}>✕</Text>
-          </Pressable>
         </View>
 
         {/* Divider */}
@@ -380,7 +379,14 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
       <>
         {/* Header Row */}
         <View style={styles.headerRow}>
-          <View style={{ flexDirection: "row", gap: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 10,
+              flex: 1,
+              alignItems: "flex-start",
+            }}
+          >
             <TouchableOpacity
               onPress={() => setCurrentScreen("main")}
               accessible={true}
@@ -394,25 +400,30 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
             <Text
               style={[
                 styles.headerTitle,
-                { justifyContent: "center", alignItems: "center" },
+                {
+                  flexWrap: "wrap",
+                  flexShrink: 1,
+                  textAlign: "center",
+                  flex: 1,
+                },
               ]}
               accessible={true}
               accessibilityRole={"header"}
             >
               Account Settings
             </Text>
+            <Pressable
+              onPress={animateClose}
+              hitSlop={12}
+              style={styles.closeBtn}
+              accessible={true}
+              accessibilityLabel={"Close"}
+              accessibilityHint={"Double tap to close settings."}
+              accessibilityRole={"button"}
+            >
+              <Text style={styles.closeBtnText}>✕</Text>
+            </Pressable>
           </View>
-          <Pressable
-            onPress={animateClose}
-            hitSlop={12}
-            style={styles.closeBtn}
-            accessible={true}
-            accessibilityLabel={"Close"}
-            accessibilityHint={"Double tap to close settings."}
-            accessibilityRole={"button"}
-          >
-            <Text style={styles.closeBtnText}>✕</Text>
-          </Pressable>
         </View>
 
         {/* Divider */}
@@ -420,17 +431,25 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
 
         {/* Scrollable content */}
         <ScrollView
-            contentContainerStyle={[styles.scrollContent, { flexGrow: 1 }]}
-            showsVerticalScrollIndicator
+          contentContainerStyle={[styles.scrollContent, { flexGrow: 1 }]}
+          showsVerticalScrollIndicator
         >
           <View style={{ flex: 1, justifyContent: "space-between" }}>
             <View>
-              <MenuItem label="Edit Profile" regButton onPress={onEditProfile} />
+              <MenuItem
+                label="Edit Profile"
+                regButton
+                onPress={onEditProfile}
+              />
               <MenuItem label="Log Out" destructive onPress={onLogout} />
             </View>
 
             <View>
-              <MenuItem label="Delete Account" deleteButton onPress={onDeleteAccount} />
+              <MenuItem
+                label="Delete Account"
+                deleteButton
+                onPress={onDeleteAccount}
+              />
             </View>
           </View>
         </ScrollView>
@@ -467,7 +486,7 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
     },
     headerRow: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "space-between",
       marginBottom: 12,
       paddingHorizontal: 23,
@@ -485,6 +504,8 @@ transform: [{ translateX: toggleAnim.value * 24 + 2 }],
       justifyContent: "center",
       borderRadius: 50,
       backgroundColor: colors.secondaryButton,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
     },
     closeBtnText: {
       fontSize: size.font.button,

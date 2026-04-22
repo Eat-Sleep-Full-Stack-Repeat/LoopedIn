@@ -829,7 +829,7 @@ export default function ForumPostDetail() {
     postBody: {
       color: colors.text,
       marginTop: 8,
-      lineHeight: 20,
+      lineHeight: size.font.titleText,
       fontSize: size.font.bodyText,
     },
 
@@ -928,7 +928,7 @@ export default function ForumPostDetail() {
     commentText: {
       color: colors.text,
       marginTop: 6,
-      lineHeight: 18,
+      lineHeight: size.font.titleText,
       fontSize: size.font.bodyText,
     },
 
@@ -1103,27 +1103,31 @@ export default function ForumPostDetail() {
               )}
             </View>
           </View>
-          <Pressable
-            hitSlop={10}
-            onPress={() => setMenuVisible(true)}
-            accessible={true}
-            accessibilityLabel={"Forum Post Menu"}
-            accessibilityHint={
-              "Double tap to view the forum post menu options."
-            }
-            accessibilityRole={"button"}
-            style={{
-              backgroundColor: colors.secondaryButton,
-              padding: 10,
-              borderRadius: 50,
-            }}
-          >
-            <Entypo
-              name="dots-three-vertical"
-              size={size.iconSize}
-              color={colors.decorativeBackground}
-            />
-          </Pressable>
+          {currentUser !== post.creator && (
+            <Pressable
+              hitSlop={10}
+              onPress={() => setMenuVisible(true)}
+              accessible={true}
+              accessibilityLabel={"Forum Post Menu"}
+              accessibilityHint={
+                "Double tap to view the forum post menu options."
+              }
+              accessibilityRole={"button"}
+              style={{
+                backgroundColor: colors.secondaryButton,
+                padding: 10,
+                borderRadius: 50,
+                borderWidth: 1,
+                borderColor: colors.decorativeBackground,
+              }}
+            >
+              <Entypo
+                name="dots-three-vertical"
+                size={size.iconSize}
+                color={colors.decorativeBackground}
+              />
+            </Pressable>
+          )}
         </View>
 
         <Text style={styles.postBody}>{post.content}</Text>

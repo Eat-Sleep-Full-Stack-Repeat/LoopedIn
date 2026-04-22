@@ -1046,6 +1046,8 @@ const themedStyles = (
       padding: 15,
       backgroundColor: colors.secondaryButton,
       borderRadius: 50,
+      borderWidth: 1,
+      borderColor: colors.decorativeBackground,
     },
     iconLabel: { fontSize: 12, marginTop: 4 },
     userInfoContainer: {
@@ -1202,5 +1204,7 @@ const themedStyles = (
       width: 150,
       alignItems: "center",
       borderRadius: 15,
+      borderWidth: 1,
+      borderColor: colors.secondaryText,
     },
   });

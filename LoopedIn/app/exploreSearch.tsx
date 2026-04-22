@@ -467,15 +467,15 @@ export default function ExploreSearch() {
         </Pressable>
 
         {/* ✅ ACTION ROW ADDED (Like / Comment / Tags / Save) */}
-        <View style={styles(colors, isTablet, size).postActions}>
+        <View style={styles(colors, isTablet, size).actionsRow}>
           <Pressable
-            style={styles(colors, isTablet, size).postAction}
+            style={styles(colors, isTablet, size).actionButton}
             onPress={() => handleLikePress(item)}
             accessible={true}
             accessibilityLabel={"Like"}
             accessibilityHint={
               item.isLiked
-                ? "double tap to unlike the post"
+                ? "double tap to unlike this post"
                 : "double tap to like this post"
             }
             accessibilityState={
@@ -483,44 +483,50 @@ export default function ExploreSearch() {
             }
             accessibilityRole={"button"}
           >
-            <Image
-              style={[
-                styles(colors, isTablet, size).actionIcon,
-                { tintColor: item.isLiked ? "#E57373" : colors.text },
-              ]}
-              source={require("../assets/images/heart.png")}
+            <Feather
+              name="heart"
+              size={size.iconSize + 4}
+              color={item.isLiked ? "#E57373" : colors.text}
             />
-            <Text style={styles(colors, isTablet, size).postActionText}>
+            <Text
+              style={[
+                styles(colors, isTablet, size).actionText,
+                { color: colors.text, fontSize: size.font.caption },
+              ]}
+            >
               {item.isLiked ? "Liked" : "Like"}
             </Text>
           </Pressable>
 
-          <View style={styles(colors, isTablet, size).postAction}>
-            <Pressable
-              onPress={() => showComments(item)}
-              style={{ alignItems: "center" }}
-              accessible={true}
-              accessibilityLabel={"Comment feed"}
-              accessibilityHint={
-                "Double tap to open comment section on this post"
-              }
-              accessibilityRole={"button"}
+          <Pressable
+            onPress={() => showComments(item)}
+            style={styles(colors, isTablet, size).actionButton}
+            accessible={true}
+            accessibilityLabel={"Comment feed"}
+            accessibilityHint={
+              "Double tap to open comment section on this post"
+            }
+            accessibilityRole={"button"}
+          >
+            <Feather
+              name="message-circle"
+              size={size.iconSize + 4}
+              color={colors.text}
+            />
+            <Text
+              style={[
+                styles(colors, isTablet, size).actionText,
+                { color: colors.text, fontSize: size.font.caption },
+              ]}
             >
-              <Image
-                style={[
-                  styles(colors, isTablet, size).actionIcon,
-                  { tintColor: colors.text },
-                ]}
-                source={require("../assets/images/comment.png")}
-              />
-              <Text style={styles(colors, isTablet, size).postActionText}>
-                Comment
-              </Text>
-            </Pressable>
-          </View>
+              Comment
+            </Text>
+          </Pressable>
+
+          <View style={{ flex: 1 }} />
 
           <Pressable
-            style={styles(colors, isTablet, size).postAction}
+            style={styles(colors, isTablet, size).actionButton}
             onPress={() => handleSavePress(item)}
             accessible={true}
             accessibilityLabel={"Save"}
@@ -534,18 +540,17 @@ export default function ExploreSearch() {
             }
             accessibilityRole={"button"}
           >
-            <Image
-              style={[
-                styles(colors, isTablet, size).actionIcon,
-                {
-                  tintColor: item.isSaved
-                    ? colors.exploreFilterSelected
-                    : colors.text,
-                },
-              ]}
-              source={require("../assets/images/saved.png")}
+            <Feather
+              name="bookmark"
+              size={size.iconSize + 4}
+              color={item.isSaved ? colors.exploreFilterSelected : colors.text}
             />
-            <Text style={styles(colors, isTablet, size).postActionText}>
+            <Text
+              style={[
+                styles(colors, isTablet, size).actionText,
+                { color: colors.text, fontSize: size.font.caption },
+              ]}
+            >
               {item.isSaved ? "Saved" : "Save"}
             </Text>
           </Pressable>
@@ -927,5 +932,18 @@ const styles = (colors: any, isTablet: boolean, size: any) =>
     postActionText: {
       color: colors.text,
       fontSize: size.font.detailText,
+    },
+    actionsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 20,
+    },
+    actionButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginRight: 16,
+    },
+    actionText: {
+      marginLeft: 6,
     },
   });

@@ -302,6 +302,8 @@ export default function MyPosts() {
               backgroundColor: colors.secondaryButton,
               padding: 10,
               borderRadius: 50,
+              borderWidth: 1,
+              borderColor: colors.decorativeBackground,
             }}
           >
             <Entypo
